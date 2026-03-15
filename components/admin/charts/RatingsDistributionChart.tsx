@@ -8,13 +8,13 @@ const COLORS = ["#2F80ED", "#EB5757", "#F2C94C", "#27AE60", "#6366F1"];
 
 export default function MetricsPieChart({ data }: { data: RatingPoint[] }) {
   // Sort descending so 5★ comes first, map to recharts shape
-  const chartData = [...data]
-    .sort((a, b) => b.rating - a.rating)
-    .map((d, i) => ({
-      name: `${d.rating}★`,
-      value: d.count,
-      fill: COLORS[i % COLORS.length],
-    }));
+ const chartData = (data ?? [])
+  .sort((a, b) => b.rating - a.rating)
+  .map((d, i) => ({
+    name: `${d.rating}★`,
+    value: d.count,
+    fill: COLORS[i % COLORS.length],
+  }));
 
   return (
     <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">

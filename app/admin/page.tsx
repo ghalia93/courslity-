@@ -75,37 +75,36 @@ export default function AdminDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const stats = [
-    {
-      value: metrics.totalUsers.toLocaleString(),
-      label: "Total Users",
-      Icon: Users,
-      iconBg: "bg-[#E8F1FF]",
-      iconColor: "text-[#2F80ED]",
-    },
-    {
-      value: metrics.totalCourses.toLocaleString(),
-      label: "Total Courses",
-      Icon: BookOpen,
-      iconBg: "bg-[#FFE9EE]",
-      iconColor: "text-[#EB5757]",
-    },
-    {
-      value: metrics.totalReviews.toLocaleString(),
-      label: "Total Reviews",
-      Icon: Star,
-      iconBg: "bg-[#FFF6D9]",
-      iconColor: "text-[#F2C94C]",
-    },
-    {
-      value: metrics.averageRating.toFixed(1),
-      label: "Average Rating",
-      Icon: TrendingUp,
-      iconBg: "bg-[#E8F7EA]",
-      iconColor: "text-[#27AE60]",
-    },
-  ];
-
+ const stats = [
+  {
+    value: (metrics.totalUsers ?? 0).toLocaleString(),
+    label: "Total Users",
+    Icon: Users,
+    iconBg: "bg-[#E8F1FF]",
+    iconColor: "text-[#2F80ED]",
+  },
+  {
+    value: (metrics.totalCourses ?? 0).toLocaleString(),
+    label: "Total Courses",
+    Icon: BookOpen,
+    iconBg: "bg-[#FFE9EE]",
+    iconColor: "text-[#EB5757]",
+  },
+  {
+    value: (metrics.totalReviews ?? 0).toLocaleString(),
+    label: "Total Reviews",
+    Icon: Star,
+    iconBg: "bg-[#FFF6D9]",
+    iconColor: "text-[#F2C94C]",
+  },
+  {
+    value: (metrics.averageRating ?? 0).toFixed(1),
+    label: "Average Rating",
+    Icon: TrendingUp,
+    iconBg: "bg-[#E8F7EA]",
+    iconColor: "text-[#27AE60]",
+  },
+];
   return (
     <div>
       <h1 className="text-2xl font-semibold text-black">Overview</h1>

@@ -12,9 +12,11 @@ import {
 
 type ChartPoint = { date: string; count: number };
 
-export default function ReviewsTrendChart({ data }: { data: ChartPoint[] }) {
-  const chartData = data.map((d) => ({ date: d.date, reviews: d.count }));
-
+export default function ReviewsTrendChart({ data = [] }: { data?: ChartPoint[] }) {
+  const chartData = data.map((d) => ({
+    date: d.date,
+    reviews: d.count,
+  }));
   return (
     <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
       <h3 className="text-sm font-semibold mb-4 text-gray-700">

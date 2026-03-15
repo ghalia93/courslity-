@@ -1,4 +1,4 @@
-USE coursality;
+USE course_checker;
 
 ALTER TABLE university ADD COLUMN email_domain VARCHAR(100) NOT NULL DEFAULT '';
 

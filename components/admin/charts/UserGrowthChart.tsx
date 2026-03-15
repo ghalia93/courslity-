@@ -12,9 +12,8 @@ import {
 
 type ChartPoint = { date: string; count: number };
 
-export default function UserGrowthChart({ data }: { data: ChartPoint[] }) {
+export default function UserGrowthChart({ data = [] }: { data?: ChartPoint[] }) {
   const chartData = data.map((d) => ({ date: d.date, users: d.count }));
-
   return (
     <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
       <h3 className="text-sm font-semibold mb-4 text-gray-700">User Growth</h3>

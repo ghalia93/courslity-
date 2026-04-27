@@ -45,7 +45,7 @@ function timeAgo(dateStr: string): string {
 
 interface Props {
   slug: string;
-  refreshKey?: number; // increment to force a refetch after new review submitted
+  refreshKey?: number;
 }
 
 export default function StudentReviews({ slug, refreshKey = 0 }: Props) {
@@ -58,8 +58,10 @@ export default function StudentReviews({ slug, refreshKey = 0 }: Props) {
     try {
       setLoading(true);
       setError(null);
+
       const res = await fetch(`/api/courses/${slug}/reviews?sort=${sort}`);
       if (!res.ok) throw new Error("Failed to load reviews");
+
       const data = await res.json();
       setReviews(data.reviews ?? []);
     } catch (err: any) {
@@ -69,7 +71,6 @@ export default function StudentReviews({ slug, refreshKey = 0 }: Props) {
     }
   }, [slug, sort]);
 
-  // Refetch when sort changes or parent signals a new review was submitted
   useEffect(() => {
     fetchReviews();
   }, [fetchReviews, refreshKey]);

@@ -1,4 +1,3 @@
-// admin dashboard
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import pool from "@/db";
@@ -18,7 +17,6 @@ type MetricsResponse = {
   totalCourses: number;
   totalReviews: number;
   averageRating: number;
-
   userGrowth: ChartPoint[];
   reviewsTrend: ChartPoint[];
   ratingDistribution: RatingDistribution[];
@@ -31,7 +29,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const daysParam = searchParams.get("days");
 
-    let days = 30; 
+    let days = 30;
     if (daysParam) {
       const parsed = Number(daysParam);
       if (!isNaN(parsed) && parsed > 0 && parsed <= 365) {
@@ -47,7 +45,7 @@ export async function GET(req: NextRequest) {
     ]: any = await Promise.all([
       pool.query(`
         SELECT
-          (SELECT COUNT(*) FROM user)   AS totalUsers,
+          (SELECT COUNT(*) FROM user) AS totalUsers,
           (SELECT COUNT(*) FROM course) AS totalCourses,
           (SELECT COUNT(*) FROM review) AS totalReviews,
           COALESCE(ROUND(AVG(r.overall_rating), 1), 0) AS averageRating
@@ -63,7 +61,6 @@ export async function GET(req: NextRequest) {
         GROUP BY DATE(created_at)
         ORDER BY DATE(created_at);
       `),
-
 
       pool.query(`
         SELECT 
@@ -110,10 +107,19 @@ export async function GET(req: NextRequest) {
     };
 
     return NextResponse.json(payload);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "UNAUTHORIZED") {
+      return NextResponse.json({ message: "UNAUTHORIZED" }, { status: 401 });
+    }
+
+    if (error.message === "FORBIDDEN") {
+      return NextResponse.json({ message: "FORBIDDEN" }, { status: 403 });
+    }
+
+    console.error("ADMIN METRICS ERROR:", error);
     return NextResponse.json(
-      { message: "UNAUTHORIZED" },
-      { status: 401 }
+      { message: "Failed to load admin metrics" },
+      { status: 500 }
     );
   }
 }

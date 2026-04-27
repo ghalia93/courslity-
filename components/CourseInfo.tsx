@@ -34,6 +34,7 @@ type Course = {
   averageRating: number | null;
   ratings: CourseRatings;
   prerequisites: { course_id: number; code: string; title: string }[];
+
 };
 
 function StarRating({ rating }: { rating: number }) {

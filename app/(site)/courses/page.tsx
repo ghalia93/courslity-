@@ -141,13 +141,17 @@ export default function CoursesPage() {
         </AnimatePresence>
 
         {/* Course list */}
-        <div className="flex flex-col gap-6 mt-8">
+        <div className="mt-8 grid justify-center gap-8 sm:grid-cols-1 md:grid-cols-2">
           {loading ? (
-            <p className="text-gray-400 text-center py-10">Loading courses…</p>
+            <p className="text-gray-400 text-center py-10 md:col-span-2">
+              Loading courses…
+            </p>
           ) : error ? (
-            <p className="text-red-500 text-center py-10">{error}</p>
+            <p className="text-red-500 text-center py-10 md:col-span-2">
+              {error}
+            </p>
           ) : filteredCourses.length === 0 ? (
-            <p className="text-gray-500 text-center py-10">
+            <p className="text-gray-500 text-center py-10 md:col-span-2">
               No courses match your search or filters.
             </p>
           ) : (

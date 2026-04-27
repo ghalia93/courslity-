@@ -85,7 +85,7 @@ export default function AdminUsersPage() {
         name: u.name,
         email: u.email,
         university: u.university ?? null,
-        role: u.role,
+      role: u.role || "admin",  
         joined: dateOnly(u.joined),
         protected: !!u.isProtected,
       }));
@@ -148,32 +148,33 @@ export default function AdminUsersPage() {
   }
 
   async function createAdmin(admin: AdminUser) {
-    try {
-      const res = await fetch("/api/admin/users", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName: admin.name.trim(),
-          email: admin.email.trim(),
-          password: admin.password,
-        }),
-      });
+  try {
+    const res = await fetch("/api/admin/users", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName: admin.name.trim(),
+        email: admin.email.trim(),
+        password: admin.password,
+        role: "admin",
+      }),
+    });
 
-      const data = await res.json().catch(() => null);
+    const data = await res.json().catch(() => null);
 
-      if (!res.ok) {
-        alert(data?.message || "Failed to create admin");
-        return;
-      }
-
-      setShowAdminForm(false);
-      setPage(1);
-      loadUsers(1, debouncedQ);
-    } catch {
-      alert("Failed to create admin");
+    if (!res.ok) {
+      alert(data?.message || "Failed to create admin");
+      return;
     }
+
+    setShowAdminForm(false);
+    setPage(1);
+    loadUsers(1, debouncedQ);
+  } catch {
+    alert("Failed to create admin");
   }
+}
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
 

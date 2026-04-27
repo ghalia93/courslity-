@@ -33,6 +33,7 @@ export default function LoginForm() {
           password,
           remember,
         }),
+         credentials: "include",
       });
 
       const data = await res.json();

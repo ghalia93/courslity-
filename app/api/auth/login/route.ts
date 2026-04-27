@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     const email = body?.email;
     const password = body?.password;
-    const remember = body?.remember === true; 
+    const remember = body?.remember === true;
 
     if (!email || typeof email !== "string") {
       return NextResponse.json(
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
         role: user.role,
       },
       secret,
-      { expiresIn: "2h" } // JWT expiration
+      { expiresIn: "2h" }
     );
 
     const response = NextResponse.json({
@@ -90,11 +90,10 @@ export async function POST(req: Request) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      ...(remember ? { maxAge: 60 * 60 * 24 * 30 } : {}), 
+      ...(remember ? { maxAge: 60 * 60 * 24 * 30 } : {}),
     });
 
     return response;
-
   } catch (error: any) {
     console.error("LOGIN ERROR:", error);
 

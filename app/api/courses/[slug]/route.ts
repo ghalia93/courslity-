@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/db";
 
+function getYearFromCourseCode(code: string): number | null {
+  const match = code.match(/\d+/);
+  if (!match) return null;
+
+  const courseNumber = parseInt(match[0], 10);
+
+  if (courseNumber >= 200 && courseNumber < 300) return 1;
+  if (courseNumber >= 300 && courseNumber < 400) return 2;
+  if (courseNumber >= 400 && courseNumber < 500) return 3;
+  if (courseNumber >= 500 && courseNumber < 600) return 4;
+
+  return null;
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
@@ -8,8 +22,7 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    // Normalize slug: "csc-326" → "CSC 326"
-    // Also normalize stored code in SQL so "CSC-326" and "CSC 326" both match.
+    // Normalize slug: "csc-326" -> "CSC 326"
     const normalizedSlug = slug.toUpperCase().replace(/-/g, " ");
 
     console.log("[slug route] raw slug:", slug);
@@ -39,7 +52,7 @@ export async function GET(
 
       FROM course c
       INNER JOIN department d ON d.department_id = c.department_id
-      INNER JOIN university u ON u.university_id  = d.university_id
+      INNER JOIN university u ON u.university_id = d.university_id
       LEFT JOIN review r ON r.course_id = c.course_id
 
       WHERE REPLACE(UPPER(c.code), '-', ' ') = ?
@@ -53,8 +66,9 @@ export async function GET(
     );
 
     console.log("[slug route] rows returned:", rows?.length ?? 0);
-    if (rows?.length > 0)
+    if (rows?.length > 0) {
       console.log("[slug route] matched code:", rows[0].code);
+    }
 
     if (!rows || rows.length === 0) {
       return NextResponse.json(
@@ -67,12 +81,16 @@ export async function GET(
 
     // Fetch prerequisites
     const [prereqs]: any = await pool.query(
-      `SELECT c.course_id, c.code, c.title
-       FROM course_prerequisite cp
-       JOIN course c ON c.course_id = cp.prereq_course_id
-       WHERE cp.course_id = ?`,
+      `
+      SELECT c.course_id, c.code, c.title
+      FROM course_prerequisite cp
+      JOIN course c ON c.course_id = cp.prereq_course_id
+      WHERE cp.course_id = ?
+      `,
       [row.course_id],
     );
+
+    const year = getYearFromCourseCode(row.code);
 
     return NextResponse.json({
       success: true,
@@ -89,6 +107,7 @@ export async function GET(
         departmentId: row.department_id,
         university: row.university,
         universityId: row.university_id,
+        year,
         reviewCount: Number(row.reviewCount) || 0,
         averageRating:
           row.avgOverall == null

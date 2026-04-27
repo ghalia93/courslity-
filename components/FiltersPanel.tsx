@@ -35,21 +35,25 @@ export default function FiltersPanel({
   };
 
   const handleReset = () => {
-    const reset: Filters = {
-      university: "",
-      department: "",
-      language: "",
-      level: "",
-    };
+  const reset: Filters = {
+    university: "",
+    department: "",
+    language: "",
+    level: "",
+    year: "",
+    semester: "",
+  };
     setFilters(reset);
     setDraftFilters(reset);
     onReset?.();
   };
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div className="flex flex-col md:flex-col lg:flex-row flex-wrap gap-2 lg:gap-4 w-full lg:w-auto">
+  <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="flex flex-col gap-4">
+      {/* Top row */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col md:flex-col lg:flex-row flex-wrap gap-2 lg:gap-4 w-full">
           <select
             name="university"
             value={draftFilters.university}
@@ -113,7 +117,7 @@ export default function FiltersPanel({
           </select>
         </div>
 
-        <div className="flex gap-2 mt-2 lg:mt-0">
+        <div className="flex gap-2 shrink-0">
           <Button onClick={handleApply} className="text-sm w-full lg:w-auto">
             Apply
           </Button>
@@ -126,6 +130,50 @@ export default function FiltersPanel({
           </Button>
         </div>
       </div>
+
+      {/* Bottom row: only for Undergraduate */}
+      {draftFilters.level === "Undergraduate" && (
+        <div className="flex flex-col sm:flex-row gap-2 lg:gap-4">
+          <select
+            name="year"
+            value={draftFilters.year || ""}
+            onChange={handleDraftChange}
+            className="w-full sm:w-auto rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-[#6155F5] focus:outline-none"
+          >
+            <option value="">Any Year</option>
+            <option value="1">Year 1</option>
+            <option value="2">Year 2</option>
+            <option value="3">Year 3</option>
+            <option value="4">Year 4</option>
+          </select>
+
+          <select
+            name="semester"
+            value={draftFilters.semester || ""}
+            onChange={handleDraftChange}
+            className="w-full sm:w-auto rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-[#6155F5] focus:outline-none"
+          >
+            <option value="">Any Semester</option>
+            <option value="fall">Fall</option>
+            <option value="spring">Spring</option>
+            <option value="summer">Summer</option>
+          </select>
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
+
+        <div className="flex gap-2 mt-2 lg:mt-0">
+          <Button onClick={handleApply} className="text-sm w-full lg:w-auto">
+            Apply
+          </Button>
+          <Button
+            onClick={handleReset}
+            className="text-sm w-full lg:w-auto"
+            variant="elevated"
+          >
+            Reset
+          </Button>
+        </div>
 }

@@ -3,4 +3,6 @@ export interface Filters {
   department: string;
   level: string;
   language: string;
+   year?: string;
+  semester?: string;
 }

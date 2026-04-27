@@ -52,17 +52,11 @@ export default function WriteReviewCard({
     setError(null);
 
     try {
-      const token = localStorage.getItem("token"); // MUST exist for auth
-      if (!token) {
-        setError("You must be logged in to leave a review.");
-        return;
-      }
-
       const res = await fetch(`/api/courses/${slug}/reviews`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           overallRating,

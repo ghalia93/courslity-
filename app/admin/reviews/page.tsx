@@ -50,7 +50,7 @@ function RatingStars({ value, size = 13 }: { value: number; size?: number }) {
     <div className="flex items-center gap-1.5">
       <Star size={size} className="text-amber-400 fill-amber-400" />
       <span className="font-medium text-gray-800 text-sm">
-        {value.toFixed(2)}
+        {typeof value === "number" ? value.toFixed(2) : Number(value || 0).toFixed(2)}
       </span>
     </div>
   );
@@ -638,8 +638,8 @@ export default function AdminReviewsPage() {
               <th className="text-left px-4 py-3 whitespace-nowrap">Semester</th>
               <th className="text-left px-4 py-3 whitespace-nowrap">Review</th>
               <th className="text-left px-4 py-3 whitespace-nowrap">Overall</th>
-              <th className="text-left px-4 py-3 whitespace-nowrap">Metrics</th>
-              <th className="text-left px-4 py-3 whitespace-nowrap">Votes</th>
+              <th className="text-left px-6 py-3 whitespace-nowrap min-w-[150px]">Metrics</th>
+              <th className="text-left px-8 py-3 whitespace-nowrap min-w-[90px]">Votes</th>
               <th className="text-left px-4 py-3 whitespace-nowrap">Date</th>
               <th className="text-right px-4 py-3 whitespace-nowrap">Actions</th>
             </tr>
@@ -659,7 +659,7 @@ export default function AdminReviewsPage() {
                   onClick={() => setDetailReview(r)}
                   className="border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
                 >
-                  <td className="px-4 py-3">
+                  <td className="px-6 py-3 min-w-[150px]">
                     <p className="font-medium text-gray-900 whitespace-nowrap">
                       {r.course_code}
                     </p>
@@ -671,7 +671,7 @@ export default function AdminReviewsPage() {
                     </p>
                   </td>
 
-                  <td className="px-4 py-3">
+                  <td className="px-8 py-3 min-w-[90px]">
                     <p className="whitespace-nowrap font-medium text-gray-800">
                       {r.reviewer_name}
                     </p>

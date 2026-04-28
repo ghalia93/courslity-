@@ -9,16 +9,32 @@ import {
   SlidersHorizontal,
   X,
   MessageSquare,
+  AlertTriangle,
 } from "lucide-react";
+
+type FeedbackKind = "feedback" | "problem";
+type ViewKind = "all" | FeedbackKind;
 
 type FeedbackRow = {
   feedback_id: string;
   user_id: string;
   full_name: string;
   email: string;
+  kind: FeedbackKind;
   rating: number;
   message: string;
   created_at: string;
+};
+
+type FeedbackResponseRow = {
+  feedback_id: number | string;
+  user_id: number | string | null;
+  full_name?: string | null;
+  email?: string | null;
+  kind?: FeedbackKind;
+  rating: number | string;
+  message?: string | null;
+  created_at?: string | null;
 };
 
 type SortKey = "newest" | "oldest" | "rating_high" | "rating_low";
@@ -68,6 +84,24 @@ function RatingBadge({ value }: { value: number }) {
   );
 }
 
+function KindBadge({ kind }: { kind: FeedbackKind }) {
+  if (kind === "problem") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
+        <AlertTriangle size={12} />
+        Problem
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">
+      <MessageSquare size={12} />
+      Feedback
+    </span>
+  );
+}
+
 function FeedbackDetailModal({
   feedback,
   onClose,
@@ -96,7 +130,10 @@ function FeedbackDetailModal({
       >
         <div className="flex items-start justify-between gap-4 p-5 border-b border-gray-100">
           <div>
-            <p className="font-semibold text-gray-900">{feedback.full_name}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-gray-900">{feedback.full_name}</p>
+              <KindBadge kind={feedback.kind} />
+            </div>
             <p className="text-sm text-gray-400 mt-0.5">{feedback.email}</p>
           </div>
           <button
@@ -117,6 +154,10 @@ function FeedbackDetailModal({
             <div>
               <p className="text-xs text-gray-400 mb-1">Sentiment</p>
               <RatingBadge value={feedback.rating} />
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 mb-1">Type</p>
+              <KindBadge kind={feedback.kind} />
             </div>
             <div>
               <p className="text-xs text-gray-400 mb-0.5">Submitted</p>
@@ -168,6 +209,7 @@ function FeedbackDetailModal({
 export default function AdminFeedbackPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [viewKind, setViewKind] = useState<ViewKind>("all");
   const [ratingFilter, setRatingFilter] = useState<"all" | "positive" | "neutral" | "negative">("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
@@ -177,7 +219,7 @@ export default function AdminFeedbackPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadFeedback = useCallback(async (q: string, sort: SortKey) => {
+  const loadFeedback = useCallback(async (q: string, sort: SortKey, kind: ViewKind) => {
     try {
       setLoading(true);
       setError("");
@@ -185,6 +227,7 @@ export default function AdminFeedbackPage() {
       const params = new URLSearchParams();
       if (q.trim()) params.set("q", q.trim());
       if (sort) params.set("sort", sort);
+      if (kind !== "all") params.set("kind", kind);
 
       const res = await fetch(`/api/admin/feedback?${params.toString()}`, {
         cache: "no-store",
@@ -195,19 +238,21 @@ export default function AdminFeedbackPage() {
         throw new Error(data?.message || "Failed to load feedback");
       }
 
-      const rows: FeedbackRow[] = (data.feedback || []).map((r: any) => ({
+      const rows: FeedbackRow[] = ((data.feedback || []) as FeedbackResponseRow[]).map((r) => ({
         feedback_id: String(r.feedback_id),
-        user_id: String(r.user_id),
+        user_id: r.user_id == null ? "" : String(r.user_id),
         full_name: String(r.full_name || ""),
         email: String(r.email || ""),
+        kind: r.kind === "problem" ? "problem" : "feedback",
         rating: Number(r.rating) || 0,
         message: String(r.message || ""),
         created_at: String(r.created_at || ""),
       }));
 
       setFeedbackList(rows);
-    } catch (e: any) {
-      setError(e?.message || "Failed to load feedback");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to load feedback";
+      setError(message);
       setFeedbackList([]);
     } finally {
       setLoading(false);
@@ -215,15 +260,15 @@ export default function AdminFeedbackPage() {
   }, []);
 
   useEffect(() => {
-    loadFeedback("", "newest");
+    loadFeedback("", "newest", "all");
   }, [loadFeedback]);
 
   useEffect(() => {
     const t = setTimeout(() => {
-      loadFeedback(searchQuery, sortKey);
+      loadFeedback(searchQuery, sortKey, viewKind);
     }, 300);
     return () => clearTimeout(t);
-  }, [searchQuery, sortKey, loadFeedback]);
+  }, [searchQuery, sortKey, viewKind, loadFeedback]);
 
   async function handleDelete(feedback_id: string) {
     try {
@@ -232,18 +277,20 @@ export default function AdminFeedbackPage() {
       const data = await res.json();
       if (!res.ok || !data?.success) throw new Error(data?.message || "Failed to delete feedback");
       setFeedbackList((prev) => prev.filter((f) => f.feedback_id !== feedback_id));
-    } catch (e: any) {
-      alert(e?.message || "Failed to delete feedback");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to delete feedback";
+      alert(message);
     }
   }
 
   const avgRating = feedbackList.length
     ? (feedbackList.reduce((s, f) => s + Number(f.rating || 0), 0) / feedbackList.length).toFixed(2)
     : "—";
-  const positiveCount = feedbackList.filter((f) => f.rating >= 4).length;
-  const negativeCount = feedbackList.filter((f) => f.rating < 3).length;
+  const feedbackCount = feedbackList.filter((f) => f.kind === "feedback").length;
+  const problemCount = feedbackList.filter((f) => f.kind === "problem").length;
 
   const activeFilterCount = [ratingFilter !== "all", sortKey !== "newest"].filter(Boolean).length;
+  const emptyLabel = viewKind === "problem" ? "problem reports" : viewKind === "feedback" ? "feedback entries" : "entries";
 
   function resetFilters() {
     setRatingFilter("all");
@@ -260,6 +307,13 @@ export default function AdminFeedbackPage() {
       return matchesRating;
     });
   }, [feedbackList, ratingFilter]);
+
+  const foundLabel =
+    viewKind === "problem"
+      ? `problem report${filtered.length !== 1 ? "s" : ""}`
+      : viewKind === "feedback"
+        ? `feedback entr${filtered.length !== 1 ? "ies" : "y"}`
+        : `entr${filtered.length !== 1 ? "ies" : "y"}`;
 
   const closeDetail = useCallback(() => setDetailFeedback(null), []);
 
@@ -304,8 +358,29 @@ export default function AdminFeedbackPage() {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-black">Feedback</h1>
-          <p className="text-sm text-gray-500">Platform feedback submitted by users</p>
+          <p className="text-sm text-gray-500">Review general feedback and reported problems from users</p>
         </div>
+      </div>
+
+      <div className="mt-4 inline-flex flex-wrap gap-2 rounded-xl border border-gray-200 bg-white p-1">
+        {[
+          { value: "all", label: "All" },
+          { value: "problem", label: "Problems" },
+          { value: "feedback", label: "Feedback" },
+        ].map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setViewKind(option.value as ViewKind)}
+            className={`rounded-lg px-3 py-2 text-sm transition ${
+              viewKind === option.value
+                ? "bg-[#6155F5] text-white"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
       <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -316,19 +391,19 @@ export default function AdminFeedbackPage() {
             icon: <MessageSquare size={16} className="text-gray-400" />,
           },
           {
+            label: "Problem reports",
+            value: problemCount,
+            icon: <AlertTriangle size={16} className="text-red-500" />,
+          },
+          {
+            label: "General feedback",
+            value: feedbackCount,
+            icon: <MessageSquare size={16} className="text-sky-500" />,
+          },
+          {
             label: "Avg. rating",
             value: avgRating,
             icon: <Star size={16} className="text-amber-400 fill-amber-400" />,
-          },
-          {
-            label: "Positive (≥4★)",
-            value: positiveCount,
-            icon: <span className="text-green-500 text-base font-bold">↑</span>,
-          },
-          {
-            label: "Negative (<3★)",
-            value: negativeCount,
-            icon: <span className="text-red-500 text-base font-bold">↓</span>,
           },
         ].map((stat) => (
           <div
@@ -446,7 +521,7 @@ export default function AdminFeedbackPage() {
       {!loading && error && <p className="mt-4 text-sm text-red-500">{error}</p>}
 
       <p className="mt-3 text-xs text-gray-400">
-        {filtered.length} entr{filtered.length !== 1 ? "ies" : "y"} found
+        {filtered.length} {foundLabel} found
       </p>
 
       <div className="hidden md:block mt-2 rounded-xl border border-gray-200 bg-white overflow-x-auto">
@@ -454,6 +529,7 @@ export default function AdminFeedbackPage() {
           <thead className="bg-gray-50 text-gray-500">
             <tr>
               <th className="text-left px-4 py-3 whitespace-nowrap">User</th>
+              <th className="text-left px-4 py-3 whitespace-nowrap">Type</th>
               <th className="text-left px-4 py-3 whitespace-nowrap">Rating</th>
               <th className="text-left px-4 py-3 whitespace-nowrap">Sentiment</th>
               <th className="text-left px-4 py-3">Message</th>
@@ -464,8 +540,8 @@ export default function AdminFeedbackPage() {
           <tbody>
             {!loading && filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-gray-400 text-sm">
-                  No feedback entries match your search or filters.
+                <td colSpan={7} className="px-4 py-12 text-center text-gray-400 text-sm">
+                  No {emptyLabel} match your search or filters.
                 </td>
               </tr>
             ) : (
@@ -478,6 +554,9 @@ export default function AdminFeedbackPage() {
                   <td className="px-4 py-3">
                     <p className="font-medium text-gray-900 whitespace-nowrap">{f.full_name}</p>
                     <p className="text-xs text-gray-400">{f.email}</p>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <KindBadge kind={f.kind} />
                   </td>
                   <td className="px-4 py-3">
                     <RatingStars value={f.rating} />
@@ -512,7 +591,7 @@ export default function AdminFeedbackPage() {
       <div className="md:hidden mt-2 flex flex-col gap-4">
         {!loading && filtered.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-8">
-            No feedback entries match your search or filters.
+            No {emptyLabel} match your search or filters.
           </p>
         ) : (
           filtered.map((f) => (
@@ -537,6 +616,7 @@ export default function AdminFeedbackPage() {
                 </div>
               </div>
               <div className="mt-3 flex items-center gap-3">
+                <KindBadge kind={f.kind} />
                 <RatingStars value={f.rating} />
                 <RatingBadge value={f.rating} />
               </div>

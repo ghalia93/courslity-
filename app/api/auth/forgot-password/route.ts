@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
     // Look up user — but don't reveal existence in the response
     const [rows]: any = await pool.query(
-      "SELECT user_id, email FROM `user` WHERE email = ? LIMIT 1",
+      "SELECT user_id, email FROM `user` WHERE email = ? AND deleted_at IS NULL LIMIT 1",
       [email.toLowerCase().trim()]
     );
 

@@ -1,6 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import type { RowDataPacket } from "mysql2";
+import { requireAdmin, requireUniversityAdmin } from "@/lib/auth";
 import pool from "@/db";
+import { COURSE_LEVEL_VALUES } from "@/lib/courseLevels";
+
+type CourseDetailRow = RowDataPacket & {
+  course_id: number;
+  code: string;
+  title: string;
+  description: string;
+  credits: number;
+  level: string;
+  language: string;
+  department_id: number;
+  department: string;
+  university_id: number;
+  university: string;
+  deleted_at: Date | string | null;
+  rating: number | string;
+  number_of_reviews: number | string;
+  exam: number | string;
+  workload: number | string;
+  attendance: number | string;
+  grading: number | string;
+};
+
+type CourseIdRow = RowDataPacket & {
+  course_id: number;
+};
+
+type PrerequisiteRow = RowDataPacket & {
+  course_id: number;
+  code: string;
+  title: string;
+};
+
+type DepartmentIdRow = RowDataPacket & {
+  department_id: number;
+};
 
 /**
  * GET /api/admin/courses/[id]
@@ -13,7 +50,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    requireAdmin(req);
+    await requireAdmin(req);
 
     const { id } = await params;
     const courseId = parseInt(id, 10);
@@ -25,7 +62,7 @@ export async function GET(
       );
     }
 
-    const [rows]: any = await pool.query(
+    const [rows] = await pool.query<CourseDetailRow[]>(
       `SELECT
         c.course_id,
         c.code,
@@ -67,7 +104,7 @@ export async function GET(
     const row = rows[0];
 
     // Fetch prerequisites
-    const [prereqs]: any = await pool.query(
+    const [prereqs] = await pool.query<PrerequisiteRow[]>(
       `SELECT c.course_id, c.code, c.title
         FROM course_prerequisite cp
         JOIN course c ON c.course_id = cp.prereq_course_id
@@ -100,7 +137,7 @@ export async function GET(
     };
 
     return NextResponse.json({ success: true, course });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("GET COURSE ERROR:", error);
     return NextResponse.json(
       { success: false, message: "UNAUTHORIZED" },
@@ -125,7 +162,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    requireAdmin(req);
+    await requireUniversityAdmin(req);
 
     const { id } = await params;
     const courseId = parseInt(id, 10);
@@ -138,7 +175,7 @@ export async function PATCH(
     }
 
     // Confirm the course exists and is not deleted
-    const [existing]: any = await pool.query(
+    const [existing] = await pool.query<CourseIdRow[]>(
       "SELECT course_id FROM course WHERE course_id = ? AND deleted_at IS NULL LIMIT 1",
       [courseId],
     );
@@ -155,7 +192,7 @@ export async function PATCH(
       body;
 
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: Array<string | number> = [];
 
     if (title !== undefined) {
       if (typeof title !== "string" || !title.trim()) {
@@ -213,12 +250,7 @@ export async function PATCH(
       values.push(language);
     }
 
-    const validLevels = [
-      "undergraduate",
-      "graduate",
-      "doctoral",
-      "professional",
-    ];
+    const validLevels = COURSE_LEVEL_VALUES;
     if (level !== undefined) {
       if (!validLevels.includes(level)) {
         return NextResponse.json(
@@ -241,7 +273,7 @@ export async function PATCH(
           { status: 400 },
         );
       }
-      const [deptRows]: any = await pool.query(
+      const [deptRows] = await pool.query<DepartmentIdRow[]>(
         "SELECT department_id FROM department WHERE department_id = ? AND is_active = 1 LIMIT 1",
         [deptId],
       );
@@ -272,8 +304,15 @@ export async function PATCH(
       success: true,
       message: "Course updated successfully",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("PATCH COURSE ERROR:", error);
+    if (error instanceof Error && error.message === "FORBIDDEN") {
+      return NextResponse.json(
+        { success: false, message: "You are not the University Admin" },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(
       { success: false, message: "UNAUTHORIZED" },
       { status: 401 },
@@ -293,7 +332,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    requireAdmin(req);
+    await requireUniversityAdmin(req);
 
     const { id } = await params;
     const courseId = parseInt(id, 10);
@@ -305,7 +344,7 @@ export async function DELETE(
       );
     }
 
-    const [rows]: any = await pool.query(
+    const [rows] = await pool.query<CourseIdRow[]>(
       "SELECT course_id FROM course WHERE course_id = ? AND deleted_at IS NULL LIMIT 1",
       [courseId],
     );
@@ -326,8 +365,15 @@ export async function DELETE(
       success: true,
       message: "Course deleted successfully",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("DELETE COURSE ERROR:", error);
+    if (error instanceof Error && error.message === "FORBIDDEN") {
+      return NextResponse.json(
+        { success: false, message: "You are not the University Admin" },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(
       { success: false, message: "UNAUTHORIZED" },
       { status: 401 },

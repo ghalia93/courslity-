@@ -1,9 +1,14 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import Button from "@/components/Button";
 import SearchableDropdownField from "@/components/SearchableDropdown";
-import { useState, useEffect } from "react";
+import {
+  COURSE_LEVEL_OPTIONS,
+  type CourseLevel,
+  formatCourseLevel,
+} from "@/lib/courseLevels";
 
 export type AddCoursePayload = {
   code: string;
@@ -11,80 +16,102 @@ export type AddCoursePayload = {
   description: string;
   credits: number;
   language: string;
-  level: string;
+  level: CourseLevel;
   department_id: number;
 };
 
-type University = { university_id: number; name: string };
-type Department = { department_id: number; name: string };
+export type CreatedCourse = AddCoursePayload & {
+  course_id: number;
+  department: string;
+  university_id: number;
+  university: string;
+  deleted_at: string | null;
+  rating: number;
+  number_of_reviews: number;
+  metrics: {
+    exam: number;
+    workload: number;
+    attendance: number;
+    grading: number;
+  };
+};
+
+type University = {
+  university_id: number;
+  name: string;
+  email_domain?: string;
+};
+
+type Department = {
+  department_id: number;
+  name: string;
+};
 
 type Props = {
   onClose: () => void;
-  onSave: (course: any) => void;
+  onSave: (course: CreatedCourse) => void;
 };
 
-const LEVELS = ["undergraduate", "graduate", "doctoral", "professional"];
 const LANGUAGES = ["English", "Arabic", "French", "German", "Spanish", "Other"];
 
 export default function AddCourseCard({ onClose, onSave }: Props) {
   const [universities, setUniversities] = useState<University[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [loadingDepts, setLoadingDepts] = useState(false);
+  const [loadingUniversities, setLoadingUniversities] = useState(true);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
 
-  // Separate "what's typed in the input" from "what ID is confirmed selected"
   const [universityInput, setUniversityInput] = useState("");
-  const [selectedUniversityId, setSelectedUniversityId] = useState<
-    number | null
-  >(null);
-
+  const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(
+    null,
+  );
   const [departmentInput, setDepartmentInput] = useState("");
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState<
-    number | null
-  >(null);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(
+    null,
+  );
 
   const [formData, setFormData] = useState({
     code: "",
     title: "",
     description: "",
     credits: "",
-    language: "",
-    level: "",
+    language: "English",
+    level: "freshman" as CourseLevel,
   });
 
   const [saving, setSaving] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // Fetch universities on mount
   useEffect(() => {
-    fetch("/api/admin/universities")
-      .then((r) => r.json())
+    setLoadingUniversities(true);
+    fetch("/api/admin/universities", { credentials: "include" })
+      .then((res) => res.json())
       .then((data) => {
         if (data.success) setUniversities(data.universities ?? []);
       })
-      .catch(() => {});
+      .catch(() => setApiError("Failed to load universities."))
+      .finally(() => setLoadingUniversities(false));
   }, []);
 
-  // Fetch departments whenever the confirmed university changes
   useEffect(() => {
-    if (selectedUniversityId == null) {
-      setDepartments([]);
-      setDepartmentInput("");
-      setSelectedDepartmentId(null);
-      return;
-    }
-    setLoadingDepts(true);
+    setDepartments([]);
     setDepartmentInput("");
     setSelectedDepartmentId(null);
-    fetch(`/api/admin/universities/${selectedUniversityId}/departments`)
-      .then((r) => r.json())
+
+    if (selectedUniversityId == null) return;
+
+    setLoadingDepartments(true);
+    fetch(`/api/admin/universities/${selectedUniversityId}/departments`, {
+      credentials: "include",
+    })
+      .then((res) => res.json())
       .then((data) => {
         if (data.success) setDepartments(data.departments ?? []);
       })
-      .catch(() => {})
-      .finally(() => setLoadingDepts(false));
+      .catch(() => setApiError("Failed to load departments."))
+      .finally(() => setLoadingDepartments(false));
   }, [selectedUniversityId]);
 
-  function handleChange(
+  function handleTextChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) {
     const { name, value } = e.target;
@@ -94,37 +121,36 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
   async function handleSubmit() {
     setApiError(null);
 
+    if (!selectedUniversityId) {
+      setApiError("Please select a university from the list.");
+      return;
+    }
+
+    if (!selectedDepartmentId) {
+      setApiError("Please select a department from the selected university.");
+      return;
+    }
+
     if (!formData.code.trim() || !formData.title.trim()) {
       setApiError("Course code and title are required.");
       return;
     }
-    if (!selectedDepartmentId) {
-      setApiError("Please select a university and department.");
-      return;
-    }
+
     const creditsNum = Number(formData.credits);
     if (
       !formData.credits ||
-      isNaN(creditsNum) ||
+      Number.isNaN(creditsNum) ||
       creditsNum < 1 ||
       creditsNum > 9
     ) {
       setApiError("Credits must be a number between 1 and 9.");
       return;
     }
-    if (!formData.language) {
-      setApiError("Please select a language.");
-      return;
-    }
-    if (!formData.level) {
-      setApiError("Please select a level.");
-      return;
-    }
 
     const payload: AddCoursePayload = {
       code: formData.code.trim(),
       title: formData.title.trim(),
-      description: formData.description.trim(),
+      description: formData.description.trim() || "No description yet.",
       credits: creditsNum,
       language: formData.language,
       level: formData.level,
@@ -135,15 +161,18 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
       setSaving(true);
       const res = await fetch("/api/admin/courses", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (!data.success) {
-        setApiError(data.message ?? "Failed to create course.");
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.success) {
+        setApiError(data?.message ?? "Failed to create course.");
         return;
       }
-      onSave(data.course);
+
+      onSave(data.course as CreatedCourse);
       onClose();
     } catch {
       setApiError("Network error. Please try again.");
@@ -152,30 +181,34 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
     }
   }
 
-  const universityNames = universities.map((u) => u.name);
-  const departmentNames = departments.map((d) => d.name);
-
+  const universityNames = universities.map((university) => university.name);
+  const departmentNames = departments.map((department) => department.name);
   const departmentPlaceholder =
     selectedUniversityId == null
-      ? "Select a university first"
-      : loadingDepts
-        ? "Loading departments…"
-        : "Select department";
+      ? "Select university first"
+      : loadingDepartments
+        ? "Loading departments..."
+        : departments.length === 0
+          ? "Add departments in University Setup first"
+          : "Select department";
+  const levelLabel =
+    selectedUniversityId == null ? "" : formatCourseLevel(formData.level);
 
   return (
-    <div className="mt-6 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-md p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">
             Add New Course
           </h2>
           <p className="text-sm text-gray-500">
-            Fill in the course information
+            Select a university and department, then add the course details.
           </p>
         </div>
         <button
           onClick={onClose}
-          className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"
+          className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+          aria-label="Close"
         >
           <X size={18} />
         </button>
@@ -187,75 +220,84 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input
-          name="code"
-          value={formData.code}
-          onChange={handleChange}
-          placeholder="Course Code (e.g. CMPS 101)"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
-            bg-white focus:outline-none focus:ring-2 focus:ring-[#6155F5] focus:border-transparent transition"
-        />
-
-        <input
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-          placeholder="Course Title"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
-            bg-white focus:outline-none focus:ring-2 focus:ring-[#6155F5] focus:border-transparent transition"
-        />
-
-        {/*
-          University: pass `universityInput` as value so the component's internal
-          filter works correctly on every keystroke. The ID is only committed
-          when the typed value exactly matches an option name (i.e. user clicked one).
-        */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <SearchableDropdownField
           value={universityInput}
           options={universityNames}
-          placeholder="Select university"
+          placeholder={
+            loadingUniversities ? "Loading universities..." : "Select university"
+          }
           onChange={(typed) => {
             setUniversityInput(typed);
-            const match = universities.find((u) => u.name === typed);
+            const match = universities.find(
+              (university) =>
+                university.name.toLowerCase() === typed.trim().toLowerCase(),
+            );
             setSelectedUniversityId(match?.university_id ?? null);
           }}
         />
 
-        {/*
-          Department: same pattern. Disabled visually when no university is selected
-          by passing an empty options array and a descriptive placeholder.
-        */}
         <SearchableDropdownField
           value={departmentInput}
           options={selectedUniversityId == null ? [] : departmentNames}
           placeholder={departmentPlaceholder}
           onChange={(typed) => {
             setDepartmentInput(typed);
-            const match = departments.find((d) => d.name === typed);
+            const match = departments.find(
+              (department) =>
+                department.name.toLowerCase() === typed.trim().toLowerCase(),
+            );
             setSelectedDepartmentId(match?.department_id ?? null);
           }}
         />
 
         <input
+          name="code"
+          value={formData.code}
+          onChange={handleTextChange}
+          placeholder="Course Code (e.g. CMPS 101)"
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6155F5]"
+        />
+
+        <input
+          name="title"
+          value={formData.title}
+          onChange={handleTextChange}
+          placeholder="Course Title"
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6155F5]"
+        />
+
+        <input
           name="credits"
           value={formData.credits}
-          onChange={handleChange}
-          placeholder="Credits (1–9)"
+          onChange={handleTextChange}
+          placeholder="Credits (1-9)"
           type="number"
           min={1}
           max={9}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
-            bg-white focus:outline-none focus:ring-2 focus:ring-[#6155F5] focus:border-transparent transition"
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6155F5]"
         />
 
         <SearchableDropdownField
-          value={formData.level}
-          options={LEVELS}
-          placeholder="Select level"
-          onChange={(typed) =>
-            setFormData((prev) => ({ ...prev, level: typed }))
+          value={levelLabel}
+          options={
+            selectedUniversityId == null
+              ? []
+              : COURSE_LEVEL_OPTIONS.map((level) => level.label)
           }
+          placeholder={
+            selectedUniversityId == null ? "Select university first" : "Select level"
+          }
+          onChange={(typed) => {
+            const selectedLevel = COURSE_LEVEL_OPTIONS.find(
+              (level) => level.label === typed,
+            );
+            if (!selectedLevel) return;
+            setFormData((prev) => ({
+              ...prev,
+              level: selectedLevel.value,
+            }));
+          }}
         />
 
         <SearchableDropdownField
@@ -270,20 +312,19 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
         <textarea
           name="description"
           value={formData.description}
-          onChange={handleChange}
+          onChange={handleTextChange}
           placeholder="Course Description"
           rows={4}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
-            bg-white focus:outline-none focus:ring-2 focus:ring-[#6155F5] focus:border-transparent transition md:col-span-2 resize-none"
+          className="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6155F5] md:col-span-2"
         />
       </div>
 
-      <div className="flex justify-end gap-3 mt-4">
+      <div className="mt-4 flex justify-end gap-3">
         <Button onClick={onClose} variant="elevated" disabled={saving}>
           Cancel
         </Button>
         <Button onClick={handleSubmit} variant="primary" disabled={saving}>
-          {saving ? "Saving…" : "Save Course"}
+          {saving ? "Saving..." : "Save Course"}
         </Button>
       </div>
     </div>

@@ -9,16 +9,7 @@ type University = {
   name: string;
   email_domain?: string; // may or may not come from the API
 };
-import { NextResponse } from "next/server";
 
-export async function GET() {
-  const universities = [
-    { university_id: 1, name: "Beirut Arab University", email_domain: "student.bau.edu.lb" },
-    { university_id: 2, name: "American University of Beirut", email_domain: "mail.aub.edu" },
-  ];
-
-  return NextResponse.json(universities);
-}
 // ─── Hardcoded fallback: used when the API doesn't return email_domain ────────
 // Once you add the email_domain column to your DB and return it from the API,
 // this map acts as a safety net — it will never be undefined either way.
@@ -33,7 +24,7 @@ const UNIVERSITY_DOMAINS: Record<string, string> = {
 
 /** Safely resolve a university's expected email domain from API or fallback map. */
 function getExpectedDomain(uni: University): string | null {
-  return uni.email_domain ?? UNIVERSITY_DOMAINS[uni.name] ?? null;
+  return uni.email_domain?.trim() || UNIVERSITY_DOMAINS[uni.name] || null;
 }
 
 export default function SignupForm() {

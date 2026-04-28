@@ -1,6 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
+import { requireAdmin, requireUniversityAdmin } from "@/lib/auth";
 import pool from "@/db";
+import { COURSE_LEVEL_VALUES } from "@/lib/courseLevels";
+
+type AdminCourseRow = RowDataPacket & {
+  course_id: number;
+  code: string;
+  title: string;
+  description: string;
+  credits: number;
+  level: string;
+  language: string;
+  department_id: number;
+  department: string;
+  university_id: number;
+  university: string;
+  deleted_at: Date | string | null;
+  rating: number | string;
+  number_of_reviews: number | string;
+  exam: number | string;
+  workload: number | string;
+  attendance: number | string;
+  grading: number | string;
+};
+
+type DepartmentCourseRow = RowDataPacket & {
+  department_id: number;
+  name: string;
+  university_id: number;
+  university: string;
+};
+
+type ExistingCourseRow = RowDataPacket & {
+  course_id: number;
+};
 
 /**
  * GET /api/admin/courses
@@ -25,14 +59,14 @@ import pool from "@/db";
  */
 export async function GET(req: NextRequest) {
   try {
-    requireAdmin(req);
+    await requireAdmin(req);
 
     const { searchParams } = new URL(req.url);
     const q = (searchParams.get("q") || "").trim();
     const sort = (searchParams.get("sort") || "rating_high").trim();
 
     const conditions: string[] = [];
-    const params: any[] = [];
+    const params: string[] = [];
 
     if (q) {
       conditions.push(`(
@@ -55,7 +89,7 @@ export async function GET(req: NextRequest) {
     };
     const orderBy = sortClause[sort] ?? "rating DESC";
 
-    const [rows]: any = await pool.query(
+    const [rows] = await pool.query<AdminCourseRow[]>(
       `SELECT
         c.course_id,
         c.code,
@@ -89,7 +123,7 @@ export async function GET(req: NextRequest) {
     );
 
     // Reshape flat metric columns into the nested metrics object the frontend expects
-    const courses = rows.map((row: any) => ({
+    const courses = rows.map((row) => ({
       course_id: row.course_id,
       code: row.code,
       title: row.title,
@@ -116,7 +150,7 @@ export async function GET(req: NextRequest) {
       success: true,
       courses,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("GET COURSES ERROR:", error);
     return NextResponse.json(
       { success: false, message: "UNAUTHORIZED" },
@@ -136,13 +170,13 @@ export async function GET(req: NextRequest) {
  *   description: string,
  *   credits: number,         // 1–9
  *   language: string,        // English | Arabic | French | German | Spanish | Other
- *   level: string,           // undergraduate | graduate | doctoral | professional
+ *   level: string,           // freshman | undergraduate | graduate | master_degree | doctoral
  *   department_id: number,
  * }
  */
 export async function POST(req: NextRequest) {
   try {
-    requireAdmin(req);
+    await requireUniversityAdmin(req);
 
     const body = await req.json();
     const {
@@ -184,7 +218,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const validLanguages = ["English", "Arabic", "French"];
+    const validLanguages = [
+      "English",
+      "Arabic",
+      "French",
+      "German",
+      "Spanish",
+      "Other",
+    ];
     if (!language || !validLanguages.includes(language)) {
       return NextResponse.json(
         {
@@ -195,12 +236,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const validLevels = [
-      "undergraduate",
-      "graduate",
-      "doctoral",
-      "professional",
-    ];
+    const validLevels = COURSE_LEVEL_VALUES;
     if (!level || !validLevels.includes(level)) {
       return NextResponse.json(
         {
@@ -219,8 +255,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify department exists and is active
-    const [deptRows]: any = await pool.query(
-      "SELECT department_id, university_id FROM department WHERE department_id = ? AND is_active = 1 LIMIT 1",
+    const [deptRows] = await pool.query<DepartmentCourseRow[]>(
+      `SELECT d.department_id, d.name, d.university_id, u.name AS university
+        FROM department d
+        JOIN university u ON u.university_id = d.university_id
+        WHERE d.department_id = ? AND d.is_active = 1 AND u.is_active = 1
+        LIMIT 1`,
       [department_id],
     );
 
@@ -232,7 +272,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Prevent duplicate code within the same department
-    const [existing]: any = await pool.query(
+    const [existing] = await pool.query<ExistingCourseRow[]>(
       "SELECT course_id FROM course WHERE code = ? AND department_id = ? AND deleted_at IS NULL LIMIT 1",
       [code.trim(), department_id],
     );
@@ -248,7 +288,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const [result]: any = await pool.query(
+    const [result] = await pool.query<ResultSetHeader>(
       `INSERT INTO course (code, title, description, credits, language, level, department_id)
       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -278,7 +318,7 @@ export async function POST(req: NextRequest) {
           department_id: Number(department_id),
           department: deptRows[0].name ?? "",
           university_id: deptRows[0].university_id,
-          university: "", // frontend refetch or AddCourseCard can supply this
+          university: deptRows[0].university ?? "",
           deleted_at: null,
           rating: 0,
           number_of_reviews: 0,
@@ -287,8 +327,15 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 },
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("POST COURSE ERROR:", error);
+    if (error instanceof Error && error.message === "FORBIDDEN") {
+      return NextResponse.json(
+        { success: false, message: "You are not the University Admin" },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(
       { success: false, message: "UNAUTHORIZED" },
       { status: 401 },

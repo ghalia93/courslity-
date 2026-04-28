@@ -17,7 +17,7 @@ export async function GET() {
 
         (SELECT COUNT(*) 
          FROM user 
-         WHERE role = 'student') AS totalStudents,
+         WHERE role = 'student' AND deleted_at IS NULL) AS totalStudents,
 
         (SELECT COUNT(*) 
          FROM university) AS totalUniversities,

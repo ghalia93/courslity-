@@ -34,6 +34,7 @@ export default function FeedbackModal({ onClose, onSubmitted }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          kind: "feedback",
           rating,
           message: feedback.trim(),
         }),
@@ -47,8 +48,10 @@ export default function FeedbackModal({ onClose, onSubmitted }: Props) {
 
       toast("Thanks! Your feedback was submitted.", "success");
       onSubmitted();
-    } catch (err: any) {
-      toast(err.message || "Failed to submit feedback", "error");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to submit feedback";
+      toast(message, "error");
     } finally {
       setLoading(false);
     }

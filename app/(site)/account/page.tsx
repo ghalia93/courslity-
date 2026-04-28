@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
+import StarRating from "@/components/StarRating";
+import { useToast } from "@/components/toast/Toastprovider";
 
 interface Profile {
   full_name: string;
@@ -14,6 +16,21 @@ export default function AccountPage() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const { toast } = useToast();
+
+  const reportRef = useRef<HTMLDivElement | null>(null);
+  const [reportRating, setReportRating] = useState(0);
+  const [reportMessage, setReportMessage] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+
+  const scrollToReport = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#report") return;
+    window.setTimeout(() => {
+      reportRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  }, []);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -34,9 +51,18 @@ export default function AccountPage() {
     fetchProfile();
   }, [router]);
 
+  useEffect(() => {
+    window.addEventListener("hashchange", scrollToReport);
+    return () => window.removeEventListener("hashchange", scrollToReport);
+  }, [scrollToReport]);
+
+  useEffect(() => {
+    if (!loading && profile) scrollToReport();
+  }, [loading, profile, scrollToReport]);
+
   const handleDeleteAccount = async () => {
     const confirmed = confirm(
-      "Are you sure you want to delete your account? This action cannot be undone."
+      "Are you sure you want to deactivate your account? Your reviews will stay visible, but you will no longer be able to sign in."
     );
 
     if (!confirmed) return;
@@ -48,12 +74,55 @@ export default function AccountPage() {
 
       if (!res.ok) throw new Error("Delete failed");
 
-      alert("Account deleted successfully.");
+      alert("Account deactivated successfully.");
 
       // 🔥 Full reload to reset auth state everywhere
       window.location.href = "/";
     } catch {
       alert("Something went wrong. Please try again.");
+    }
+  };
+
+  const handleReportSubmit = async () => {
+    if (!reportMessage.trim()) {
+      toast("Please describe the problem before submitting.", "error");
+      return;
+    }
+    if (reportRating === 0) {
+      toast("Please select a rating.", "error");
+      return;
+    }
+
+    try {
+      setReportLoading(true);
+
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "problem",
+          rating: reportRating,
+          message: reportMessage.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to submit report");
+      }
+
+      toast("Thanks! Your report was submitted.", "success");
+      setReportRating(0);
+      setReportMessage("");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.";
+      toast(message, "error");
+    } finally {
+      setReportLoading(false);
     }
   };
 
@@ -121,9 +190,50 @@ export default function AccountPage() {
               className="flex-1 text-red-600 border border-red-600 hover:bg-red-50 hover:ring-0 focus:ring-0"
               onClick={handleDeleteAccount}
             >
-              Delete Account
+              Deactivate Account
             </Button>
           </div>
+        </div>
+      </section>
+
+      <section
+        className="w-full max-w-md mt-10 rounded-xl bg-white border border-gray-200 p-6 shadow-lg"
+      >
+        <div id="report" ref={reportRef} className="scroll-mt-24" />
+        <h2 className="text-xl font-medium text-gray-700">Report a Problem</h2>
+        <p className="mt-2 text-sm text-gray-500">
+          Tell us what looks wrong and how it affected you.
+        </p>
+
+        <div className="mt-5">
+          <p className="text-sm font-medium text-gray-700">Rating</p>
+          <p className="text-xs text-gray-500 mt-1">
+            1 = bad experience, 5 = great experience
+          </p>
+          <div className="mt-2">
+            <StarRating value={reportRating} onChange={setReportRating} />
+          </div>
+        </div>
+
+        <textarea
+          value={reportMessage}
+          onChange={(e) => setReportMessage(e.target.value)}
+          placeholder="Describe the problem..."
+          className="mt-5 h-32 w-full resize-none rounded-lg border border-gray-300 p-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6155F5]"
+          disabled={reportLoading}
+        />
+
+        <div className="mt-4 flex justify-end">
+          <Button
+            type="button"
+            onClick={handleReportSubmit}
+            disabled={
+              reportLoading || !reportMessage.trim() || reportRating === 0
+            }
+            className="disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {reportLoading ? "Submitting..." : "Submit"}
+          </Button>
         </div>
       </section>
     </div>

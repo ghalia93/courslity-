@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     }
 
     const [rows]: any = await pool.query(
-      "SELECT user_id, full_name, email, password, role FROM `user` WHERE email = ? LIMIT 1",
+      "SELECT user_id, full_name, email, password, role FROM `user` WHERE email = ? AND deleted_at IS NULL LIMIT 1",
       [email]
     );
 

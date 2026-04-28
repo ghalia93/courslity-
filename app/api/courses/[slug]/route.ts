@@ -1,5 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
+import { formatCourseLevel } from "@/lib/courseLevels";
+
+type CourseDetailRow = RowDataPacket & {
+  course_id: number;
+  code: string;
+  title: string;
+  description: string;
+  credits: number;
+  level: string;
+  language: string;
+  department: string;
+  department_id: number;
+  university: string;
+  university_id: number;
+  reviewCount: number | string;
+  avgOverall: number | string | null;
+  avgExam: number | string | null;
+  avgWorkload: number | string | null;
+  avgAttendance: number | string | null;
+  avgGrading: number | string | null;
+};
+
+type PrerequisiteRow = RowDataPacket & {
+  course_id: number;
+  code: string;
+  title: string;
+};
 
 function getYearFromCourseCode(code: string): number | null {
   const match = code.match(/\d+/);
@@ -28,7 +56,7 @@ export async function GET(
     console.log("[slug route] raw slug:", slug);
     console.log("[slug route] normalizedSlug:", normalizedSlug);
 
-    const [rows]: any = await pool.query(
+    const [rows] = await pool.query<CourseDetailRow[]>(
       `
       SELECT
         c.course_id,
@@ -80,7 +108,7 @@ export async function GET(
     const row = rows[0];
 
     // Fetch prerequisites
-    const [prereqs]: any = await pool.query(
+    const [prereqs] = await pool.query<PrerequisiteRow[]>(
       `
       SELECT c.course_id, c.code, c.title
       FROM course_prerequisite cp
@@ -101,7 +129,7 @@ export async function GET(
         title: row.title,
         description: row.description,
         credits: `${row.credits} cr.`,
-        level: row.level.charAt(0).toUpperCase() + row.level.slice(1),
+        level: formatCourseLevel(row.level),
         language: row.language,
         department: row.department,
         departmentId: row.department_id,
@@ -132,8 +160,8 @@ export async function GET(
         prerequisites: prereqs ?? [],
       },
     });
-  } catch (error: any) {
-    console.error("GET COURSE BY SLUG ERROR:", error.message, error.stack);
+  } catch (error: unknown) {
+    console.error("GET COURSE BY SLUG ERROR:", error);
     return NextResponse.json(
       { success: false, message: "Failed to fetch course" },
       { status: 500 },

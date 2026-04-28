@@ -34,6 +34,7 @@ export async function middleware(req: NextRequest) {
       if (isAdminRoute && !isAdminRole) {
         return NextResponse.redirect(new URL("/", req.url));
       }
+
     } catch {
       return NextResponse.redirect(new URL("/login", req.url));
     }

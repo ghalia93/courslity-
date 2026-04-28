@@ -9,22 +9,30 @@ export type AdminUser = {
   name: string;
   email: string;
   password: string;
-  role: "Super Admin" | "Admin";
+  role: "admin" | "super_admin";
 };
 
 type Props = {
   onClose: () => void;
   onSave: (admin: AdminUser) => void;
+  canCreateUniversityAdmin?: boolean;
 };
 
-const roles: AdminUser["role"][] = ["Super Admin", "Admin"];
+const roleOptions: { label: string; value: AdminUser["role"] }[] = [
+  { label: "Admin", value: "admin" },
+  { label: "University Admin", value: "super_admin" },
+];
 
-export default function AddAdminCard({ onClose, onSave }: Props) {
+export default function AddAdminCard({
+  onClose,
+  onSave,
+  canCreateUniversityAdmin = false,
+}: Props) {
   const [formData, setFormData] = useState<AdminUser>({
     name: "",
     email: "",
     password: "",
-    role: "Admin",
+    role: "admin",
   });
 
   function handleChange(
@@ -54,6 +62,13 @@ export default function AddAdminCard({ onClose, onSave }: Props) {
       email,
     });
   }
+
+  const availableRoles = canCreateUniversityAdmin
+    ? roleOptions
+    : roleOptions.filter((role) => role.value === "admin");
+  const roleLabel =
+    availableRoles.find((role) => role.value === formData.role)?.label ??
+    "Admin";
 
   return (
     <div className="mt-6 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-md p-6">
@@ -111,15 +126,19 @@ export default function AddAdminCard({ onClose, onSave }: Props) {
         />
 
         <SearchableDropdownField
-          value={formData.role}
-          options={roles}
+          value={roleLabel}
+          options={availableRoles.map((role) => role.label)}
           placeholder="Select role"
-          onChange={(value) =>
+          onChange={(value) => {
+            const selectedRole = availableRoles.find(
+              (role) => role.label === value,
+            );
+            if (!selectedRole) return;
             setFormData((prev) => ({
               ...prev,
-              role: value as AdminUser["role"],
-            }))
-          }
+              role: selectedRole.value,
+            }));
+          }}
         />
       </div>
 

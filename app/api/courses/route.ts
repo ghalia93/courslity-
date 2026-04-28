@@ -1,5 +1,46 @@
 import { NextResponse } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
+
+type CourseRow = RowDataPacket & {
+  course_id: number;
+  code: string;
+  title: string;
+  description: string;
+  credits: number;
+  level: string;
+  language: string;
+  department: string;
+  university: string;
+  reviewCount: number | string;
+  avgOverall: number | string | null;
+  avgExam: number | string | null;
+  avgWorkload: number | string | null;
+  avgAttendance: number | string | null;
+  avgGrading: number | string | null;
+};
+
+type PublicCourse = {
+  courseId: number;
+  code: string;
+  title: string;
+  description: string;
+  credits: number;
+  level: string;
+  language: string;
+  university: string;
+  department: string;
+  year: number | null;
+  semester: string | null;
+  reviewCount: number;
+  averageRating: number | null;
+  ratings: {
+    exam: number | null;
+    workload: number | null;
+    attendance: number | null;
+    grading: number | null;
+  };
+};
 
 function getCourseNumber(code: string): number | null {
   const match = code.match(/\d+/);
@@ -35,15 +76,19 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
 
-    const limit = Math.min(Number(url.searchParams.get("limit") || 10), 50);
+    const limit = Math.min(Number(url.searchParams.get("limit") || 10), 500);
     const page = Math.max(Number(url.searchParams.get("page") || 1), 1);
     const offset = (page - 1) * limit;
 
-    const selectedLevel = (url.searchParams.get("level") || "").trim().toLowerCase();
+    const selectedLevel = (url.searchParams.get("level") || "")
+      .trim()
+      .toLowerCase();
     const selectedYear = Number(url.searchParams.get("year") || 0);
-    const selectedSemester = (url.searchParams.get("semester") || "").trim().toLowerCase();
+    const selectedSemester = (url.searchParams.get("semester") || "")
+      .trim()
+      .toLowerCase();
 
-    const [rows]: any = await pool.query(
+    const [rows] = await pool.query<CourseRow[]>(
       `
       SELECT
         c.course_id,
@@ -66,7 +111,11 @@ export async function GET(req: Request) {
       FROM course c
       INNER JOIN department d ON d.department_id = c.department_id
       INNER JOIN university u ON u.university_id = d.university_id
-      LEFT JOIN review r ON r.course_id = c.course_id
+      LEFT JOIN review r ON r.course_id = c.course_id AND r.deleted_at IS NULL
+
+      WHERE c.deleted_at IS NULL
+        AND d.is_active = 1
+        AND u.is_active = 1
 
       GROUP BY
         c.course_id,
@@ -82,7 +131,7 @@ export async function GET(req: Request) {
       `,
     );
 
-    const mapped = rows.map((row: any) => ({
+    const mapped: PublicCourse[] = rows.map((row) => ({
       courseId: row.course_id,
       code: row.code,
       title: row.title,
@@ -117,7 +166,7 @@ export async function GET(req: Request) {
       },
     }));
 
-    const filtered = mapped.filter((course: any) => {
+    const filtered = mapped.filter((course) => {
       const courseLevel = String(course.level || "").trim().toLowerCase();
       const courseSemester = String(course.semester || "").trim().toLowerCase();
 
@@ -139,7 +188,7 @@ export async function GET(req: Request) {
       total: filtered.length,
       courses: paginated,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("COURSES GET ERROR:", error);
     return NextResponse.json(
       { success: false, message: "Failed to fetch courses" },

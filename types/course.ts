@@ -9,6 +9,8 @@ export interface Course {
   credits: string | number;
   level: string;
   language: string;
+  year?: number | null;
+  semester?: string | null;
   averageRating: number | null;
   ratings: {
     exam: number | null;

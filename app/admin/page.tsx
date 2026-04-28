@@ -7,7 +7,13 @@ import ReviewTrendChart from "@/components/admin/charts/ReviewTrendChart";
 import RatingsDistributionChart from "@/components/admin/charts/RatingsDistributionChart";
 
 type ChartPoint = { date: string; count: number };
-type RatingPoint = { rating: number; count: number };
+type CourseRatingPoint = {
+  courseId: number;
+  code: string;
+  title: string;
+  averageRating: number;
+  reviewCount: number;
+};
 
 type Metrics = {
   totalUsers: number;
@@ -16,7 +22,7 @@ type Metrics = {
   averageRating: number;
   userGrowth: ChartPoint[];
   reviewsTrend: ChartPoint[];
-  ratingDistribution: RatingPoint[];
+  ratingDistribution: CourseRatingPoint[];
 };
 
 const EMPTY: Metrics = {

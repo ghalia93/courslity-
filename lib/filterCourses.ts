@@ -5,6 +5,8 @@ interface CourseFilters {
   department?: string;
   level?: string;
   language?: string;
+  year?: string;
+  semester?: string;
   query?: string;
 }
 
@@ -15,6 +17,8 @@ export function filterCourses(
     department = "",
     language = "",
     level = "",
+    year = "",
+    semester = "",
     query = "",
   }: CourseFilters,
 ): Course[] {
@@ -23,6 +27,8 @@ export function filterCourses(
   const normalizedDepartment = department.toLowerCase().trim();
   const normalizedLanguage = language.toLowerCase().trim();
   const normalizedLevel = level.toLowerCase().trim();
+  const normalizedYear = year.trim();
+  const normalizedSemester = semester.toLowerCase().trim();
 
   return courses.filter((course) => {
     const matchesUniversity =
@@ -40,6 +46,13 @@ export function filterCourses(
     const matchesLevel =
       !normalizedLevel || course.level.toLowerCase() === normalizedLevel;
 
+    const matchesYear =
+      !normalizedYear || String(course.year ?? "") === normalizedYear;
+
+    const matchesSemester =
+      !normalizedSemester ||
+      String(course.semester ?? "").toLowerCase() === normalizedSemester;
+
     const matchesQuery =
       !normalizedQuery ||
       course.title.toLowerCase().includes(normalizedQuery) ||
@@ -52,6 +65,8 @@ export function filterCourses(
       matchesDepartment &&
       matchesLanguage &&
       matchesLevel &&
+      matchesYear &&
+      matchesSemester &&
       matchesQuery
     );
   });

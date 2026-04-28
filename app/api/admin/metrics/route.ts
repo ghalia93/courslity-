@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
 import pool from "@/db";
 
@@ -7,9 +8,12 @@ type ChartPoint = {
   count: number;
 };
 
-type RatingDistribution = {
-  rating: number;
-  count: number;
+type CourseRatingPoint = {
+  courseId: number;
+  code: string;
+  title: string;
+  averageRating: number;
+  reviewCount: number;
 };
 
 type MetricsResponse = {
@@ -19,7 +23,27 @@ type MetricsResponse = {
   averageRating: number;
   userGrowth: ChartPoint[];
   reviewsTrend: ChartPoint[];
-  ratingDistribution: RatingDistribution[];
+  ratingDistribution: CourseRatingPoint[];
+};
+
+type MetricsRow = RowDataPacket & {
+  totalUsers: number;
+  totalCourses: number;
+  totalReviews: number;
+  averageRating: number;
+};
+
+type CountRow = RowDataPacket & {
+  date: string;
+  count: number;
+};
+
+type CourseRatingRow = RowDataPacket & {
+  courseId: number;
+  code: string;
+  title: string;
+  averageRating: number;
+  reviewCount: number;
 };
 
 export async function GET(req: NextRequest) {
@@ -37,50 +61,53 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const [
-      [metricsRows],
-      [userGrowthRows],
-      [reviewsTrendRows],
-      [ratingRows],
-    ]: any = await Promise.all([
-      pool.query(`
-        SELECT
-          (SELECT COUNT(*) FROM user) AS totalUsers,
-          (SELECT COUNT(*) FROM course) AS totalCourses,
-          (SELECT COUNT(*) FROM review) AS totalReviews,
-          COALESCE(ROUND(AVG(r.overall_rating), 1), 0) AS averageRating
-        FROM review r;
-      `),
+    const [[metricsRows], [userGrowthRows], [reviewsTrendRows], [ratingRows]] =
+      await Promise.all([
+        pool.query<MetricsRow[]>(`
+          SELECT
+            (SELECT COUNT(*) FROM user WHERE deleted_at IS NULL) AS totalUsers,
+            (SELECT COUNT(*) FROM course) AS totalCourses,
+            (SELECT COUNT(*) FROM review) AS totalReviews,
+            COALESCE(ROUND(AVG(r.overall_rating), 1), 0) AS averageRating
+          FROM review r;
+        `),
 
-      pool.query(`
-        SELECT 
-          DATE_FORMAT(created_at, '%Y-%m-%d') as date,
-          COUNT(*) as count
-        FROM user
-        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)
-        GROUP BY DATE(created_at)
-        ORDER BY DATE(created_at);
-      `),
+        pool.query<CountRow[]>(`
+          SELECT
+            DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            COUNT(*) as count
+          FROM user
+          WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)
+          GROUP BY DATE(created_at)
+          ORDER BY DATE(created_at);
+        `),
 
-      pool.query(`
-        SELECT 
-          DATE_FORMAT(created_at, '%Y-%m-%d') as date,
-          COUNT(*) as count
-        FROM review
-        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)
-        GROUP BY DATE(created_at)
-        ORDER BY DATE(created_at);
-      `),
+        pool.query<CountRow[]>(`
+          SELECT
+            DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+            COUNT(*) as count
+          FROM review
+          WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)
+          GROUP BY DATE(created_at)
+          ORDER BY DATE(created_at);
+        `),
 
-      pool.query(`
-        SELECT 
-          overall_rating as rating,
-          COUNT(*) as count
-        FROM review
-        GROUP BY overall_rating
-        ORDER BY overall_rating DESC;
-      `),
-    ]);
+        pool.query<CourseRatingRow[]>(`
+          SELECT
+            c.course_id AS courseId,
+            c.code,
+            c.title,
+            ROUND(AVG(r.overall_rating), 2) AS averageRating,
+            COUNT(r.review_id) AS reviewCount
+          FROM course c
+          JOIN review r
+            ON r.course_id = c.course_id
+           AND r.deleted_at IS NULL
+          GROUP BY c.course_id, c.code, c.title
+          HAVING COUNT(r.review_id) > 0
+          ORDER BY averageRating DESC, reviewCount DESC, c.code ASC;
+        `),
+      ]);
 
     const metrics = metricsRows?.[0] || {};
 
@@ -90,29 +117,32 @@ export async function GET(req: NextRequest) {
       totalReviews: Number(metrics.totalReviews || 0),
       averageRating: Number(metrics.averageRating || 0),
 
-      userGrowth: (userGrowthRows || []).map((row: any) => ({
+      userGrowth: (userGrowthRows || []).map((row) => ({
         date: row.date,
         count: Number(row.count),
       })),
 
-      reviewsTrend: (reviewsTrendRows || []).map((row: any) => ({
+      reviewsTrend: (reviewsTrendRows || []).map((row) => ({
         date: row.date,
         count: Number(row.count),
       })),
 
-      ratingDistribution: (ratingRows || []).map((row: any) => ({
-        rating: Number(row.rating),
-        count: Number(row.count),
+      ratingDistribution: (ratingRows || []).map((row) => ({
+        courseId: Number(row.courseId),
+        code: row.code,
+        title: row.title,
+        averageRating: Number(row.averageRating),
+        reviewCount: Number(row.reviewCount),
       })),
     };
 
     return NextResponse.json(payload);
-  } catch (error: any) {
-    if (error.message === "UNAUTHORIZED") {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json({ message: "UNAUTHORIZED" }, { status: 401 });
     }
 
-    if (error.message === "FORBIDDEN") {
+    if (error instanceof Error && error.message === "FORBIDDEN") {
       return NextResponse.json({ message: "FORBIDDEN" }, { status: 403 });
     }
 

@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import pool from "@/db";
 import bcrypt from "bcryptjs";
+
+type ExistingUserRow = RowDataPacket & {
+  user_id: number;
+};
+
+type UniversityRow = RowDataPacket & {
+  university_id: number;
+  email_domain: string | null;
+};
 
 export async function POST(req: Request) {
   try {
@@ -66,7 +76,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const [existing]: any = await pool.query(
+    const [existing] = await pool.query<ExistingUserRow[]>(
       "SELECT user_id FROM `user` WHERE email = ? LIMIT 1",
       [email],
     );
@@ -78,8 +88,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const [uni]: any = await pool.query(
-      "SELECT university_id FROM university WHERE university_id = ? LIMIT 1",
+    const [uni] = await pool.query<UniversityRow[]>(
+      "SELECT university_id, email_domain FROM university WHERE university_id = ? AND is_active = 1 LIMIT 1",
       [universityId],
     );
 
@@ -90,9 +100,22 @@ export async function POST(req: Request) {
       );
     }
 
+    const expectedDomain = uni[0].email_domain?.trim().toLowerCase();
+    const typedDomain = email.split("@")[1]?.trim().toLowerCase() ?? "";
+
+    if (expectedDomain && typedDomain !== expectedDomain) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Email must use @${expectedDomain} for the selected university`,
+        },
+        { status: 400 },
+      );
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const [result]: any = await pool.query(
+    const [result] = await pool.query<ResultSetHeader>(
       "INSERT INTO `user` (full_name, email, password, role, university_id) VALUES (?, ?, ?, ?, ?)",
       [fullName, email, hashedPassword, "student", universityId],
     );
@@ -110,10 +133,14 @@ export async function POST(req: Request) {
       },
       { status: 201 },
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("SIGNUP ERROR:", error);
     return NextResponse.json(
-      { success: false, message: "Signup failed", error: error?.message },
+      {
+        success: false,
+        message: "Signup failed",
+        error: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 },
     );
   }

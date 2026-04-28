@@ -1,7 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
+import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
 import { requireAuth } from "@/lib/auth";
+
+type CourseLookupRow = RowDataPacket & {
+  course_id: number;
+  code: string;
+};
+
+type ReviewRow = RowDataPacket & {
+  review_id: number;
+  user_id: number;
+  semester_taken: string;
+  instructor_name: string;
+  overall_rating: number | string;
+  review_text: string;
+  exam_difficulty_rating: number | string;
+  workload_rating: number | string;
+  attendance_rating: number | string;
+  grading_rating: number | string;
+  created_at: Date | string;
+};
+
+const VALID_SEMESTERS = ["Fall", "Spring", "Summer"];
 
 function anonymousName(userId: number): string {
   const hash = createHash("sha256")
@@ -15,23 +37,42 @@ function anonymousName(userId: number): string {
 async function courseIdFromSlug(slug: string): Promise<number | null> {
   const normalizedSlug = slug.toUpperCase().replace(/-/g, " ");
 
-  const [rows]: any = await pool.query(
+  const [rows] = await pool.query<CourseLookupRow[]>(
     `
     SELECT course_id, code
     FROM course
     WHERE REPLACE(UPPER(code), '-', ' ') = ?
     LIMIT 1
     `,
-    [normalizedSlug]
+    [normalizedSlug],
   );
 
   if (!rows || rows.length === 0) return null;
   return rows[0].course_id;
 }
 
+function normalizeSemester(value: unknown) {
+  if (typeof value !== "string") return "";
+
+  const normalized = value.trim().toLowerCase();
+  return (
+    VALID_SEMESTERS.find((semester) => semester.toLowerCase() === normalized) ??
+    ""
+  );
+}
+
+function isDuplicateEntry(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "ER_DUP_ENTRY"
+  );
+}
+
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ slug: string }> },
 ) {
   try {
     const { slug } = await params;
@@ -40,7 +81,7 @@ export async function GET(
     if (!courseId) {
       return NextResponse.json(
         { success: false, message: "Course not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -56,7 +97,7 @@ export async function GET(
 
     const orderBy = sortClause[sort] ?? "r.created_at DESC";
 
-    const [rows]: any = await pool.query(
+    const [rows] = await pool.query<ReviewRow[]>(
       `
       SELECT
         r.review_id,
@@ -74,10 +115,10 @@ export async function GET(
       WHERE r.course_id = ?
       ORDER BY ${orderBy}
       `,
-      [courseId]
+      [courseId],
     );
 
-    const reviews = (rows ?? []).map((row: any) => ({
+    const reviews = (rows ?? []).map((row) => ({
       review_id: row.review_id,
       anonymous_name: anonymousName(Number(row.user_id)),
       semester_taken: row.semester_taken,
@@ -99,21 +140,21 @@ export async function GET(
       total: reviews.length,
       reviews,
     });
-  } catch (error: any) {
-    console.error("GET REVIEWS ERROR:", error?.message, error?.stack || error);
+  } catch (error: unknown) {
+    console.error("GET REVIEWS ERROR:", error);
 
     return NextResponse.json(
       { success: false, message: "Failed to load reviews" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ slug: string }> },
 ) {
   try {
-    const user = requireAuth(req);
+    const user = await requireAuth(req);
 
     const { slug } = await params;
     const courseId = await courseIdFromSlug(slug);
@@ -121,7 +162,7 @@ export async function POST(
     if (!courseId) {
       return NextResponse.json(
         { success: false, message: "Course not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -146,28 +187,29 @@ export async function POST(
     ) {
       return NextResponse.json(
         { success: false, message: "overallRating must be between 1 and 5" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!instructor || typeof instructor !== "string" || !instructor.trim()) {
       return NextResponse.json(
         { success: false, message: "instructor name is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (!semester || typeof semester !== "string" || !semester.trim()) {
+    const semesterTaken = normalizeSemester(semester);
+    if (!semesterTaken) {
       return NextResponse.json(
-        { success: false, message: "semester is required" },
-        { status: 400 }
+        { success: false, message: "semester must be Fall, Spring, or Summer" },
+        { status: 400 },
       );
     }
 
     if (!review || typeof review !== "string" || !review.trim()) {
       return NextResponse.json(
         { success: false, message: "review text is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -183,7 +225,7 @@ export async function POST(
       if (isNaN(n) || n < 1 || n > 5) {
         return NextResponse.json(
           { success: false, message: `${field} must be between 1 and 5` },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -209,7 +251,7 @@ export async function POST(
         [
           user.userId,
           courseId,
-          semester.trim(),
+          semesterTaken,
           review.trim(),
           instructor.trim(),
           Number(overallRating),
@@ -217,13 +259,13 @@ export async function POST(
           Number(attendanceStrictness),
           Number(workload),
           Number(gradingFairness),
-        ]
+        ],
       );
-    } catch (dbErr: any) {
-      if (dbErr?.code === "ER_DUP_ENTRY") {
+    } catch (dbErr: unknown) {
+      if (isDuplicateEntry(dbErr)) {
         return NextResponse.json(
           { success: false, message: "You have already reviewed this course" },
-          { status: 409 }
+          { status: 409 },
         );
       }
 
@@ -235,21 +277,21 @@ export async function POST(
         success: true,
         message: "Review submitted successfully",
       },
-      { status: 201 }
+      { status: 201 },
     );
-  } catch (error: any) {
-    if (error.message === "UNAUTHORIZED") {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json(
         { success: false, message: "You must be logged in to leave a review" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
-    console.error("POST REVIEW ERROR:", error?.message, error?.stack || error);
+    console.error("POST REVIEW ERROR:", error);
 
     return NextResponse.json(
       { success: false, message: "Failed to submit review" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

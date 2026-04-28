@@ -14,6 +14,7 @@ USE coursality;
 CREATE TABLE `university` (
   `university_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NOT NULL,
+  `email_domain` VARCHAR(100) NOT NULL DEFAULT '',
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`university_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -42,7 +43,7 @@ CREATE TABLE `user` (
   `full_name` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NOT NULL,
   `password` VARCHAR(255) NOT NULL,
-  `role` ENUM('student','super_admin') NOT NULL DEFAULT 'student',
+  `role` ENUM('student','admin','super_admin') NOT NULL DEFAULT 'student',
   `university_id` INT UNSIGNED DEFAULT NULL,
   -- Email verification: token is set on registration, cleared on verification
   `email_verified_at` TIMESTAMP NULL DEFAULT NULL,
@@ -74,7 +75,7 @@ CREATE TABLE `course` (
   `description` TEXT NOT NULL,
   `credits` TINYINT UNSIGNED NOT NULL,   -- credits realistically 1-9; TINYINT saves space and rejects negatives
   `language` ENUM('English','Arabic','French','German','Spanish','Other') NOT NULL DEFAULT 'English',
-  `level` ENUM('undergraduate','graduate','doctoral','professional') NOT NULL,
+  `level` ENUM('freshman','undergraduate','graduate','master_degree','doctoral') NOT NULL,
   `department_id` INT UNSIGNED NOT NULL,
   -- Soft delete: preserves reviews when a course is retired
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -162,7 +163,8 @@ CREATE TABLE `review_vote` (
 -- --------------------------------------------------------
 CREATE TABLE `feedback` (
   `feedback_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` INT UNSIGNED NULL,  
+  `user_id` INT UNSIGNED NULL,
+  `kind` ENUM('feedback','problem') NOT NULL DEFAULT 'feedback',
   `rating` DECIMAL(3,2) NOT NULL CHECK (`rating` BETWEEN 0 AND 5),
   `message` TEXT NOT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

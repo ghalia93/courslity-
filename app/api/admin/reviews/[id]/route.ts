@@ -15,7 +15,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    requireAdmin(req);
+    await requireAdmin(req);
 
     const { id } = await params;
     const reviewId = parseInt(id, 10);

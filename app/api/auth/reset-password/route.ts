@@ -83,6 +83,18 @@ export async function POST(req: Request) {
 
     const record = rows[0];
 
+    const [userRows]: any = await pool.query(
+      "SELECT user_id FROM `user` WHERE user_id = ? AND deleted_at IS NULL LIMIT 1",
+      [payload.userId],
+    );
+
+    if (userRows.length === 0) {
+      return NextResponse.json(
+        { success: false, message: "Invalid or expired reset link" },
+        { status: 400 },
+      );
+    }
+
     // 4) Ensure it hasn't already been used
     if (record.used_at !== null) {
       return NextResponse.json(
@@ -110,10 +122,10 @@ export async function POST(req: Request) {
       await conn.beginTransaction();
 
       // Update the user's password
-      await conn.query("UPDATE `user` SET password = ? WHERE user_id = ?", [
-        hashedPassword,
-        payload.userId,
-      ]);
+      await conn.query(
+        "UPDATE `user` SET password = ? WHERE user_id = ? AND deleted_at IS NULL",
+        [hashedPassword, payload.userId],
+      );
 
       // Mark the reset token as used so it can't be replayed
       const usedAt = new Date().toISOString().slice(0, 19).replace("T", " ");

@@ -4,6 +4,13 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import AddCourseCard from "@/components/admin/AddCourseCard";
 import Button from "@/components/Button";
 import SearchableDropdownField from "@/components/SearchableDropdown";
+import { useAuth } from "@/context/AuthContext";
+import {
+  COURSE_LEVEL_OPTIONS,
+  COURSE_LEVEL_VALUES,
+  formatCourseLevel,
+  sortCourseLevels,
+} from "@/lib/courseLevels";
 import {
   Pencil,
   Trash2,
@@ -21,7 +28,7 @@ type Course = {
   title: string;
   description: string;
   credits: number;
-  level: "undergraduate" | "graduate" | "doctoral" | "professional";
+  level: string;
   language: string;
   department_id: number;
   department: string;
@@ -38,20 +45,31 @@ type Course = {
   };
 };
 
+type UniversityOption = {
+  university_id: number;
+  name: string;
+  email_domain: string;
+};
+
+type DepartmentOption = {
+  department_id: number;
+  name: string;
+  university_id: number;
+  university: string;
+};
+
 type SortKey = "rating_high" | "rating_low" | "reviews_most";
 
 function unique<T>(arr: T[]): T[] {
   return Array.from(new Set(arr));
 }
 
+function uniqueSorted(values: string[]) {
+  return unique(values.filter(Boolean)).sort((a, b) => a.localeCompare(b));
+}
+
 // ─── Edit Modal ──────────────────────────────────────────────────────────────
 
-const VALID_LEVELS = [
-  "undergraduate",
-  "graduate",
-  "doctoral",
-  "professional",
-] as const;
 const VALID_LANGUAGES = [
   "English",
   "Arabic",
@@ -79,6 +97,7 @@ function EditCourseModal({
   });
   const [saving, setSaving] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const levelLabel = formatCourseLevel(form.level);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -109,12 +128,18 @@ function EditCourseModal({
       return;
     }
 
-    const payload: Record<string, any> = {
+    const payload: {
+      title: string;
+      description: string;
+      credits: number;
+      language: string;
+      level: Course["level"];
+    } = {
       title: form.title.trim(),
       description: form.description.trim(),
       credits: creditsNum,
       language: form.language,
-      level: form.level,
+      level: form.level as Course["level"],
     };
 
     try {
@@ -205,10 +230,16 @@ function EditCourseModal({
                   Level
                 </label>
                 <SearchableDropdownField
-                  value={form.level}
-                  options={[...VALID_LEVELS]}
+                  value={levelLabel}
+                  options={COURSE_LEVEL_OPTIONS.map((level) => level.label)}
                   placeholder="Select level"
-                  onChange={(v) => setForm((prev) => ({ ...prev, level: v }))}
+                  onChange={(v) => {
+                    const selectedLevel = COURSE_LEVEL_OPTIONS.find(
+                      (level) => level.label === v,
+                    );
+                    if (!selectedLevel) return;
+                    setForm((prev) => ({ ...prev, level: selectedLevel.value }));
+                  }}
                 />
               </div>
             </div>
@@ -331,8 +362,8 @@ function CourseDetailModal({
             </div>
             <div>
               <p className="text-xs text-gray-400 mb-0.5">Level</p>
-              <p className="text-gray-800 font-medium capitalize">
-                {course.level}
+              <p className="text-gray-800 font-medium">
+                {formatCourseLevel(course.level)}
               </p>
             </div>
             <div>
@@ -552,7 +583,14 @@ function FilterSelect({
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function AdminCoursesPage() {
+  const { user, loading: authLoading } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
+  const [catalogUniversities, setCatalogUniversities] = useState<
+    UniversityOption[]
+  >([]);
+  const [catalogDepartments, setCatalogDepartments] = useState<
+    DepartmentOption[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -572,33 +610,137 @@ export default function AdminCoursesPage() {
     "all" | "active" | "deleted"
   >("all");
   const [sortKey, setSortKey] = useState<SortKey>("rating_high");
+  const isUniversityAdmin = user?.role === "super_admin";
+  const showUniversityAdminWarning = !authLoading && !isUniversityAdmin;
+  const universityAdminWarning = "You are not the University Admin";
 
   // ── Fetch all courses ──────────────────────────────────────────────────────
-  useEffect(() => {
+  const loadCourses = useCallback(async () => {
     setLoading(true);
     setError(null);
-    fetch("/api/admin/courses")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.success) {
-          setCourses(data.courses);
-        } else {
-          setError(data.message ?? "Failed to load courses.");
-        }
-      })
-      .catch(() => setError("Network error. Could not load courses."))
-      .finally(() => setLoading(false));
+
+    try {
+      const res = await fetch("/api/admin/courses", {
+        credentials: "include",
+        cache: "no-store",
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message ?? "Failed to load courses.");
+      }
+
+      setCourses((data.courses ?? []) as Course[]);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Network error. Could not load courses.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const universities = unique(courses.map((c) => c.university));
-  const departments = unique(
-    courses
-      .filter(
-        (c) => universityFilter === "all" || c.university === universityFilter,
-      )
-      .map((c) => c.department),
+  const loadAcademicCatalog = useCallback(async () => {
+    try {
+      const [universitiesRes, departmentsRes] = await Promise.all([
+        fetch("/api/admin/universities", {
+          credentials: "include",
+          cache: "no-store",
+        }),
+        fetch("/api/departments", { cache: "no-store" }),
+      ]);
+
+      const universitiesData = await universitiesRes.json().catch(() => null);
+      const departmentsData = await departmentsRes.json().catch(() => null);
+
+      if (universitiesRes.ok && universitiesData?.success) {
+        setCatalogUniversities(
+          (universitiesData.universities ?? []) as UniversityOption[],
+        );
+      }
+
+      if (departmentsRes.ok) {
+        setCatalogDepartments(
+          (Array.isArray(departmentsData)
+            ? departmentsData
+            : departmentsData?.departments ?? []) as DepartmentOption[],
+        );
+      }
+    } catch {
+      setCatalogUniversities([]);
+      setCatalogDepartments([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadCourses();
+    void loadAcademicCatalog();
+  }, [loadAcademicCatalog, loadCourses]);
+
+  const universities = useMemo(
+    () =>
+      uniqueSorted([
+        ...catalogUniversities.map((university) => university.name),
+        ...courses.map((course) => course.university),
+      ]),
+    [catalogUniversities, courses],
   );
-  const languages = unique(courses.map((c) => c.language));
+
+  const departments = useMemo(
+    () =>
+      uniqueSorted([
+        ...catalogDepartments
+          .filter(
+            (department) =>
+              universityFilter === "all" ||
+              department.university === universityFilter,
+          )
+          .map((department) => department.name),
+        ...courses
+          .filter(
+            (course) =>
+              universityFilter === "all" ||
+              course.university === universityFilter,
+          )
+          .map((course) => course.department),
+      ]),
+    [catalogDepartments, courses, universityFilter],
+  );
+
+  const languages = useMemo(
+    () => uniqueSorted(courses.map((course) => course.language)),
+    [courses],
+  );
+
+  const levels = useMemo(() => {
+    if (universityFilter === "all") {
+      return sortCourseLevels([
+        ...COURSE_LEVEL_VALUES,
+        ...courses.map((course) => course.level),
+      ]);
+    }
+
+    return sortCourseLevels([
+      ...COURSE_LEVEL_VALUES,
+      ...courses
+        .filter((course) => course.university === universityFilter)
+        .map((course) => course.level),
+    ]);
+  }, [courses, universityFilter]);
+
+  useEffect(() => {
+    if (departmentFilter !== "all" && !departments.includes(departmentFilter)) {
+      setDepartmentFilter("all");
+    }
+  }, [departmentFilter, departments]);
+
+  useEffect(() => {
+    if (levelFilter !== "all" && !levels.includes(levelFilter)) {
+      setLevelFilter("all");
+    }
+  }, [levelFilter, levels]);
 
   const activeFilterCount = [
     universityFilter !== "all",
@@ -620,7 +762,7 @@ export default function AdminCoursesPage() {
 
   const filteredCourses = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    let result = courses.filter((c) => {
+    const result = courses.filter((c) => {
       const matchesSearch =
         !q ||
         c.title.toLowerCase().includes(q) ||
@@ -663,10 +805,18 @@ export default function AdminCoursesPage() {
 
   // ── Create ─────────────────────────────────────────────────────────────────
   // AddCourseCard now calls the API itself and passes back the created Course object
-  const handleSaveCourse = useCallback((newCourse: Course) => {
-    setCourses((prev) => [newCourse, ...prev]);
-    setShowForm(false);
-  }, []);
+  const handleSaveCourse = useCallback(
+    (newCourse: Course) => {
+      setCourses((prev) => [
+        newCourse,
+        ...prev.filter((course) => course.course_id !== newCourse.course_id),
+      ]);
+      setShowForm(false);
+      void loadCourses();
+      void loadAcademicCatalog();
+    },
+    [loadAcademicCatalog, loadCourses],
+  );
 
   // ── Delete ─────────────────────────────────────────────────────────────────
   async function handleConfirmDelete() {
@@ -756,14 +906,31 @@ export default function AdminCoursesPage() {
         </div>
         <Button
           variant="primary"
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            if (!isUniversityAdmin) {
+              setShowForm(false);
+              setError(universityAdminWarning);
+              return;
+            }
+
+            setError(null);
+            setShowForm(true);
+          }}
+          disabled={authLoading}
           className="flex items-center justify-center gap-2 self-start sm:self-auto"
         >
           <Plus size={18} /> Add Course
         </Button>
       </div>
 
-      {showForm && (
+      {showUniversityAdminWarning && (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          You are not the University Admin. Only the University Admin can add
+          courses.
+        </div>
+      )}
+
+      {showForm && isUniversityAdmin && (
         <AddCourseCard
           onClose={() => setShowForm(false)}
           onSave={handleSaveCourse}
@@ -844,10 +1011,10 @@ export default function AdminCoursesPage() {
               onChange={setLevelFilter}
               options={[
                 { value: "all", label: "All levels" },
-                { value: "undergraduate", label: "Undergraduate" },
-                { value: "graduate", label: "Graduate" },
-                { value: "doctoral", label: "Doctoral" },
-                { value: "professional", label: "Professional" },
+                ...levels.map((level) => ({
+                  value: level,
+                  label: formatCourseLevel(level),
+                })),
               ]}
             />
             <FilterSelect
@@ -982,8 +1149,8 @@ export default function AdminCoursesPage() {
                       {course.university}
                     </p>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap capitalize text-gray-700">
-                    {course.level}
+                  <td className="px-4 py-3 whitespace-nowrap text-gray-700">
+                    {formatCourseLevel(course.level)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700">
                     {course.language}
@@ -1136,7 +1303,7 @@ export default function AdminCoursesPage() {
                 </p>
                 <p>
                   <span className="text-gray-400">Level:</span>{" "}
-                  <span className="capitalize">{course.level}</span>
+                  <span>{formatCourseLevel(course.level)}</span>
                 </p>
                 <p>
                   <span className="text-gray-400">Language:</span>{" "}

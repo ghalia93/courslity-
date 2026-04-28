@@ -7,40 +7,28 @@ import Searchbar from "@/components/Searchbar";
 import CourseCard from "@/components/CourseCard";
 import FiltersPanel from "@/components/FiltersPanel";
 import { Filters } from "@/types/filters";
+import { Course } from "@/types/course";
 import { filterCourses } from "@/lib/filterCourses";
+import { COURSE_LEVEL_VALUES } from "@/lib/courseLevels";
 
-const courses = [
-  {
-    slug: "cmps-204",
-    code: "CMPS 204",
-    title: "Animation Tools",
-    university: "American University of Beirut",
-    department: "Computer Science",
-    credits: "3 cr.",
-    level: "Undergraduate",
-    language: "English",
-    rating: 4.8,
-    description:
-      "This course teaches students the knowledge needed to create digital prototypes of 2D and 3D games...",
-    metrics: { exam: 4, workload: 4, attendance: 3, grading: 5 },
-    reviewsLabel: "350+ Reviews",
-  },
-  {
-    slug: "cmps-101",
-    code: "CMPS 101",
-    title: "Introduction to Computer Science",
-    university: "American University of Beirut",
-    department: "Computer Science",
-    credits: "3 cr.",
-    level: "Undergraduate",
-    language: "English",
-    rating: 4.2,
-    description:
-      "This course introduces the skills, concepts, and capabilities needed for effective use of information technology (IT)...",
-    metrics: { exam: 3, workload: 4, attendance: 4, grading: 4 },
-    reviewsLabel: "200+ Reviews",
-  },
-];
+type UniversityOption = {
+  university_id: number;
+  name: string;
+  email_domain: string;
+};
+
+type DepartmentOption = {
+  department_id: number;
+  name: string;
+  university_id: number;
+  university: string;
+};
+
+function uniqueSorted(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean))).sort((a, b) =>
+    a.localeCompare(b),
+  );
+}
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -50,13 +38,52 @@ export default function SearchPage() {
 
   const [query, setQuery] = useState(initialQuery);
   const [showFilters, setShowFilters] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [universities, setUniversities] = useState<UniversityOption[]>([]);
+  const [departments, setDepartments] = useState<DepartmentOption[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [filters, setFilters] = useState<Filters>({
-    university: "",
-    department: "",
-    language: "",
-    level: "",
+    university: searchParams.get("university") || "",
+    department: searchParams.get("department") || "",
+    language: searchParams.get("language") || "",
+    level: searchParams.get("level") || "",
+    year: searchParams.get("year") || "",
+    semester: searchParams.get("semester") || "",
   });
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+
+      try {
+        const [coursesRes, universitiesRes, departmentsRes] = await Promise.all([
+          fetch("/api/courses?limit=500&page=1", { cache: "no-store" }),
+          fetch("/api/universities", { cache: "no-store" }),
+          fetch("/api/departments", { cache: "no-store" }),
+        ]);
+
+        if (coursesRes.ok) {
+          const coursesData = await coursesRes.json();
+          setCourses(coursesData.courses ?? []);
+        }
+
+        if (universitiesRes.ok) {
+          const universitiesData = await universitiesRes.json();
+          setUniversities(universitiesData ?? []);
+        }
+
+        if (departmentsRes.ok) {
+          const departmentsData = await departmentsRes.json();
+          setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -72,7 +99,40 @@ export default function SearchPage() {
 
   const filteredCourses = useMemo(() => {
     return filterCourses(courses, { ...filters, query });
-  }, [query, filters]);
+  }, [courses, query, filters]);
+
+  const filterOptions = useMemo(
+    () => ({
+      universities: uniqueSorted([
+        ...universities.map((university) => university.name),
+        ...courses.map((course) => course.university),
+      ]),
+      departments: [
+        ...departments.map((department) => ({
+          name: department.name,
+          university: department.university,
+        })),
+        ...courses.map((course) => ({
+          name: course.department,
+          university: course.university,
+        })),
+      ],
+      languages: uniqueSorted(courses.map((course) => course.language)),
+      levels: [
+        ...universities.flatMap((university) =>
+          COURSE_LEVEL_VALUES.map((level) => ({
+            value: level,
+            university: university.name,
+          })),
+        ),
+        ...courses.map((course) => ({
+          value: course.level,
+          university: course.university,
+        })),
+      ],
+    }),
+    [courses, departments, universities],
+  );
 
   return (
     <main className="min-h-screen bg-white px-4 md:px-8 py-8">
@@ -117,6 +177,10 @@ export default function SearchPage() {
               <FiltersPanel
                 filters={filters}
                 setFilters={setFilters}
+                universities={filterOptions.universities}
+                departments={filterOptions.departments}
+                languages={filterOptions.languages}
+                levels={filterOptions.levels}
                 onApply={() => setShowFilters(false)}
                 onReset={() => setShowFilters(false)}
               />
@@ -124,14 +188,18 @@ export default function SearchPage() {
           )}
         </AnimatePresence>
 
-        {filteredCourses.length === 0 ? (
+        {loading ? (
+          <div className="mt-10 text-center text-gray-500">
+            Loading courses...
+          </div>
+        ) : filteredCourses.length === 0 ? (
           <div className="mt-10 text-center text-gray-500">
             No courses found.
           </div>
         ) : (
           <div className="flex flex-col gap-6">
             {filteredCourses.map((course) => (
-              <CourseCard key={course.slug} {...course} />
+              <CourseCard key={course.courseId} {...course} />
             ))}
           </div>
         )}

@@ -1,6 +1,17 @@
 USE course_checker;
 
+ALTER TABLE `user`
+  MODIFY role ENUM('student','admin','super_admin') NOT NULL DEFAULT 'student';
+
 ALTER TABLE university ADD COLUMN email_domain VARCHAR(100) NOT NULL DEFAULT '';
+
+ALTER TABLE course
+  MODIFY level ENUM('freshman','undergraduate','graduate','master_degree','doctoral','professional') NOT NULL;
+
+UPDATE course SET level = 'graduate' WHERE level = 'professional';
+
+ALTER TABLE course
+  MODIFY level ENUM('freshman','undergraduate','graduate','master_degree','doctoral') NOT NULL;
 
 UPDATE university SET email_domain = 'student.bau.edu.lb' WHERE name = 'Beirut Arab University';
 UPDATE university SET email_domain = 'mail.aub.edu' WHERE name = 'American University of Beirut';
@@ -20,4 +31,7 @@ ALTER TABLE feedback
     FOREIGN KEY (user_id) REFERENCES user(user_id)
     ON DELETE SET NULL
     ON UPDATE CASCADE;
+
+ALTER TABLE feedback
+  ADD COLUMN kind ENUM('feedback','problem') NOT NULL DEFAULT 'feedback' AFTER user_id;
 

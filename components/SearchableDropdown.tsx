@@ -30,12 +30,17 @@ export default function SearchableDropdownField({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredOptions = options.filter((opt) =>
-    opt.toLowerCase().includes(value.toLowerCase()),
+  const normalizedValue = value.trim().toLowerCase();
+  const hasExactMatch = options.some(
+    (opt) => opt.toLowerCase() === normalizedValue,
   );
+  const filteredOptions =
+    showDropdown && hasExactMatch
+      ? options
+      : options.filter((opt) => opt.toLowerCase().includes(normalizedValue));
 
   const optionHeight = 36;
-  const maxDropdownHeight = optionHeight * 4;
+  const maxDropdownHeight = optionHeight * 5;
 
   return (
     <div ref={wrapperRef} className="relative w-full">

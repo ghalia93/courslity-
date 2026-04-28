@@ -10,6 +10,26 @@ import { Filters } from "@/types/filters";
 import { Course } from "@/types/course";
 import FiltersPanel from "@/components/FiltersPanel";
 import CourseCard from "@/components/CourseCard";
+import { COURSE_LEVEL_VALUES } from "@/lib/courseLevels";
+
+type UniversityOption = {
+  university_id: number;
+  name: string;
+  email_domain: string;
+};
+
+type DepartmentOption = {
+  department_id: number;
+  name: string;
+  university_id: number;
+  university: string;
+};
+
+function uniqueSorted(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean))).sort((a, b) =>
+    a.localeCompare(b),
+  );
+}
 
 export default function CoursesPage() {
   const searchParams = useSearchParams();
@@ -23,10 +43,14 @@ export default function CoursesPage() {
     department: searchParams.get("department") || "",
     language: searchParams.get("language") || "",
     level: searchParams.get("level") || "",
+    year: searchParams.get("year") || "",
+    semester: searchParams.get("semester") || "",
   });
 
   // ── Courses from API ────────────────────────────────────────────────────────
   const [courses, setCourses] = useState<Course[]>([]);
+  const [universities, setUniversities] = useState<UniversityOption[]>([]);
+  const [departments, setDepartments] = useState<DepartmentOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,13 +59,27 @@ export default function CoursesPage() {
       try {
         setLoading(true);
         setError(null);
-        // Fetch a generous first page; adjust limit as your dataset grows
-        const res = await fetch("/api/courses?limit=50&page=1");
-        if (!res.ok) throw new Error("Failed to fetch courses");
-        const data = await res.json();
-        setCourses(data.courses ?? []);
-      } catch (err: any) {
-        setError(err.message ?? "Something went wrong");
+        const [coursesRes, universitiesRes, departmentsRes] = await Promise.all([
+          fetch("/api/courses?limit=500&page=1", { cache: "no-store" }),
+          fetch("/api/universities", { cache: "no-store" }),
+          fetch("/api/departments", { cache: "no-store" }),
+        ]);
+
+        if (!coursesRes.ok) throw new Error("Failed to fetch courses");
+        if (!universitiesRes.ok) throw new Error("Failed to fetch universities");
+
+        const coursesData = await coursesRes.json();
+        const universitiesData = await universitiesRes.json();
+
+        setCourses(coursesData.courses ?? []);
+        setUniversities(universitiesData ?? []);
+
+        if (departmentsRes.ok) {
+          const departmentsData = await departmentsRes.json();
+          setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
+        }
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Something went wrong");
       } finally {
         setLoading(false);
       }
@@ -75,6 +113,39 @@ export default function CoursesPage() {
   const filteredCourses = useMemo(
     () => filterCourses(courses, { ...filters, query: debouncedQuery }),
     [courses, filters, debouncedQuery],
+  );
+
+  const filterOptions = useMemo(
+    () => ({
+      universities: uniqueSorted([
+        ...universities.map((university) => university.name),
+        ...courses.map((course) => course.university),
+      ]),
+      departments: [
+        ...departments.map((department) => ({
+          name: department.name,
+          university: department.university,
+        })),
+        ...courses.map((course) => ({
+          name: course.department,
+          university: course.university,
+        })),
+      ],
+      languages: uniqueSorted(courses.map((course) => course.language)),
+      levels: [
+        ...universities.flatMap((university) =>
+          COURSE_LEVEL_VALUES.map((level) => ({
+            value: level,
+            university: university.name,
+          })),
+        ),
+        ...courses.map((course) => ({
+          value: course.level,
+          university: course.university,
+        })),
+      ],
+    }),
+    [courses, departments, universities],
   );
 
   const [showFilters, setShowFilters] = useState(false);
@@ -133,6 +204,10 @@ export default function CoursesPage() {
               <FiltersPanel
                 filters={filters}
                 setFilters={setFilters}
+                universities={filterOptions.universities}
+                departments={filterOptions.departments}
+                languages={filterOptions.languages}
+                levels={filterOptions.levels}
                 onApply={() => setShowFilters(false)}
                 onReset={() => setShowFilters(false)}
               />

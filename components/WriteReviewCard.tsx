@@ -5,6 +5,8 @@ import Button from "@/components/Button";
 import StarRating from "@/components/StarRating";
 import SliderRow from "@/components/SliderRow";
 
+const SEMESTER_OPTIONS = ["Fall", "Spring", "Summer"];
+
 type WriteReviewCardProps = {
   slug: string;
   onSubmit: () => void;
@@ -70,7 +72,9 @@ export default function WriteReviewCard({
         }),
       });
 
-      const data = await res.json().catch(() => ({} as any));
+      const data = await res
+        .json()
+        .catch(() => ({} as { message?: string }));
 
       if (!res.ok) {
         setError(data?.message ?? "Failed to submit review");
@@ -124,11 +128,20 @@ export default function WriteReviewCard({
           <div className="text-sm font-medium text-gray-700">
             Semester Taken
           </div>
-          <input
+          <select
             value={semester}
             onChange={(e) => setSemester(e.target.value)}
             className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-[#6155F5]/30"
-          />
+          >
+            <option value="" disabled>
+              Select semester
+            </option>
+            {SEMESTER_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

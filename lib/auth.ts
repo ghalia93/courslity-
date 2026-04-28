@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import jwt from "jsonwebtoken";
+import pool from "@/db";
 
 export type AuthUser = {
   userId: number;
@@ -7,7 +9,21 @@ export type AuthUser = {
   role: string;
 };
 
-export function requireAuth(req: NextRequest): AuthUser {
+export function isAdminRole(role: string | undefined | null) {
+  return role === "admin" || role === "super_admin";
+}
+
+export function isUniversityAdminRole(role: string | undefined | null) {
+  return role === "super_admin";
+}
+
+type AuthRow = RowDataPacket & {
+  user_id: number;
+  email: string;
+  role: string;
+};
+
+export async function requireAuth(req: NextRequest): Promise<AuthUser> {
   const token = req.cookies.get("auth_token")?.value;
 
   if (!token) {
@@ -20,17 +36,50 @@ export function requireAuth(req: NextRequest): AuthUser {
   }
 
   try {
-    const decoded = jwt.verify(token, secret) as AuthUser;
-    return decoded;
+    const decoded = jwt.verify(token, secret) as Partial<AuthUser>;
+    const userId = Number(decoded.userId);
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      throw new Error("UNAUTHORIZED");
+    }
+
+    const [rows] = await pool.query<AuthRow[]>(
+      "SELECT user_id, email, role FROM `user` WHERE user_id = ? AND deleted_at IS NULL LIMIT 1",
+      [userId],
+    );
+
+    if (!rows.length) {
+      throw new Error("UNAUTHORIZED");
+    }
+
+    const user = rows[0];
+
+    return {
+      userId: user.user_id,
+      email: user.email,
+      role: user.role,
+    };
   } catch {
     throw new Error("UNAUTHORIZED");
   }
 }
 
-export function requireAdmin(req: NextRequest): AuthUser {
-  const user = requireAuth(req);
+export async function requireAdmin(req: NextRequest): Promise<AuthUser> {
+  const user = await requireAuth(req);
 
-  if (user.role !== "admin" && user.role !== "super_admin") {
+  if (!isAdminRole(user.role)) {
+    throw new Error("FORBIDDEN");
+  }
+
+  return user;
+}
+
+export async function requireUniversityAdmin(
+  req: NextRequest,
+): Promise<AuthUser> {
+  const user = await requireAuth(req);
+
+  if (!isUniversityAdminRole(user.role)) {
     throw new Error("FORBIDDEN");
   }
 

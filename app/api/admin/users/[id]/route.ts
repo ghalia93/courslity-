@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
 import pool from "@/db";
+
+type UserRow = RowDataPacket & {
+  user_id: number;
+  role: string;
+  deleted_at: Date | string | null;
+};
 
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const currentAdmin: any = await requireAdmin(req);
+    const currentAdmin = await requireAdmin(req);
 
     const resolvedParams = await params;
     const userId = parseInt(resolvedParams.id, 10);
@@ -20,8 +27,8 @@ export async function DELETE(
     }
 
     // Check if user exists
-    const [users]: any = await pool.query(
-      "SELECT user_id, role FROM user WHERE user_id = ?",
+    const [users] = await pool.query<UserRow[]>(
+      "SELECT user_id, role, deleted_at FROM user WHERE user_id = ? LIMIT 1",
       [userId]
     );
 
@@ -35,40 +42,42 @@ export async function DELETE(
     const targetUser = users[0];
 
     // Prevent deleting yourself
-    if (currentAdmin.user_id === userId) {
+    if (currentAdmin.userId === userId) {
       return NextResponse.json(
-        { message: "You cannot delete yourself" },
+        { message: "You cannot deactivate yourself" },
         { status: 400 }
       );
     }
 
-    // Prevent deleting last admin
-    if (targetUser.role === "admin") {
-      const [adminCountRows]: any = await pool.query(
-        "SELECT COUNT(*) AS total FROM user WHERE role = 'admin'"
+    if (targetUser.deleted_at) {
+      return NextResponse.json(
+        { message: "User is already deactivated" },
+        { status: 409 }
       );
-
-      const adminCount = adminCountRows[0].total;
-
-      if (adminCount <= 1) {
-        return NextResponse.json(
-          { message: "Cannot delete the last remaining admin" },
-          { status: 400 }
-        );
-      }
     }
 
-    // Delete related records first
-    await pool.query("DELETE FROM review_vote WHERE user_id = ?", [userId]);
-    await pool.query("DELETE FROM review WHERE user_id = ?", [userId]);
-    await pool.query("DELETE FROM feedback WHERE user_id = ?", [userId]);
+    if (targetUser.role === "admin") {
+      return NextResponse.json(
+        { message: "Protected admin accounts cannot be deactivated" },
+        { status: 400 }
+      );
+    }
 
-    // Delete user
-    await pool.query("DELETE FROM user WHERE user_id = ?", [userId]);
+    const [result] = await pool.query<ResultSetHeader>(
+      "UPDATE user SET deleted_at = NOW() WHERE user_id = ? AND deleted_at IS NULL",
+      [userId],
+    );
+
+    if (result.affectedRows === 0) {
+      return NextResponse.json(
+        { message: "User could not be deactivated" },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      message: "User deleted successfully",
+      message: "User deactivated successfully",
     });
 
   } catch (error) {

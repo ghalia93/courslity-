@@ -2,6 +2,7 @@
 import Link from "next/link";
 import React from "react";
 import { FileText, Briefcase, MapPin, Scale, User } from "lucide-react";
+import { formatCourseLevel } from "@/lib/courseLevels";
 
 type CourseRatings = {
   exam: number | null;
@@ -16,7 +17,7 @@ type CourseCardProps = {
   title: string;
   university: string;
   department: string;
-  credits: string;
+  credits: string | number;
   level: string;
   language: string;
   averageRating: number | null;
@@ -101,7 +102,7 @@ export default function CourseCard({
         {/* Badges */}
         <div className="mt-2 flex flex-wrap gap-2">
           <span className="text-[13px] font-medium text-[#6155F5] bg-[#EEF2FF] px-2 py-1 rounded-full">
-            {level}
+            {formatCourseLevel(level)}
           </span>
           <span className="text-[13px] font-medium text-[#10B981] bg-[#D1FAE5] px-2 py-1 rounded-full">
             {language}

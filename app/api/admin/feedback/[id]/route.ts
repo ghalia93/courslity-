@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
 import pool from "@/db";
 
@@ -14,7 +15,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    requireAdmin(req);
+    await requireAdmin(req);
 
     const { id } = await params;
     const feedbackId = parseInt(id, 10);
@@ -26,7 +27,7 @@ export async function DELETE(
       );
     }
 
-    const [rows]: any = await pool.query(
+    const [rows] = await pool.query<RowDataPacket[]>(
       "SELECT feedback_id FROM feedback WHERE feedback_id = ? LIMIT 1",
       [feedbackId],
     );
@@ -46,7 +47,7 @@ export async function DELETE(
       success: true,
       message: "Feedback deleted successfully",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("DELETE FEEDBACK ERROR:", error);
     return NextResponse.json(
       { success: false, message: "UNAUTHORIZED" },

@@ -1,36 +1,90 @@
 "use client";
 
-import { PieChart, Pie, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
-type RatingPoint = { rating: number; count: number };
+type CourseRatingPoint = {
+  courseId: number;
+  code: string;
+  title: string;
+  averageRating: number;
+  reviewCount: number;
+};
 
-const COLORS = ["#2F80ED", "#EB5757", "#F2C94C", "#27AE60", "#6366F1"];
+function CourseRatingTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: CourseRatingPoint }>;
+}) {
+  if (!active || !payload?.length) return null;
 
-export default function MetricsPieChart({ data }: { data: RatingPoint[] }) {
-  // Sort descending so 5★ comes first, map to recharts shape
- const chartData = (data ?? [])
-  .sort((a, b) => b.rating - a.rating)
-  .map((d, i) => ({
-    name: `${d.rating}★`,
-    value: d.count,
-    fill: COLORS[i % COLORS.length],
+  const point = payload[0]?.payload;
+  if (!point) return null;
+
+  return (
+    <div className="rounded-lg bg-white px-3 py-2 shadow-lg border border-gray-200">
+      <p className="text-sm font-semibold text-gray-900">{point.code}</p>
+      <p className="text-xs text-gray-500">{point.title}</p>
+      <p className="mt-2 text-xs text-gray-600">
+        Average rating:{" "}
+        <span className="font-medium text-gray-900">
+          {point.averageRating.toFixed(2)} / 5
+        </span>
+      </p>
+      <p className="text-xs text-gray-600">
+        Reviews:{" "}
+        <span className="font-medium text-gray-900">{point.reviewCount}</span>
+      </p>
+    </div>
+  );
+}
+
+export default function RatingsDistributionChart({
+  data = [],
+}: {
+  data?: CourseRatingPoint[];
+}) {
+  const chartData = [...data].map((point) => ({
+    ...point,
+    courseLabel: point.code,
   }));
 
   return (
     <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
       <h3 className="text-sm font-semibold mb-4 text-gray-700">
-        Rating Distribution
+        Course Rating Distribution
       </h3>
+      <p className="mb-4 text-xs text-gray-500">
+        Average overall rating for each course with at least one review.
+      </p>
 
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={chartData}
-              dataKey="value"
-              nameKey="name"
-              outerRadius={90}
-              paddingAngle={2}
+          <LineChart
+            data={chartData}
+            margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
+          >
+            <CartesianGrid stroke="#f0f0f0" strokeDasharray="3 3" />
+            <XAxis
+              dataKey="courseLabel"
+              tick={{ fill: "#6B7280", fontSize: 12 }}
+              tickLine={false}
+              minTickGap={18}
+            />
+            <YAxis
+              domain={[0, 5]}
+              ticks={[0, 1, 2, 3, 4, 5]}
+              tick={{ fill: "#6B7280", fontSize: 12 }}
+              tickLine={false}
             />
             <Tooltip
               contentStyle={{
@@ -39,12 +93,27 @@ export default function MetricsPieChart({ data }: { data: RatingPoint[] }) {
                 border: "none",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
               }}
-              formatter={(value?: number, name?: string) => [
-                value !== undefined ? `${value}` : "0",
-                name ?? "",
-              ]}
+              content={({ active, payload }) => (
+                <CourseRatingTooltip
+                  active={active}
+                  payload={payload as Array<{ payload: CourseRatingPoint }> | undefined}
+                />
+              )}
             />
-          </PieChart>
+            <Line
+              type="monotone"
+              dataKey="averageRating"
+              stroke="#2F80ED"
+              strokeWidth={3}
+              dot={{ r: 3, fill: "#2F80ED", stroke: "#fff", strokeWidth: 1.5 }}
+              activeDot={{
+                r: 6,
+                fill: "#2F80ED",
+                stroke: "#fff",
+                strokeWidth: 2,
+              }}
+            />
+          </LineChart>
         </ResponsiveContainer>
       </div>
     </div>

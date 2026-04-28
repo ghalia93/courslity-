@@ -11,6 +11,7 @@ import {
   Scale,
 } from "lucide-react";
 import Link from "next/link";
+import { formatCourseLevel } from "@/lib/courseLevels";
 
 type CourseRatings = {
   exam: number | null;
@@ -158,8 +159,8 @@ export default function CourseInfo({ course }: { course: Course }) {
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
         <div className="rounded-xl border border-gray-200 bg-white p-4">
           <div className="text-xs text-gray-400">Level</div>
-          <div className="mt-1 font-medium text-gray-900 capitalize">
-            {course.level}
+          <div className="mt-1 font-medium text-gray-900">
+            {formatCourseLevel(course.level)}
           </div>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-4">

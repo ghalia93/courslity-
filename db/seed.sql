@@ -78,7 +78,7 @@ SELECT
   'This course consists of an Introduction to computer hardware and software. Binary system and data representation. The software life-cycle. Flow charts and IPO-charts. Introduction to computer programming and problem solving. Structured high level language programming with an emphasis on procedural abstraction and good programming style. The basic looping and selection constructs, arrays, functions, parameter passing, and scope of variables.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -100,7 +100,7 @@ SELECT
   'An introduction to digital electronics, integrated circuits, numbering systems, Boolean algebra, gates, flip-flops, multiplexers, sequential circuits, combinational circuits, and computer architecture. Introduction to hardware description language and programmable logic devices.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -122,7 +122,7 @@ SELECT
   'The course introduces basic discrete structures that are backbones of computer science. In particular, this class is meant to introduce logic, proofs, sets, relations, functions, sequences, summations, counting techniques with an emphasis on applications in computer science. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -144,7 +144,7 @@ SELECT
   'This course focuses on object-oriented concepts and techniques for analysis, design, and implementation. Topics include methods and parameters passing, recursive methods, objects and classes, UML representation of classes, abstraction, encapsulation and information hiding, message passing, methods overloading and overriding, classes relationships (aggregation, composition), inheritance, polymorphism, abstract classes, interfaces, Exception handling, Files.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -166,7 +166,7 @@ SELECT
   'The course covers different techniques and technologies for developing dynamic web sites. Topics include introduction to internet infrastructure, PHP as the server-side scripting language, the MySQL database, JavaScript, DHTML, XML and AJAX for enriching web services, and page layout with HTML and CSS. This course includes a team project to deploy a dynamic website. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -188,7 +188,7 @@ SELECT
   'Different phases of large-scale software development with emphasis on analysis, design, testing, and documentation. Topics include: introduction to software engineering, ethics in software engineering, development processes, requirements developments, object oriented analysis and design using UML, architectural design, testing, and project management. Students work in groups on realistic projects to apply covered techniques. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -210,7 +210,7 @@ SELECT
   'This course is an introduction to the fundamental models of computation used throughout computer science. Topics include deterministic finite automata (DFA), regular languages, non-deterministic finite automata (NFA), equivalence of NFAs and DFAs, closure properties, regular expressions, the pumping lemma, pushdown automata, context free languages, context free grammar, ambiguity, Chomsky normal form, Turing machines, decidability, the halting problem and topics related to time complexity, P, NP and NP-Completeness. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -232,7 +232,7 @@ SELECT
   'This course will define, analyze and evaluate important concepts found in current programming languages. Its goals are to build an ability to evaluate and compare programming languages, both from the user''s and implementor''s view. Topics include: syntax, operational semantics, scope of objects and time of binding, type checking, module mechanisms (e.g., blocks, procedures, coroutines), data abstraction, data types, expressions, control structures, subprograms, implementation of subprograms, functional programming, logic programming and object-oriented programming languages. This course includes a team project to learn a novel programming language and use it in implementing an application. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -254,7 +254,7 @@ SELECT
   'Operating systems concepts and functions. Operating systems structures and system Calls. Processes and threads scheduling. Inter-process communication. CPU scheduling algorithms. Process synchronization. Deadlocks. Main memory management. Virtual memory management. File management. I/O subsystem and device management. Selected topics in networking, protection and security, distributed systems.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -276,7 +276,7 @@ SELECT
   'A systematic study of algorithms and their complexity. Topics include techniques for designing efficient computer algorithms, proving their correctness, analyzing their run-time complexity; as well as Divide and Conquer algorithms, Greedy algorithms, Dynamic Programming algorithms, Sorting and Searching algorithms (Binary search, Radix sort, Bucket sort, Count Sort, Insertion sort, Merge sort, Quick sort and Heap sort), Order statistics, Graph algorithms (Graph traversal, Minimum spanning trees and Shortest path problems). ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -299,7 +299,7 @@ SELECT
   'This course introduces the skills, concepts, and capabilities needed for effective use of information technology (IT). It includes logical reasoning, organization of information, managing complexity, operations of computers and networks, digital representation of information, security principles, and the use of contemporary applications such as effective Web search, spreadsheets, and database systems. Also, it includes a basic introduction to programming and problem solving through scripting web applications. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -321,7 +321,7 @@ SELECT
   'This course is an introductory computer course that presents computing and information, and illustrates their use. The student is introduced to computers and their role in society with emphasis on conceptual understanding as well as operational proficiency. Topics include principles of computer operations both from the hardware and software perspectives, basic networking concepts, web authoring concepts including HTML, cascading style sheets, and publishing, and data manipulation using spreadsheets and databases. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -343,7 +343,7 @@ SELECT
   'This course introduces students to the technical and conceptual skills necessary for developing web sites and for analyzing and visualizing real data . In web design, students will learn HTML5 and CSS3. In data analysis and visualization, students will learn to code using Python with an emphasis on organizing, analyzing, and plotting data. Visualizations produced by Python can then be embedded into html pages. The core skills learned in this course will be applicable to most programming languages. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -365,7 +365,7 @@ SELECT
   'A continuation of CMPS 200, this course consolidates algorithm design and programming techniques, emphasizing large programs. This course also provides a detailed study of data structures and data abstraction, and an introduction to complexity considerations and program verification.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -387,7 +387,7 @@ SELECT
   'The class is an introduction to digital media programming and processing. The course explains the essential technology behind images, animations, sound, and video and illustrates how to write interactive programs that manipulate these media in creative ways. The class assumes basic knowledge in Java or a first course in programming. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -409,7 +409,7 @@ SELECT
   'Techniques of numerical analysis: number representations and round-off errors, root finding, approximation of functions, integration, solving initial value problems, MonteCarlo methods. Implementations and analysis of the algorithms are stressed. Projects using MATLAB or a similar tool are assigned.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -431,7 +431,7 @@ SELECT
   'This course introduces practical industry-standard software engineering best practices to students that have already written moderate sized software. Students are exposed to full development lifecycle from choosing the right SDLC, to requirements management, software design, development, patterns, testing and UAT. A group term project provides a holistic hands-on experience building an end-to-end software application emulating a real-world environment often for real clients with real needs. Other topics covered include working in a team, professionalism, project management, risk, and ethics. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -453,7 +453,7 @@ SELECT
   'A systematic study of algorithms and advanced data structures and their complexity. Topics include techniques for designing efficient computer algorithms, proving their correctness, and analyzing their complexity as well as advanced searching, sorting, selection, priority queues, binary search trees, graph, hash tables, and matrix algorithms.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -475,7 +475,7 @@ SELECT
   'This course provides an introduction to the fundamentals of operating system function, design, and implementation. It contains a theory component illustrating the concepts and principles that underlie modern operating systems and a practice component to relate theoretical principles with operating system implementation. The course is divided into three major parts. The first part of the course discusses concurrency (processes, threads, scheduling, synchronization, and deadlocks). The second part of the course discusses memory management (memory management strategies and virtual memory management). The third part of the course concerns file systems, including topics such as secondary storage systems and I/O systems.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -497,7 +497,7 @@ SELECT
   'A course that covers syntax specifications of programming languages, parsing theory, top-down and bottom-up parsing, parser generators, syntax-directed code generation, symbol table organization and management, dynamic storage allocation, code optimization, dataflow analysis, and register allocation. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -520,7 +520,7 @@ SELECT
   'This course introduces the fundamental concepts, and techniques, of programming and problem solving, from an object-oriented perspective. Topics include the introduction to computer systems (hardware, software, compilation, execution), fundamental programming constructs, (variables, primitive data types, expressions, assignment), program readability, simple I/O, conditional constructs, iterative control structures, structured decomposition, method call and parameter passing, basic program design using algorithms, algorithm stepwise refinement, pseudo-code, introduction to the object-oriented paradigm (abstraction, objects, classes, entity and application classes, class libraries, methods, encapsulation, class interaction, aggregation), inheritance, error types, simple testing and debugging, 1-D and 2-D arrays, basic searching, and sorting algorithms.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -542,7 +542,7 @@ SELECT
   'This course presents further techniques of object oriented programming and problem solving, with emphasis on abstraction and data structures. Topics include: object oriented concepts, such as, composition, inheritance, polymorphism, information hiding, and interfaces; basic program design and correctness, such as, abstract data types, preconditions and post conditions, assertions and loop invariants, testing, basic exception handling, and the application of algorithm design techniques. The course also covers: basic algorithmic analysis, time and space tradeoffs in algorithms, big-O notation; fundamental data structures and applications, such as, collections, single- and double-linked structures, stacks, queues, and trees; performance issues for data structures; recursion, more sorting algorithms.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -564,7 +564,7 @@ SELECT
   'This course presents the fundamental computing algorithms and data structures, with emphasis on design and analysis. Topics include the asymptotic analysis of upper and average complexity bounds, the best, the average, and the worst, case behaviors. Recurrence relations, sets, hashing and hash tables, trees and binary trees (properties, tree traversal algorithms), heaps, priority queues, and graphs (representation, depth- and breadth-first traversals and applications, shortest-path algorithms, transitive closure, network flows, topological sort). The course also covers the sorting algorithms and performance analysis which include mergesort, quicksort and heapsort. As well, the course details the fundamental algorithmic strategies (divide-and-conquer approach, greedy, dynamic programming, and backtracking). Introduction to NP-completeness theory.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -586,7 +586,7 @@ SELECT
   'Overview of the history of the digital computer, representation of numeric data, introduction to digital logic, logic expressions and Boolean functions, logic functions minimization. Processor and system performance, Amdahl’s law. Introduction to reconfigurable logic and special-purpose processors. Introduction to instruction set architecture, and microarchitecture. Processor structures, instruction sequencing, flow-of control, subroutine call and return mechanism, structure of machine-level programs, low level architectural support for high-level languages. Memory hierarchy, latency and throughput, cache memories: operating principles, replacement policies, multilevel cache, and cache coherency. Register-transfer language to describe internal operations in a computer, instruction pipelining and instruction-level parallelism (ILP), overview of superscalar architectures. Multicore and multithreaded processors.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -608,7 +608,7 @@ SELECT
   'This course provides an introduction to prallel programming with a focus on multicore architectures and cluster programming techniques. Topics include relevant architectural trends and aspects of multicores, writing multicore programs and extracting data parallelism using vectors and SIMD, thread-level parallelism, task-based parallelism, efficient sybchronization, program profiling, and performance tuning. Message-passing cluster-based parallel computing is also introduced. The course includes several programming assignments to provide students first-hand experience with programming, and experimentally analyzing and tuning parallel software.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -630,7 +630,7 @@ SELECT
   'This course presents the techniques for developing reliable, and cost-effective, medium-to-large-scale object-oriented and classical software. It also involves project development to implement these techniques. Topics include the software life-cycle and process models, the software requirements elicitation, specification, and validation techniques, the design techniques for object-oriented and classical software (architectural, and component, level design and the basic unified modeling language diagrams), software testing (black box and white box testing techniques), unit, integration, validation, and system testing, as well as the basic software project management and quality issues, and the documentation and technical writing, and the use of CASE tools.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -652,7 +652,7 @@ SELECT
   'This course is an introduction to the fundamental concepts and techniques of database systems. Topics include database architecture, data independence, data modeling, physical and relational database design, functional dependency, normal forms, query languages, query optimization, database security, and transactions at the SQL level.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -674,7 +674,7 @@ SELECT
   'This course introduces the fundamentals of operating systems design and implementation. Topics include C language and shell programming, operating system components, dynamic memory allocation, text processing, memory management, virtual memory, files, pipes, processes, process scheduling, process synchronization (mutual exclusion, deadlocks), and threads.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -696,7 +696,7 @@ SELECT
   'This course provides an overview of theoretical and application aspects of machine learning. Topics include supervised and unsupervised learning including generative/discriminative learning, parametric/non-parametric learning, neural networks, support vector machines, clustering, dimensionality reduction, and kernel methods. The course also covers learning theory, reinforcement learning, adaptive control. An applied approach will be used, where students get hands-on exposure to ML techniques through the use of state-of-the-art machine learning software frameworks.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -718,7 +718,7 @@ SELECT
   'Understanding complex language has wide applications in web search, advertisement, customer service, automatic translation, chat bot engineering, etc. Many different machine learning techniques are at the heart of natural language processing (NLP) applications. Recently, Deep Learning(DL) approaches have obtained very high performance across many different NLP tasks. This course covers such approaches. Students will build their own neural network model and apply it to a large scale NLP problem. From the model side, the following topics will be covered: word vector representations, window-based neural networks, recurrent neural networks, long-short-term-memory models, recursive neural networks, convolutional neural networks. From the NLP side, the course covers the following topics: syntax parsing, vector space modeling, dimensionality reduction, speech tagging, text classification, and sentiment analysis.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -741,7 +741,7 @@ SELECT
   'The course investigates various techniques used for designing web pages. Presenting the basics of static web page design using HTML. Dynamic web page design using JavaScript. Introduces the server side scripting languages such as : ASP and PHP4.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -763,7 +763,7 @@ SELECT
   'This course introduces the basic concepts and principles for using the Arduino microcontroller platform as an instrument to teach students about topics in electronics, programming, and human-computer interaction. Students will be able to build useful devices. Half of the in-class time is entirely devoted to developing, debugging, and refining projects where each session will have a period to solve a problem by the instructor and a period dedicated to the students to practice on a similar problem.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -785,7 +785,7 @@ SELECT
   'The course develops the ability of the student to understand the design of digital electronic circuits which are the main components in digital computers, data communication, digital recording, and so forth. The course covers number systems, Boolean switching algebra, combinational circuit design, flip-flops, counters, registers, state machine notation, analysis of sequential circuits, and sequential circuit design',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -807,7 +807,7 @@ SELECT
   'This course introduces fundamentals of database systems. It starts by motivating the need of the database approach in real life scenarios and the benefit of adopting a Database Management System (DBMS). This course includes data modeling (based on the entity relationship model), data normalization and data manipulation SQL queries. Students will learn how to design, implement and query a relational database by using a Microsoft SQL Server DBMS.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -829,7 +829,7 @@ SELECT
   'The ITNcourse introduces the architecture, structure, functions, components, and models of the Internet and other computer networks. The principles and structure of IP addressing and the fundamentals of Ethernet concepts, media, and operations are introduced to provide a foundation for the CCNA curriculum.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -851,7 +851,7 @@ SELECT
   'The Routing and Switching Essentials course describes the architecture, components, and operations of routers and switches in a small network. Students learn how to configure a router and a switch for basic functionality.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -873,7 +873,7 @@ SELECT
   'Information systems development is a legitimate engineering discipline. Software process models, software engineering methods, and software tools have been adopted successfully across a broad spectrum of industry applications. Effective development of an information system depends on proper utilization of a broad range of information technology, including database management systems, operating systems, computer systems, and telecommunications networks. This course covers the phases from physical system design through the installation of working information systems; Concentrates on using the results of systems analysis and design, typically documented in CASE technology, and either building or generating systems to meet these specifications. The course is a semesterlong field project with various hands-on exercises that provide practical experience in building, testing, and installing a system.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -895,7 +895,7 @@ SELECT
   'This course covers the design and implementation of important data structures and their algorithms. The data structures considered include stacks, queues, lists, linked lists, trees, and graphs. Students will also learn basic to fundamental algorithms for solving problems and how to compute the time complexity of algorithms and will focus on general design and analysis techniques that lie beneath these algorithms.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -917,7 +917,7 @@ SELECT
   'Fundamental overview of operating systems. First Quarter: Operating system structures, processes, process synchronization, deadlocks, CPU scheduling, memory management, file systems, secondary storage management. Requires substantial programming projects. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -939,7 +939,7 @@ SELECT
   'The course introduces the main concepts of current programming languages and provides the student with the tools necessary to evaluate existing and future programming languages. It also explains the design of compilers by explaining in depth the programming language structures, describing the syntax in a formal method and introducing approaches to lexical and syntactic analysis',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -962,7 +962,7 @@ SELECT
   'This course will allow students who have already learned the notions of object-oriented programming in C++ or C#, to recognize and identify the design models and apply the design principles in their development. Students will be able to carry out an architectural analysis to produce the structural units, design the interfaces to ensure the integration of the different components of the solution, carry out the detailed design of the solution and develop the code. The course covers all the usual models: Abstract Factory - Builder - Factory Method - Object Pool - Prototype - Singleton - Adapter - Bridge - Composite - Decorator - Facade - Flyweight – Private Class Data - Proxy - Chain of responsibility - Command - Interpreter - Iterator - Mediator - Memento - Null Object - Observer - State - Strategy - Template method - Visitor. ',
   4,
   'French',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -984,7 +984,7 @@ SELECT
   'This course introduces the basic notions of digital electronics and presents the functional aspects of combinatorial and sequential digital circuits. It covers, in a first phase, coding, digitization systems, combinatorial circuits through the expression of a logic function, logic gates, Boolean algebra and the different reduction techniques. In a second phase, we approach state machines and sequential circuits with the different types of flip-flops and the implementations of sequential circuits such as counters and shift registers. For each system, we move from analysis to synthesis of circuits using different methods. Part of the lab work takes place around the Quartus II tool which allows students to implement digital circuits in a schematic or descriptive form and to simulate and analyze the circuits with signals and practical considerations. The other part of the lab work is reserved for the practical creation of digital circuits using integrated circuits on a breadboard to allow students to discover electronic components and their wiring.',
   6,
   'French',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1006,7 +1006,7 @@ SELECT
   'This course introduces the concepts of Cloud, Data Centers, and virtualization with the different associatedtechnologies. It covers the following topics: Introduction to Data Centers and the Cloud - Strategic Data Center - Principles and types of Data Centers - Data Center Design - Cloud Computing - Cloud Security - Software-Defined Approach for Networks (SDN), Data Center (SDDC) and Storage (SDS) - Virtualization - Workstation and Server Virtualization - Data Virtualization - Operating System Virtualization - Network Function Virtualization. ',
   4,
   'French',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1028,7 +1028,7 @@ SELECT
   'This course covers the following themes: complexity analysis, elementary data structures (linked lists, arrays, queues and stacks), search problems (sequential, dichotomy), sorting problems (elementary sorting, quicksort, merge sort), trees (characteristics, structure, traversal), string search algorithms, priority queues, maximize, graphs (characteristics, structures), graph algorithms (shortest path, connectivity, spanning tree, etc.), scheduling problems, flow problems (maximum flow, minimum cost flow, etc.), coupling problems, dynamic programming, linear programming (simplex). ',
   6,
   'French',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1050,7 +1050,7 @@ SELECT
   'This course focuses on mastering C programming for microcontroller-based embedded system environments. It covers the internal structure and operation of microcontrollers, firmware architecture methodologies including low-level drivers, interfacing, and task-based programming. Topics include: computer architecture in limited resource platforms, C programming with pointers and data structures, code optimization for limited resources (RAM, program memory, and speed), firmware architecture including flat and task-based programming approaches (schedulers, RTOS, etc.), system debugging, simulation, emulation, and source control using GIT repositories (commit, checkout, push, pull, branch, merge, etc.). ',
   4,
   'French',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1072,7 +1072,7 @@ SELECT
   'This course is designed for students interested in exploring how new technologies are disrupting the financial services industry, leading to radical changes in business models, products, applications, and the customer user interface. Participants will explore artificial intelligence, deep learning, blockchain technology, and application programming interfaces (APIs), as well as the specific opportunities for their application in the following areas: payments, credit, trading, and risk management. We will review the competitive advantages of leading Fintech companies and startups, global finance and technology leaders',
   2,
   'French',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1095,7 +1095,7 @@ SELECT
 ',
   4,
   'French',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1117,7 +1117,7 @@ SELECT
   'This course introduces the basic concepts related to information and network security. It helps develop the skills necessary to troubleshoot and protect data networks from threats and attacks. It covers the following topics: Network Basics - Network Protocols and TCP/IP - Introduction to Cybersecurity - Computer Security and Malware - Physical Security - Information Security (confidentiality, integrity, and availability) - Types of Attacks and Protection Methods - Network Security, Level 2 and 3 Attacks.',
   4,
   'French',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1139,7 +1139,7 @@ SELECT
   'Machine learning (ML) is a subfield of artificial intelligence. It is the science of making machines learn by example. The ultimate goal of ML is to create a computer capable of learning autonomously from examples. The main research topics in ML include: natural language understanding, computer vision, and self-driving cars. In this course, we will study the implementation of different algorithms using python with tensorflow and keras. We will present several algorithms such as decision trees, random forest, support vector machines, neural networks as well as other algorithms.',
   4,
   'French',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1161,7 +1161,7 @@ SELECT
   'This course introduces object-oriented programming in C++. It covers the structure of a C++ program, types and variables, expressions and instructions, control instructions (conditionals, loops), composite types, functions and parameters, objects (encapsulation and abstraction, inheritance, polymorphism), inputs/outputs, streams, error and exception handling, template programming, move semantics, C++ STL, lambdas and functional programming, C++ API design, build engines, and solving interview problems.',
   6,
   'French',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1184,7 +1184,7 @@ SELECT
   'This course provides students with a foundation of computing and algorithmic principles. It is intended to establish concrete skills in the constructs and algorithmic methods as an essential part of the software development process. Teaching is carried out by way of a lecture-and-homework agenda that emphasizes the design, construction, and analysis of algorithms, coupled to a lab-and-project agenda focused on the application of those principles in the use of software packages. Lecture-and-homework topics include: pseudo-language, algorithms, programming life cycle, procedural programming versus object-oriented programming, abstraction, objects and classes, decision constructs and repetition structures. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1206,7 +1206,7 @@ SELECT
   'Programming with functions, top-down decomposition and stepwise refinement, higher-order functions, referential transparency, Lazy evaluation. The application language is LISP.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1228,7 +1228,7 @@ SELECT
   'This course is designed to introduce students to the concept of computing and programming principles. It is intended to establish concrete skills in the constructs and algorithmic methods as an essential part of the software development process. The topics include: algorithms, procedural programming, data representation, basic programming control structures (sequence, selection and repetition), functional decomposition, functions call and arrays. ',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1250,7 +1250,7 @@ SELECT
   'An introduction to computer organization and assembly programming covering the general structure of a microprocessor-based computer with detailed description of the data, address, and control buses used on the 8086 microprocessor. It also covers the assembly process and the instruction set of the 8086. In addition, it discusses I/ O and memory management',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1272,7 +1272,7 @@ SELECT
   'Overview of compilers including component functions and classification. Symbol table construction and operations; lexical analysis, parsers, code generation, and error handling. Intermediate code generation and compiler generators',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1294,7 +1294,7 @@ SELECT
   'This is an advanced programming course. It covers the programming paradigms with examples, and the transition between modular programming and object-oriented programming. The course also covers data categorization and subdivision into classes and discusses inheritance of operations from one class to another. Topics include: Advanced Arrays, Files, object-oriented analysis and design, class abstraction, encapsulation, inheritance, polymorphism, Composition, Exception Handling, and Binary I/O.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1316,7 +1316,7 @@ SELECT
   'The UNIX operating system is introduced as a programming environment. Topics include: the C language and libraries, history and overview of the UNIX operating system, the file structure, the shell, graphical user interfaces, the vi editor, programming the Bourne, the C and the Korn shell, UNIX utility programs, and UNIX networking.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1338,7 +1338,7 @@ SELECT
   'This course provides a foundation of network administration including account administration, resource allocation and optimization, and service management. Strategies for maintaining robust and secure networks are explored. Topics include, but are not limited to: Network administration and configuration, network management (SNMP), network security, access controls, error correction, routing protocols, congestion control (TCP, UDP), selection of topics including DHCP, ICMP, VPNs, and multicast. Programming assignments include developing client and server software using sockets, RMI or CORBA',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1360,7 +1360,7 @@ SELECT
   'This course introduces Java as a technology and a development and deployment platform (J2SE). It provides students with the skills to create applications that leverage the object-oriented features of Java, such as encapsulation, inheritance, and polymorphism. The course introduces students to GUI programming, multithreading, networking, and event-driven programming using Java technology GUI components. Students will develop classes to connect to SQL database systems by using the core aspects of JDBC API. Other topics include: Exception handling, multi-threading, RMI, two-tier and three-tier Java technology applications',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id
@@ -1382,7 +1382,7 @@ SELECT
   'Mobile computing is a growing developed communication system in distributed networks. It is a part of HumanComputer Interaction where users interact with portable mobile devices. This course covers the fundamental concepts of mobile computing including mobile area overview, concentrations on problems and solutions in mobile networking, mobility and data management, service management, and security for mobile and wireless communication systems. Topics include mobile communication, protocols and data format, mobile devices and components, data and service management, characteristics of mobile applications, and security in mobile computing environments.',
   3,
   'English',
-  'Undergraduate',
+  'undergraduate',
   d.department_id
 FROM department d
 JOIN university u ON u.university_id = d.university_id

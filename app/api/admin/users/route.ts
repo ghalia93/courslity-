@@ -1,7 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
 import pool from "@/db";
 import bcrypt from "bcryptjs";
+
+type CountRow = RowDataPacket & {
+  total: number;
+};
+
+type UserListRow = RowDataPacket & {
+  user_id: number;
+  full_name: string;
+  email: string;
+  role: string;
+  created_at: string | Date;
+  deleted_at: string | Date | null;
+  university_name: string | null;
+};
+
+type ExistingUserRow = RowDataPacket & {
+  user_id: number;
+};
 
 //display users (admin: user management table)
 export async function GET(req: NextRequest) {
@@ -16,7 +35,7 @@ export async function GET(req: NextRequest) {
     const offset = (page - 1) * limit;
 
     let where = "";
-    const params: any[] = [];
+    const params: string[] = [];
 
     if (q) {
       where = `WHERE u.full_name LIKE ? OR u.email LIKE ?`;
@@ -24,7 +43,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Total count
-    const [countRows]: any = await pool.query(
+    const [countRows] = await pool.query<CountRow[]>(
       `SELECT COUNT(*) AS total FROM user u ${where}`,
       params
     );
@@ -32,7 +51,7 @@ export async function GET(req: NextRequest) {
     const total = countRows[0].total;
 
     // Data query
-    const [rows]: any = await pool.query(
+    const [rows] = await pool.query<UserListRow[]>(
       `
       SELECT 
         u.user_id,
@@ -40,6 +59,7 @@ export async function GET(req: NextRequest) {
         u.email,
         u.role,
         u.created_at,
+        u.deleted_at,
         uni.name AS university_name
       FROM user u
       LEFT JOIN university uni 
@@ -51,14 +71,15 @@ export async function GET(req: NextRequest) {
       [...params, limit, offset]
     );
 
-    const users = rows.map((user: any) => ({
+    const users = rows.map((user) => ({
       id: user.user_id,
       name: user.full_name,
       email: user.email,
       university: user.university_name,
       role: user.role,
       joined: user.created_at,
-      isProtected: user.role === "admin"
+      active: !user.deleted_at,
+      isProtected: !user.deleted_at && user.role === "admin",
     }));
 
     return NextResponse.json({
@@ -70,7 +91,7 @@ export async function GET(req: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch {
     return NextResponse.json(
       { error: "UNAUTHORIZED" },
       { status: 401 }
@@ -79,14 +100,15 @@ export async function GET(req: NextRequest) {
 }
 
 //add admin (user management)
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    await requireAdmin(req);
+    const currentAdmin = await requireAdmin(req);
 
     const body = await req.json();
     const fullName = body?.fullName;
     const email = body?.email;
     const password = body?.password;
+    const requestedRole = body?.role ?? "admin";
 
     if (!fullName || typeof fullName !== "string") {
       return NextResponse.json(
@@ -123,8 +145,22 @@ export async function POST(req: Request) {
       );
     }
 
+    if (requestedRole !== "admin" && requestedRole !== "super_admin") {
+      return NextResponse.json(
+        { success: false, message: "role must be admin or super_admin" },
+        { status: 400 }
+      );
+    }
+
+    if (requestedRole === "super_admin" && currentAdmin.role !== "super_admin") {
+      return NextResponse.json(
+        { success: false, message: "Only University Admins can create University Admin accounts" },
+        { status: 403 }
+      );
+    }
+
     // Check if email exists
-    const [existing]: any = await pool.query(
+    const [existing] = await pool.query<ExistingUserRow[]>(
       "SELECT user_id FROM `user` WHERE email = ? LIMIT 1",
       [email]
     );
@@ -138,27 +174,28 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert as ADMIN
-    const [result]: any = await pool.query(
+    const [result] = await pool.query<ResultSetHeader>(
       "INSERT INTO `user` (full_name, email, password, role) VALUES (?, ?, ?, ?)",
-      [fullName, email, hashedPassword, "admin"]
+      [fullName, email, hashedPassword, requestedRole]
     );
+
+    const roleLabel =
+      requestedRole === "super_admin" ? "University Admin" : "Admin";
 
     return NextResponse.json(
       {
         success: true,
-        message: "Admin created successfully",
+        message: `${roleLabel} created successfully`,
         user: {
           id: result.insertId,
           name: fullName,
           email,
-          role: "admin"
+          role: requestedRole
         }
       },
       { status: 201 }
     );
-
-  } catch (error: any) {
+  } catch {
     return NextResponse.json(
       { error: "UNAUTHORIZED" },
       { status: 401 }

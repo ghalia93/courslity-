@@ -1,19 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import pool from "@/db";
 import { requireAuth } from "@/lib/auth";
 
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
   try {
-    const user = requireAuth(req);
+    const user = await requireAuth(req);
 
     await pool.query(
-      "DELETE FROM `user` WHERE user_id = ?",
+      "UPDATE `user` SET deleted_at = NOW() WHERE user_id = ? AND deleted_at IS NULL",
       [user.userId],
     );
 
     const response = NextResponse.json({
       success: true,
-      message: "Account deleted successfully",
+      message: "Account deactivated successfully",
     });
 
     response.cookies.set("auth_token", "", {

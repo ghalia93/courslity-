@@ -57,6 +57,7 @@ export default function NavBar() {
             <NavLink href="/">Home</NavLink>
             <NavLink href="/courses">Courses</NavLink>
             <NavLink href="/about">About</NavLink>
+            <NavLink href="/faqs">FAQs</NavLink>
           </div>
         </div>
 
@@ -155,6 +156,9 @@ export default function NavBar() {
           </div>
           <div onClick={() => setMenuOpen(false)}>
             <NavLink href="/about">About</NavLink>
+          </div>
+          <div onClick={() => setMenuOpen(false)}>
+            <NavLink href="/faqs">FAQs</NavLink>
           </div>
 
           {!loading && !user && (

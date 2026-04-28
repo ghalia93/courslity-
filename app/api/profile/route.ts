@@ -1,11 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import pool from "@/db";
 import { requireAuth } from "@/lib/auth"; 
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
-    // Verify JWT from cookies
-    const user = requireAuth(req);
+    const user = await requireAuth(req);
 
     // Fetch full profile from DB
     const [rows]: any = await pool.query(
@@ -35,7 +34,7 @@ export async function GET(req: Request) {
       success: true,
       data: rows[0],
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("PROFILE GET ERROR:", error);
     return NextResponse.json(
       { success: false, message: "Unauthorized" },

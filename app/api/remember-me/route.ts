@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { requireAuth } from "@/lib/auth";
 
@@ -14,9 +14,9 @@ const REMEMBER_ME_COOKIE = "remember_me_token";
  * Issues a long-lived httpOnly cookie so future visits can restore the session
  * without requiring the user to log in again.
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const user = requireAuth(req); // throws "UNAUTHORIZED" if no valid token
+    const user = await requireAuth(req);
 
     const secret = process.env.JWT_SECRET;
     if (!secret) {

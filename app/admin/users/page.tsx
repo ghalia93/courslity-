@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
-import { Plus, Search, Trash2, Shield } from "lucide-react";
+import { Plus, Search, Shield, UserX } from "lucide-react";
 import AddAdminCard, { type AdminUser } from "@/components/admin/AddAdminCard";
 import ConfirmModal from "@/components/admin/ConfirmModal";
+import { useAuth } from "@/context/AuthContext";
 
 type UserRow = {
   id: number;
@@ -13,6 +14,7 @@ type UserRow = {
   university: string | null;
   role: string;
   joined: string;
+  active: boolean;
   protected?: boolean;
 };
 
@@ -24,6 +26,7 @@ type ApiResponse = {
     university: string | null;
     role: string;
     joined: string;
+    active?: boolean;
     isProtected?: boolean;
   }[];
   pagination: {
@@ -33,12 +36,13 @@ type ApiResponse = {
   };
 };
 
-function dateOnly(x: any) {
+function dateOnly(x: string | Date | null | undefined) {
   if (!x) return "";
   return String(x).slice(0, 10);
 }
 
 export default function AdminUsersPage() {
+  const { user } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [showAdminForm, setShowAdminForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -85,17 +89,18 @@ export default function AdminUsersPage() {
         name: u.name,
         email: u.email,
         university: u.university ?? null,
-      role: u.role || "admin",  
+        role: u.role || "admin",
         joined: dateOnly(u.joined),
+        active: u.active !== false,
         protected: !!u.isProtected,
       }));
 
       setUsers(mapped);
       setTotal(payload.pagination?.total || 0);
-    } catch (e: any) {
+    } catch (e: unknown) {
       setUsers([]);
       setTotal(0);
-      setErrorMsg(e?.message || "Error");
+      setErrorMsg(e instanceof Error ? e.message : "Error");
     } finally {
       setLoading(false);
     }
@@ -107,6 +112,7 @@ export default function AdminUsersPage() {
 
   const displayUsers = useMemo(() => {
     return [...users].sort((a, b) => {
+      if (a.active !== b.active) return a.active ? -1 : 1;
       const ap = a.protected ? 1 : 0;
       const bp = b.protected ? 1 : 0;
       return bp - ap;
@@ -114,7 +120,7 @@ export default function AdminUsersPage() {
   }, [users]);
 
   function handleDelete(u: UserRow) {
-    if (u.protected) return;
+    if (u.protected || !u.active) return;
     setPendingDelete(u);
   }
 
@@ -130,20 +136,14 @@ export default function AdminUsersPage() {
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        alert(data?.message || "Failed to delete user");
+        alert(data?.message || "Failed to deactivate user");
         return;
       }
 
       setPendingDelete(null);
-
-      const remaining = users.length - 1;
-      if (remaining <= 0 && page > 1) {
-        setPage(page - 1);
-      } else {
-        loadUsers(page, debouncedQ);
-      }
+      loadUsers(page, debouncedQ);
     } catch {
-      alert("Failed to delete user");
+      alert("Failed to deactivate user");
     }
   }
 
@@ -157,7 +157,7 @@ export default function AdminUsersPage() {
         fullName: admin.name.trim(),
         email: admin.email.trim(),
         password: admin.password,
-        role: "admin",
+        role: admin.role,
       }),
     });
 
@@ -182,10 +182,10 @@ export default function AdminUsersPage() {
     <div className="max-w-7xl mx-auto px-4 py-6">
       {pendingDelete && (
         <ConfirmModal
-          title="Delete user?"
+          title="Deactivate user?"
           description={
             <>
-              Are you sure you want to delete{" "}
+              Are you sure you want to deactivate{" "}
               <span className="font-medium text-gray-700">
                 {pendingDelete.name}
               </span>{" "}
@@ -193,10 +193,10 @@ export default function AdminUsersPage() {
               <span className="font-mono text-gray-600">
                 {pendingDelete.email}
               </span>
-              )?
+              )? Their reviews and feedback will stay visible to other users.
             </>
           }
-          confirmText="Delete"
+          confirmText="Deactivate"
           cancelText="Cancel"
           variant="danger"
           onCancel={() => setPendingDelete(null)}
@@ -226,6 +226,7 @@ export default function AdminUsersPage() {
           <AddAdminCard
             onClose={() => setShowAdminForm(false)}
             onSave={createAdmin}
+            canCreateUniversityAdmin={user?.role === "super_admin"}
           />
         </div>
       )}
@@ -255,6 +256,7 @@ export default function AdminUsersPage() {
               <th className="text-left px-4 py-3">User</th>
               <th className="text-left px-4 py-3">Email</th>
               <th className="text-left px-4 py-3">Role</th>
+              <th className="text-left px-4 py-3">Status</th>
               <th className="text-left px-4 py-3">Joined</th>
               <th className="text-right px-4 py-3">Actions</th>
             </tr>
@@ -263,7 +265,7 @@ export default function AdminUsersPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-gray-500">
+                <td colSpan={6} className="px-4 py-6 text-gray-500">
                   Loading...
                 </td>
               </tr>
@@ -271,7 +273,7 @@ export default function AdminUsersPage() {
               displayUsers.map((u) => (
                 <tr
                   key={u.id}
-                  className="border-t border-gray-200 hover:bg-gray-50"
+                  className={`border-t border-gray-200 hover:bg-gray-50 ${u.active ? "" : "opacity-60"}`}
                 >
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {u.name}
@@ -280,19 +282,24 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-3">
                     <RolePill role={u.role} />
                   </td>
+                  <td className="px-4 py-3">
+                    <StatusPill active={u.active} />
+                  </td>
                   <td className="px-4 py-3 text-gray-700">{u.joined}</td>
                   <td className="px-4 py-3 text-right">
                     {u.protected ? (
                       <span className="inline-flex items-center gap-1 text-xs text-gray-400">
                         <Shield size={16} /> Protected
                       </span>
+                    ) : !u.active ? (
+                      <span className="text-xs text-gray-400">Deactivated</span>
                     ) : (
                       <button
                         onClick={() => handleDelete(u)}
                         className="hover:text-red-500"
-                        aria-label="Delete user"
+                        aria-label="Deactivate user"
                       >
-                        <Trash2 size={16} />
+                        <UserX size={16} />
                       </button>
                     )}
                   </td>
@@ -331,20 +338,25 @@ export default function AdminUsersPage() {
                     <span className="inline-flex items-center gap-1 text-xs text-gray-400">
                       <Shield size={16} /> Protected
                     </span>
+                  ) : !u.active ? (
+                    <span className="text-xs text-gray-400">Deactivated</span>
                   ) : (
                     <button
                       onClick={() => handleDelete(u)}
                       className="text-gray-400 hover:text-red-500 transition"
-                      aria-label="Delete user"
+                      aria-label="Deactivate user"
                     >
-                      <Trash2 size={18} />
+                      <UserX size={18} />
                     </button>
                   )}
                 </div>
               </div>
 
               <div className="mt-3 flex items-center justify-between">
-                <RolePill role={u.role} />
+                <div className="flex items-center gap-2">
+                  <RolePill role={u.role} />
+                  <StatusPill active={u.active} />
+                </div>
                 <span className="text-xs text-gray-500">
                   Joined: {u.joined}
                 </span>
@@ -384,6 +396,14 @@ function RolePill({ role }: { role: string }) {
   const base =
     "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border";
 
+  if (role === "super_admin") {
+    return (
+      <span className={`${base} bg-blue-50 text-blue-700 border-blue-100`}>
+        University Admin
+      </span>
+    );
+  }
+
   if (role === "admin") {
     return (
       <span className={`${base} bg-purple-50 text-purple-700 border-purple-100`}>
@@ -395,6 +415,21 @@ function RolePill({ role }: { role: string }) {
   return (
     <span className={`${base} bg-blue-50 text-blue-700 border-blue-100`}>
       {role}
+    </span>
+  );
+}
+
+function StatusPill({ active }: { active: boolean }) {
+  const base =
+    "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border";
+
+  return active ? (
+    <span className={`${base} bg-green-50 text-green-700 border-green-100`}>
+      Active
+    </span>
+  ) : (
+    <span className={`${base} bg-gray-100 text-gray-600 border-gray-200`}>
+      Deactivated
     </span>
   );
 }

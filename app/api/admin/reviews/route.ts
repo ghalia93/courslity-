@@ -21,7 +21,7 @@ import pool from "@/db";
  */
 export async function GET(req: NextRequest) {
   try {
-    requireAdmin(req);
+    await requireAdmin(req);
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") || 1));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 
 import {
   Globe,
+  Building2,
   BookOpen,
   LayoutDashboard,
   Star,
@@ -17,7 +18,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   LogOut,
-  User,
 } from "lucide-react";
 
 function isActive(pathname: string, href: string) {
@@ -25,24 +25,45 @@ function isActive(pathname: string, href: string) {
   return pathname.startsWith(href);
 }
 
+const SIDEBAR_STORAGE_KEY = "admin-sidebar";
+const SIDEBAR_STORAGE_EVENT = "admin-sidebar-change";
+
+function getSidebarSnapshot() {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(SIDEBAR_STORAGE_KEY) === "collapsed";
+}
+
+function subscribeToSidebarPreference(onStoreChange: () => void) {
+  window.addEventListener(SIDEBAR_STORAGE_EVENT, onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+
+  return () => {
+    window.removeEventListener(SIDEBAR_STORAGE_EVENT, onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+  };
+}
+
+function setSidebarPreference(collapsed: boolean) {
+  localStorage.setItem(
+    SIDEBAR_STORAGE_KEY,
+    collapsed ? "collapsed" : "expanded",
+  );
+  window.dispatchEvent(new Event(SIDEBAR_STORAGE_EVENT));
+}
+
 export default function AdminNavbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
-  const [collapsed, setCollapsed] = useState(false);
+  const collapsed = useSyncExternalStore(
+    subscribeToSidebarPreference,
+    getSidebarSnapshot,
+    () => false,
+  );
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const userMenuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("admin-sidebar");
-    if (saved) setCollapsed(saved === "collapsed");
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("admin-sidebar", collapsed ? "collapsed" : "expanded");
-  }, [collapsed]);
 
   useEffect(() => {
     document.documentElement.style.setProperty(
@@ -52,8 +73,12 @@ export default function AdminNavbar() {
   }, [collapsed]);
 
   useEffect(() => {
-    setMobileOpen(false);
-    setUserMenuOpen(false);
+    const timeoutId = window.setTimeout(() => {
+      setMobileOpen(false);
+      setUserMenuOpen(false);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [pathname]);
 
   useEffect(() => {
@@ -76,6 +101,8 @@ export default function AdminNavbar() {
 
   const displayName = user?.email?.split("@")[0] ?? "Admin";
   const avatarLetter = displayName.charAt(0).toUpperCase();
+  const canManageAcademicData =
+    user?.role === "admin" || user?.role === "super_admin";
 
   const itemBase = `flex items-center gap-3 px-3 py-2 text-sm transition rounded-lg ${
     collapsed ? "justify-center" : ""
@@ -86,7 +113,7 @@ export default function AdminNavbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 h-16 w-full bg-white border-b border-gray-200">
+      <header className="fixed inset-x-0 top-0 z-50 h-16 w-full bg-white border-b border-gray-200">
         <div className="flex h-full items-center px-4 md:px-8 gap-3">
           <button
             type="button"
@@ -166,7 +193,7 @@ export default function AdminNavbar() {
               </span>
             )}
             <button
-              onClick={() => setCollapsed((v) => !v)}
+              onClick={() => setSidebarPreference(!collapsed)}
               className="p-2 rounded-lg hover:bg-gray-100"
             >
               {collapsed ? (
@@ -191,15 +218,33 @@ export default function AdminNavbar() {
             <div className="pt-3 text-xs text-gray-500">Manage</div>
           )}
 
-          <Link
-            href="/admin/courses"
-            className={`${itemBase} ${
-              isActive(pathname, "/admin/courses") ? activePill : inactivePill
-            }`}
-          >
-            <BookOpen size={18} />
-            {!collapsed && "Courses"}
-          </Link>
+          {canManageAcademicData && (
+            <>
+              <Link
+                href="/admin/universities"
+                className={`${itemBase} ${
+                  isActive(pathname, "/admin/universities")
+                    ? activePill
+                    : inactivePill
+                }`}
+              >
+                <Building2 size={18} />
+                {!collapsed && "Universities"}
+              </Link>
+
+              <Link
+                href="/admin/courses"
+                className={`${itemBase} ${
+                  isActive(pathname, "/admin/courses")
+                    ? activePill
+                    : inactivePill
+                }`}
+              >
+                <BookOpen size={18} />
+                {!collapsed && "Courses"}
+              </Link>
+            </>
+          )}
 
           <Link
             href="/admin/users"
@@ -282,17 +327,33 @@ export default function AdminNavbar() {
 
               <div className="pt-3 text-xs text-gray-500">Manage</div>
 
-              <Link
-                href="/admin/courses"
-                className={`${mobileItem} ${
-                  isActive(pathname, "/admin/courses")
-                    ? activePill
-                    : inactivePill
-                }`}
-              >
-                <BookOpen size={18} className="shrink-0" />
-                Courses
-              </Link>
+              {canManageAcademicData && (
+                <>
+                  <Link
+                    href="/admin/universities"
+                    className={`${mobileItem} ${
+                      isActive(pathname, "/admin/universities")
+                        ? activePill
+                        : inactivePill
+                    }`}
+                  >
+                    <Building2 size={18} className="shrink-0" />
+                    Universities
+                  </Link>
+
+                  <Link
+                    href="/admin/courses"
+                    className={`${mobileItem} ${
+                      isActive(pathname, "/admin/courses")
+                        ? activePill
+                        : inactivePill
+                    }`}
+                  >
+                    <BookOpen size={18} className="shrink-0" />
+                    Courses
+                  </Link>
+                </>
+              )}
 
               <Link
                 href="/admin/users"

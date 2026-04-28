@@ -508,18 +508,6 @@ export default function AdminReviewsPage() {
           <div className="flex flex-wrap gap-3 items-end">
             {[
               {
-                label: "Overall rating",
-                value: ratingFilter,
-                onChange: setRatingFilter,
-                options: [
-                  { value: "all", label: "All ratings" },
-                  ...["5", "4", "3", "2", "1"].map((v) => ({
-                    value: v,
-                    label: `${v} ★`,
-                  })),
-                ],
-              },
-              {
                 label: "University",
                 value: universityFilter,
                 onChange: (v: string) => {
@@ -547,6 +535,18 @@ export default function AdminReviewsPage() {
                 options: [
                   { value: "all", label: "All semesters" },
                   ...semesters.map((s) => ({ value: s, label: s })),
+                ],
+              },
+              {
+                label: "Overall rating",
+                value: ratingFilter,
+                onChange: setRatingFilter,
+                options: [
+                  { value: "all", label: "All ratings" },
+                  ...["5", "4", "3", "2", "1"].map((v) => ({
+                    value: v,
+                    label: `${v} ★`,
+                  })),
                 ],
               },
             ].map(({ label, value, onChange, options }) => (

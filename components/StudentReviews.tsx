@@ -19,6 +19,7 @@ type Review = {
   upvotes: number;
   downvotes: number;
   net_votes: number;
+  user_vote: number | null;
   created_at: string;
 };
 
@@ -64,8 +65,8 @@ export default function StudentReviews({ slug, refreshKey = 0 }: Props) {
 
       const data = await res.json();
       setReviews(data.reviews ?? []);
-    } catch (err: any) {
-      setError(err.message ?? "Something went wrong");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -167,8 +168,20 @@ export default function StudentReviews({ slug, refreshKey = 0 }: Props) {
               </div>
 
               <ReviewFooterBar
-                initialVotes={r.net_votes}
+                reviewId={r.review_id}
+                initialUpvotes={r.upvotes}
+                initialDownvotes={r.downvotes}
+                initialUserVote={r.user_vote}
                 timeAgo={timeAgo(r.created_at)}
+                onVoteChange={(summary) => {
+                  setReviews((prev) =>
+                    prev.map((review) =>
+                      review.review_id === r.review_id
+                        ? { ...review, ...summary }
+                        : review,
+                    ),
+                  );
+                }}
               />
             </div>
           ))}

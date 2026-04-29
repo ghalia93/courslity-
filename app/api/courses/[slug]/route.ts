@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
+import { getYearFromCourseCode } from "@/lib/courseCode";
 import { formatCourseLevel } from "@/lib/courseLevels";
 
 type CourseDetailRow = RowDataPacket & {
@@ -28,20 +29,6 @@ type PrerequisiteRow = RowDataPacket & {
   code: string;
   title: string;
 };
-
-function getYearFromCourseCode(code: string): number | null {
-  const match = code.match(/\d+/);
-  if (!match) return null;
-
-  const courseNumber = parseInt(match[0], 10);
-
-  if (courseNumber >= 200 && courseNumber < 300) return 1;
-  if (courseNumber >= 300 && courseNumber < 400) return 2;
-  if (courseNumber >= 400 && courseNumber < 500) return 3;
-  if (courseNumber >= 500 && courseNumber < 600) return 4;
-
-  return null;
-}
 
 export async function GET(
   req: NextRequest,

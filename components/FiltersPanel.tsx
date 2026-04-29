@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
 import { Filters } from "@/types/filters";
+import { formatCourseLevel } from "@/lib/courseLevels";
 
 export type DepartmentFilterOption =
   | string
@@ -27,14 +28,6 @@ interface FiltersPanelProps {
   levels: LevelFilterOption[];
   onApply?: () => void;
   onReset?: () => void;
-}
-
-function formatLabel(value: string) {
-  if (!value) return value;
-  return value
-    .split(/[_\s-]+/)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
 }
 
 function uniqueSorted(values: string[]) {
@@ -220,7 +213,7 @@ export default function FiltersPanel({
               <option value="">Any Level</option>
               {options.levels.map((level) => (
                 <option key={level} value={level}>
-                  {formatLabel(level)}
+                  {formatCourseLevel(level)}
                 </option>
               ))}
             </select>
@@ -240,34 +233,32 @@ export default function FiltersPanel({
           </div>
         </div>
 
-        {draftFilters.level.toLowerCase() === "undergraduate" && (
-          <div className="flex flex-col gap-2 sm:flex-row lg:gap-4">
-            <select
-              name="year"
-              value={draftFilters.year || ""}
-              onChange={handleDraftChange}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-[#6155F5] focus:outline-none sm:w-auto"
-            >
-              <option value="">Any Year</option>
-              <option value="1">Year 1</option>
-              <option value="2">Year 2</option>
-              <option value="3">Year 3</option>
-              <option value="4">Year 4</option>
-            </select>
+        <div className="flex flex-col gap-2 sm:flex-row lg:gap-4">
+          <select
+            name="year"
+            value={draftFilters.year || ""}
+            onChange={handleDraftChange}
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-[#6155F5] focus:outline-none sm:w-auto"
+          >
+            <option value="">Any Year</option>
+            <option value="1">Year 1 (200-299)</option>
+            <option value="2">Year 2 (300-399)</option>
+            <option value="3">Year 3 (400-499)</option>
+            <option value="4">Year 4 (500-599)</option>
+          </select>
 
-            <select
-              name="semester"
-              value={draftFilters.semester || ""}
-              onChange={handleDraftChange}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-[#6155F5] focus:outline-none sm:w-auto"
-            >
-              <option value="">Any Semester</option>
-              <option value="fall">Fall</option>
-              <option value="spring">Spring</option>
-              <option value="summer">Summer</option>
-            </select>
-          </div>
-        )}
+          <select
+            name="semester"
+            value={draftFilters.semester || ""}
+            onChange={handleDraftChange}
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-[#6155F5] focus:outline-none sm:w-auto"
+          >
+            <option value="">Any Semester</option>
+            <option value="fall">Fall</option>
+            <option value="spring">Spring</option>
+            <option value="summer">Summer</option>
+          </select>
+        </div>
       </div>
     </div>
   );

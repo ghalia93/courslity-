@@ -1,4 +1,8 @@
 import { Course } from "@/types/course";
+import {
+  getSemesterFromCourseCode,
+  getYearFromCourseCode,
+} from "@/lib/courseCode";
 
 interface CourseFilters {
   university?: string;
@@ -46,12 +50,16 @@ export function filterCourses(
     const matchesLevel =
       !normalizedLevel || course.level.toLowerCase() === normalizedLevel;
 
+    const courseYear = course.year ?? getYearFromCourseCode(course.code);
+    const courseSemester =
+      course.semester ?? getSemesterFromCourseCode(course.code);
+
     const matchesYear =
-      !normalizedYear || String(course.year ?? "") === normalizedYear;
+      !normalizedYear || String(courseYear ?? "") === normalizedYear;
 
     const matchesSemester =
       !normalizedSemester ||
-      String(course.semester ?? "").toLowerCase() === normalizedSemester;
+      String(courseSemester ?? "").toLowerCase() === normalizedSemester;
 
     const matchesQuery =
       !normalizedQuery ||

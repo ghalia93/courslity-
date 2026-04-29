@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
-import { requireAuth } from "@/lib/auth";
+import { type AuthUser, requireAuth } from "@/lib/auth";
 
 type CourseLookupRow = RowDataPacket & {
   course_id: number;
@@ -21,6 +21,10 @@ type ReviewRow = RowDataPacket & {
   attendance_rating: number | string;
   grading_rating: number | string;
   created_at: Date | string;
+  upvotes: number | string;
+  downvotes: number | string;
+  net_votes: number | string;
+  user_vote: number | string | null;
 };
 
 const VALID_SEMESTERS = ["Fall", "Spring", "Summer"];
@@ -70,6 +74,14 @@ function isDuplicateEntry(error: unknown) {
   );
 }
 
+async function getOptionalUser(req: NextRequest): Promise<AuthUser | null> {
+  try {
+    return await requireAuth(req);
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
@@ -87,9 +99,10 @@ export async function GET(
 
     const { searchParams } = new URL(req.url);
     const sort = (searchParams.get("sort") || "popular").trim();
+    const currentUser = await getOptionalUser(req);
 
     const sortClause: Record<string, string> = {
-      popular: "r.created_at DESC",
+      popular: "net_votes DESC, r.created_at DESC",
       newest: "r.created_at DESC",
       rating_high: "r.overall_rating DESC",
       rating_low: "r.overall_rating ASC",
@@ -110,12 +123,34 @@ export async function GET(
         r.workload_rating,
         r.attendance_rating,
         r.grading_rating,
-        r.created_at
+        r.created_at,
+        COALESCE(SUM(CASE WHEN rv.vote_value = 1 THEN 1 ELSE 0 END), 0) AS upvotes,
+        COALESCE(SUM(CASE WHEN rv.vote_value = -1 THEN 1 ELSE 0 END), 0) AS downvotes,
+        COALESCE(SUM(CASE WHEN rv.vote_value = 1 THEN 1 WHEN rv.vote_value = -1 THEN -1 ELSE 0 END), 0) AS net_votes,
+        (
+          SELECT my_vote.vote_value
+          FROM review_vote my_vote
+          WHERE my_vote.review_id = r.review_id AND my_vote.user_id = ?
+          LIMIT 1
+        ) AS user_vote
       FROM review r
-      WHERE r.course_id = ?
+      LEFT JOIN review_vote rv ON rv.review_id = r.review_id
+      WHERE r.course_id = ? AND r.deleted_at IS NULL
+      GROUP BY
+        r.review_id,
+        r.user_id,
+        r.semester_taken,
+        r.instructor_name,
+        r.overall_rating,
+        r.review_text,
+        r.exam_difficulty_rating,
+        r.workload_rating,
+        r.attendance_rating,
+        r.grading_rating,
+        r.created_at
       ORDER BY ${orderBy}
       `,
-      [courseId],
+      [currentUser?.userId ?? 0, courseId],
     );
 
     const reviews = (rows ?? []).map((row) => ({
@@ -129,9 +164,10 @@ export async function GET(
       workload_rating: Number(row.workload_rating),
       attendance_rating: Number(row.attendance_rating),
       grading_rating: Number(row.grading_rating),
-      upvotes: 0,
-      downvotes: 0,
-      net_votes: 0,
+      upvotes: Number(row.upvotes),
+      downvotes: Number(row.downvotes),
+      net_votes: Number(row.net_votes),
+      user_vote: row.user_vote == null ? null : Number(row.user_vote),
       created_at: row.created_at,
     }));
 

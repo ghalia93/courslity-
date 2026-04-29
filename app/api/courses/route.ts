@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
+import {
+  getSemesterFromCourseCode,
+  getYearFromCourseCode,
+} from "@/lib/courseCode";
 
 type CourseRow = RowDataPacket & {
   course_id: number;
@@ -41,35 +45,6 @@ type PublicCourse = {
     grading: number | null;
   };
 };
-
-function getCourseNumber(code: string): number | null {
-  const match = code.match(/\d+/);
-  if (!match) return null;
-
-  return parseInt(match[0], 10);
-}
-
-function getYearFromCourseCode(code: string): number | null {
-  const courseNumber = getCourseNumber(code);
-  if (courseNumber == null) return null;
-
-  if (courseNumber >= 200 && courseNumber < 300) return 1;
-  if (courseNumber >= 300 && courseNumber < 400) return 2;
-  if (courseNumber >= 400 && courseNumber < 500) return 3;
-  if (courseNumber >= 500 && courseNumber < 600) return 4;
-
-  return null;
-}
-
-function getSemesterFromCourseCode(code: string): string | null {
-  const courseNumber = getCourseNumber(code);
-  if (courseNumber == null) return null;
-
-  const lastTwoDigits = courseNumber % 100;
-
-  if (lastTwoDigits < 50) return "fall";
-  return "spring";
-}
 
 // get courses
 export async function GET(req: Request) {

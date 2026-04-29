@@ -1,31 +1,81 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowBigDown, ArrowBigUp } from "lucide-react";
 
 type ReviewFooterBarProps = {
-  initialVotes?: number;
+  reviewId: number;
+  initialUpvotes?: number;
+  initialDownvotes?: number;
+  initialUserVote?: number | null;
   timeAgo?: string;
+  onVoteChange?: (summary: {
+    upvotes: number;
+    downvotes: number;
+    net_votes: number;
+    user_vote: number | null;
+  }) => void;
 };
 
 export default function ReviewFooterBar({
-  initialVotes = 24,
+  reviewId,
+  initialUpvotes = 0,
+  initialDownvotes = 0,
+  initialUserVote = null,
   timeAgo = "2 weeks ago",
+  onVoteChange,
 }: ReviewFooterBarProps) {
-  const [vote, setVote] = useState<"up" | "down" | null>(null);
+  const [upvotes, setUpvotes] = useState(initialUpvotes);
+  const [downvotes, setDownvotes] = useState(initialDownvotes);
+  const [userVote, setUserVote] = useState(initialUserVote);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const votes = useMemo(() => {
-    if (vote === "up") return initialVotes + 1;
-    if (vote === "down") return initialVotes - 1;
-    return initialVotes;
-  }, [vote, initialVotes]);
+  useEffect(() => {
+    setUpvotes(initialUpvotes);
+    setDownvotes(initialDownvotes);
+    setUserVote(initialUserVote);
+    setError("");
+  }, [initialDownvotes, initialUpvotes, initialUserVote]);
 
-  function handleUpvote() {
-    setVote((prev) => (prev === "up" ? null : "up"));
-  }
+  const netVotes = upvotes - downvotes;
 
-  function handleDownvote() {
-    setVote((prev) => (prev === "down" ? null : "down"));
+  async function submitVote(vote: 1 | -1) {
+    if (saving) return;
+
+    setSaving(true);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/reviews/${reviewId}/vote`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vote }),
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.success) {
+        setError(data?.message ?? "Could not save vote");
+        return;
+      }
+
+      const summary = {
+        upvotes: Number(data.upvotes),
+        downvotes: Number(data.downvotes),
+        net_votes: Number(data.net_votes),
+        user_vote: data.user_vote == null ? null : Number(data.user_vote),
+      };
+
+      setUpvotes(summary.upvotes);
+      setDownvotes(summary.downvotes);
+      setUserVote(summary.user_vote);
+      onVoteChange?.(summary);
+    } catch {
+      setError("Could not save vote");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -34,28 +84,32 @@ export default function ReviewFooterBar({
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={handleUpvote}
-            className="transition active:scale-95"
+            onClick={() => submitVote(1)}
+            disabled={saving}
+            className="transition active:scale-95 disabled:opacity-50"
             aria-label="Upvote"
           >
             <ArrowBigUp
               className={`h-7 w-7 ${
-                vote === "up" ? "text-green-600" : "text-gray-400"
+                userVote === 1 ? "text-green-600" : "text-gray-400"
               }`}
             />
           </button>
 
-          <span className="text-base font-medium text-gray-700">{votes}</span>
+          <span className="text-base font-medium text-gray-700">
+            {netVotes}
+          </span>
 
           <button
             type="button"
-            onClick={handleDownvote}
-            className="transition active:scale-95"
+            onClick={() => submitVote(-1)}
+            disabled={saving}
+            className="transition active:scale-95 disabled:opacity-50"
             aria-label="Downvote"
           >
             <ArrowBigDown
               className={`h-7 w-7 ${
-                vote === "down" ? "text-gray-700" : "text-gray-400"
+                userVote === -1 ? "text-gray-700" : "text-gray-400"
               }`}
             />
           </button>
@@ -63,6 +117,7 @@ export default function ReviewFooterBar({
 
         <div className="text-base text-gray-500">{timeAgo}</div>
       </div>
+      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
     </div>
   );
 }

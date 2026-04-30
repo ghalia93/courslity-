@@ -983,7 +983,7 @@ export default function AdminCoursesPage() {
 
       {showFilters && (
         <div className="mt-3 p-4 rounded-xl border border-gray-200 bg-gray-50">
-          <div className="flex flex-wrap gap-3 items-end">
+          <div className="flex flex-wrap gap-4 items-end">
             <FilterSelect
               label="University"
               value={universityFilter}
@@ -1081,14 +1081,27 @@ export default function AdminCoursesPage() {
 
       {/* ── Desktop table ── */}
       <div className="hidden md:block mt-2 rounded-xl border border-gray-200 bg-white overflow-x-auto">
-        <table className="w-full text-sm table-fixed">
+        <table className="w-full min-w-[1520px] text-sm table-fixed">
+          <colgroup>
+            <col className="w-[210px]" />
+            <col className="w-[180px]" />
+            <col className="w-[150px]" />
+            <col className="w-[130px]" />
+            <col className="w-[90px]" />
+            <col className="w-[90px]" />
+            <col className="w-[180px]" />
+            <col className="w-[240px]" />
+            <col className="w-[90px]" />
+            <col className="w-[100px]" />
+            <col className="w-[100px]" />
+          </colgroup>
           <thead className="bg-gray-50 text-gray-500">
             <tr>
               <th className="text-left px-4 py-3 whitespace-nowrap">Course</th>
               <th className="text-left px-4 py-3 whitespace-nowrap">
                 University
               </th>
-              <th className="text-left px-4 py-3 whitespace-nowrap">Level</th>
+              <th className="text-left px-5 py-3 whitespace-nowrap">Level</th>
               <th className="text-left px-4 py-3 whitespace-nowrap">
                 Language
               </th>
@@ -1149,7 +1162,7 @@ export default function AdminCoursesPage() {
                       {course.university}
                     </p>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-gray-700">
+                  <td className="px-5 py-3 whitespace-nowrap text-gray-700">
                     {formatCourseLevel(course.level)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700">

@@ -3,6 +3,8 @@ import Link from "next/link";
 import CourseCard from "../../components/CourseCard";
 import HowItWorks from "../../components/HowItWorks";
 import FeedbackCarousel from "../../components/FeedbackCarousel";
+import { ArrowRight, BookOpen, Map } from "lucide-react";
+import type { Course } from "@/types/course";
 
 async function getRandomCourses() {
   try {
@@ -13,7 +15,7 @@ async function getRandomCourses() {
     );
     if (!res.ok) return [];
     const data = await res.json();
-    const courses: any[] = data.courses ?? [];
+    const courses: Course[] = data.courses ?? [];
 
     // Shuffle and return 2
     for (let i = courses.length - 1; i > 0; i--) {
@@ -34,28 +36,29 @@ export default async function Home() {
       <section className="mx-auto max-w-7xl">
         <Hero />
 
-        <Link
-          href="/courses"
-          className="mt-6 flex w-full items-center justify-between text-[#111827]"
-        >
-          <span className="text-xl lg:text-3xl font-extrabold tracking-tight">
-            Browse Courses
-          </span>
-
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 lg:h-7 lg:w-7 transition-transform duration-200 hover:translate-x-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={3}
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="mt-6 grid gap-3 md:grid-cols-2">
+          <Link
+            href="/courses"
+            className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-[#111827] transition hover:border-[#6155F5]"
           >
-            <path d="M5 12h14" />
-            <path d="M13 5l7 7-7 7" />
-          </svg>
-        </Link>
+            <span className="inline-flex items-center gap-2 text-xl font-extrabold tracking-tight lg:text-2xl">
+              <BookOpen size={22} className="text-[#6155F5]" />
+              Browse Courses
+            </span>
+            <ArrowRight className="h-6 w-6 transition-transform duration-200 hover:translate-x-1" />
+          </Link>
+
+          <Link
+            href="/roadmaps"
+            className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-[#111827] transition hover:border-[#6155F5]"
+          >
+            <span className="inline-flex items-center gap-2 text-xl font-extrabold tracking-tight lg:text-2xl">
+              <Map size={22} className="text-[#6155F5]" />
+              Explore Roadmaps
+            </span>
+            <ArrowRight className="h-6 w-6 transition-transform duration-200 hover:translate-x-1" />
+          </Link>
+        </div>
 
         <div className="mt-8 grid justify-center gap-8 sm:grid-cols-1 md:grid-cols-2">
           {courses.length > 0 ? (

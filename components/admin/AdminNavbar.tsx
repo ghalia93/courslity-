@@ -5,15 +5,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { isAdminRole } from "@/lib/roles";
 
 import {
   Globe,
   Building2,
   BookOpen,
+  Map,
   LayoutDashboard,
   Star,
   Users,
   MessageSquare,
+  Settings,
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
@@ -101,8 +104,7 @@ export default function AdminNavbar() {
 
   const displayName = user?.email?.split("@")[0] ?? "Admin";
   const avatarLetter = displayName.charAt(0).toUpperCase();
-  const canManageAcademicData =
-    user?.role === "admin" || user?.role === "super_admin";
+  const canManageAcademicData = isAdminRole(user?.role);
 
   const itemBase = `flex items-center gap-3 px-3 py-2 text-sm transition rounded-lg ${
     collapsed ? "justify-center" : ""
@@ -243,6 +245,18 @@ export default function AdminNavbar() {
                 <BookOpen size={18} />
                 {!collapsed && "Courses"}
               </Link>
+
+              <Link
+                href="/admin/roadmaps"
+                className={`${itemBase} ${
+                  isActive(pathname, "/admin/roadmaps")
+                    ? activePill
+                    : inactivePill
+                }`}
+              >
+                <Map size={18} />
+                {!collapsed && "Roadmaps"}
+              </Link>
             </>
           )}
 
@@ -274,6 +288,16 @@ export default function AdminNavbar() {
           >
             <MessageSquare size={18} />
             {!collapsed && "Feedback"}
+          </Link>
+
+          <Link
+            href="/admin/settings"
+            className={`${itemBase} ${
+              isActive(pathname, "/admin/settings") ? activePill : inactivePill
+            }`}
+          >
+            <Settings size={18} />
+            {!collapsed && "Settings"}
           </Link>
 
           <div className="pt-4 border-t border-gray-100 mt-2">
@@ -352,6 +376,18 @@ export default function AdminNavbar() {
                     <BookOpen size={18} className="shrink-0" />
                     Courses
                   </Link>
+
+                  <Link
+                    href="/admin/roadmaps"
+                    className={`${mobileItem} ${
+                      isActive(pathname, "/admin/roadmaps")
+                        ? activePill
+                        : inactivePill
+                    }`}
+                  >
+                    <Map size={18} className="shrink-0" />
+                    Roadmaps
+                  </Link>
                 </>
               )}
 
@@ -387,6 +423,18 @@ export default function AdminNavbar() {
               >
                 <MessageSquare size={18} className="shrink-0" />
                 Feedback
+              </Link>
+
+              <Link
+                href="/admin/settings"
+                className={`${mobileItem} ${
+                  isActive(pathname, "/admin/settings")
+                    ? activePill
+                    : inactivePill
+                }`}
+              >
+                <Settings size={18} className="shrink-0" />
+                Settings
               </Link>
 
               <div className="border-t border-gray-100 pt-3 mt-3">

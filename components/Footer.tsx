@@ -16,6 +16,7 @@ export default function Footer() {
             <nav className="flex flex-col gap-3">
               <NavLink href="/">Home</NavLink>
               <NavLink href="/courses">Browse</NavLink>
+              <NavLink href="/roadmaps">Roadmaps</NavLink>
               <NavLink href="/about">About</NavLink>
               <NavLink href="/faqs">FAQs</NavLink>
             </nav>

@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { normalizeRole } from "@/lib/roles";
+
+type LoginUserRow = RowDataPacket & {
+  user_id: number;
+  full_name: string;
+  email: string;
+  password: string;
+  role: string;
+};
 
 export async function POST(req: Request) {
   try {
@@ -32,7 +42,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const [rows]: any = await pool.query(
+    const [rows] = await pool.query<LoginUserRow[]>(
       "SELECT user_id, full_name, email, password, role FROM `user` WHERE email = ? AND deleted_at IS NULL LIMIT 1",
       [email]
     );
@@ -45,6 +55,7 @@ export async function POST(req: Request) {
     }
 
     const user = rows[0];
+    const role = normalizeRole(user.role);
 
     const passwordMatches = await bcrypt.compare(password, user.password);
 
@@ -68,7 +79,7 @@ export async function POST(req: Request) {
       {
         userId: user.user_id,
         email: user.email,
-        role: user.role,
+        role,
       },
       secret,
       { expiresIn: "2h" }
@@ -81,7 +92,7 @@ export async function POST(req: Request) {
         id: user.user_id,
         fullName: user.full_name,
         email: user.email,
-        role: user.role,
+        role,
       },
     });
 
@@ -94,14 +105,14 @@ export async function POST(req: Request) {
     });
 
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("LOGIN ERROR:", error);
 
     return NextResponse.json(
       {
         success: false,
         message: "Login failed",
-        error: error?.message || String(error),
+        error: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );

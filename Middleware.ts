@@ -29,8 +29,15 @@ export async function middleware(req: NextRequest) {
     try {
       const { payload } = await jwtVerify(token, encodedSecret);
 
-      const role = (payload as { role?: string }).role;
-      const isAdminRole = role === "admin" || role === "super_admin";
+      const role = String((payload as { role?: string }).role ?? "")
+        .trim()
+        .toLowerCase();
+      const isAdminRole =
+        role === "admin" ||
+        role === "super_admin" ||
+        role === "administrator" ||
+        role === "university_admin" ||
+        role === "university admin";
       if (isAdminRoute && !isAdminRole) {
         return NextResponse.redirect(new URL("/", req.url));
       }

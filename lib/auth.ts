@@ -2,20 +2,19 @@ import { NextRequest } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import jwt from "jsonwebtoken";
 import pool from "@/db";
+import {
+  isAdminRole,
+  isUniversityAdminRole,
+  normalizeRole,
+} from "@/lib/roles";
+
+export { isAdminRole, isUniversityAdminRole, normalizeRole };
 
 export type AuthUser = {
   userId: number;
   email: string;
   role: string;
 };
-
-export function isAdminRole(role: string | undefined | null) {
-  return role === "admin" || role === "super_admin";
-}
-
-export function isUniversityAdminRole(role: string | undefined | null) {
-  return role === "super_admin";
-}
 
 type AuthRow = RowDataPacket & {
   user_id: number;
@@ -57,7 +56,7 @@ export async function requireAuth(req: NextRequest): Promise<AuthUser> {
     return {
       userId: user.user_id,
       email: user.email,
-      role: user.role,
+      role: normalizeRole(user.role),
     };
   } catch {
     throw new Error("UNAUTHORIZED");

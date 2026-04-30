@@ -28,6 +28,7 @@ interface FiltersPanelProps {
   levels: LevelFilterOption[];
   onApply?: () => void;
   onReset?: () => void;
+  showLanguage?: boolean;
 }
 
 function uniqueSorted(values: string[]) {
@@ -74,6 +75,7 @@ export default function FiltersPanel({
   levels,
   onApply,
   onReset,
+  showLanguage = true,
 }: FiltersPanelProps) {
   const [draftFilters, setDraftFilters] = useState<Filters>(filters);
 
@@ -190,19 +192,21 @@ export default function FiltersPanel({
               ))}
             </select>
 
-            <select
-              name="language"
-              value={draftFilters.language}
-              onChange={handleDraftChange}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-[#6155F5] focus:outline-none lg:w-auto"
-            >
-              <option value="">Any Language</option>
-              {options.languages.map((language) => (
-                <option key={language} value={language}>
-                  {language}
-                </option>
-              ))}
-            </select>
+            {showLanguage && (
+              <select
+                name="language"
+                value={draftFilters.language}
+                onChange={handleDraftChange}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-[#6155F5] focus:outline-none lg:w-auto"
+              >
+                <option value="">Any Language</option>
+                {options.languages.map((language) => (
+                  <option key={language} value={language}>
+                    {language}
+                  </option>
+                ))}
+              </select>
+            )}
 
             <select
               name="level"

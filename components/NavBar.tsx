@@ -7,6 +7,7 @@ import NavLink from "./NavLink";
 import Button from "./Button";
 import { User, LogOut, ChevronDown, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { isAdminRole } from "@/lib/roles";
 
 export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -56,6 +57,7 @@ export default function NavBar() {
           <div className="hidden lg:flex gap-6">
             <NavLink href="/">Home</NavLink>
             <NavLink href="/courses">Courses</NavLink>
+            <NavLink href="/roadmaps">Roadmaps</NavLink>
             <NavLink href="/about">About</NavLink>
             <NavLink href="/faqs">FAQs</NavLink>
           </div>
@@ -110,7 +112,7 @@ export default function NavBar() {
                       View Account
                     </Link>
 
-                    {(user.role === "admin" || user.role === "super_admin") && (
+                    {isAdminRole(user.role) && (
                       <Link
                         href="/admin"
                         className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#6155F5] transition-colors"
@@ -153,6 +155,9 @@ export default function NavBar() {
           </div>
           <div onClick={() => setMenuOpen(false)}>
             <NavLink href="/courses">Courses</NavLink>
+          </div>
+          <div onClick={() => setMenuOpen(false)}>
+            <NavLink href="/roadmaps">Roadmaps</NavLink>
           </div>
           <div onClick={() => setMenuOpen(false)}>
             <NavLink href="/about">About</NavLink>

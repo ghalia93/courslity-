@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, ChangeEvent } from "react";
+import {
+  Suspense,
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  ChangeEvent,
+} from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,7 +38,7 @@ function uniqueSorted(values: string[]) {
   );
 }
 
-export default function CoursesPage() {
+function CoursesPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -237,5 +244,21 @@ export default function CoursesPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function CoursesPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-white px-4 py-10 md:px-8">
+          <div className="mx-auto max-w-6xl text-center text-sm text-gray-400">
+            Loading courses...
+          </div>
+        </main>
+      }
+    >
+      <CoursesPageContent />
+    </Suspense>
   );
 }

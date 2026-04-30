@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
-import { Plus, Search, Shield, UserX } from "lucide-react";
+import {
+  BadgeCheck,
+  Plus,
+  Search,
+  Shield,
+  UserCheck,
+  UserX,
+} from "lucide-react";
 import AddAdminCard, { type AdminUser } from "@/components/admin/AddAdminCard";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import { useAuth } from "@/context/AuthContext";
@@ -15,6 +22,7 @@ type UserRow = {
   role: string;
   joined: string;
   active: boolean;
+  verified: boolean;
   protected?: boolean;
 };
 
@@ -27,6 +35,7 @@ type ApiResponse = {
     role: string;
     joined: string;
     active?: boolean;
+    verified?: boolean;
     isProtected?: boolean;
   }[];
   pagination: {
@@ -92,6 +101,7 @@ export default function AdminUsersPage() {
         role: u.role || "admin",
         joined: dateOnly(u.joined),
         active: u.active !== false,
+        verified: !!u.verified,
         protected: !!u.isProtected,
       }));
 
@@ -124,26 +134,50 @@ export default function AdminUsersPage() {
     setPendingDelete(u);
   }
 
+  async function updateUserAction(
+    userId: number,
+    action: "verify" | "activate" | "deactivate",
+  ) {
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      throw new Error(data?.message || `Failed to ${action} user`);
+    }
+
+    loadUsers(page, debouncedQ);
+  }
+
   async function confirmDelete() {
     if (!pendingDelete) return;
 
     try {
-      const res = await fetch(`/api/admin/users/${pendingDelete.id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        alert(data?.message || "Failed to deactivate user");
-        return;
-      }
-
+      await updateUserAction(pendingDelete.id, "deactivate");
       setPendingDelete(null);
-      loadUsers(page, debouncedQ);
-    } catch {
-      alert("Failed to deactivate user");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to deactivate user");
+    }
+  }
+
+  async function handleVerify(u: UserRow) {
+    try {
+      await updateUserAction(u.id, "verify");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to verify user");
+    }
+  }
+
+  async function handleActivate(u: UserRow) {
+    try {
+      await updateUserAction(u.id, "activate");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to activate user");
     }
   }
 
@@ -257,6 +291,7 @@ export default function AdminUsersPage() {
               <th className="text-left px-4 py-3">Email</th>
               <th className="text-left px-4 py-3">Role</th>
               <th className="text-left px-4 py-3">Status</th>
+              <th className="text-left px-4 py-3">Verified</th>
               <th className="text-left px-4 py-3">Joined</th>
               <th className="text-right px-4 py-3">Actions</th>
             </tr>
@@ -265,7 +300,7 @@ export default function AdminUsersPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-gray-500">
+                <td colSpan={7} className="px-4 py-6 text-gray-500">
                   Loading...
                 </td>
               </tr>
@@ -285,6 +320,9 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-3">
                     <StatusPill active={u.active} />
                   </td>
+                  <td className="px-4 py-3">
+                    <VerifiedPill verified={u.verified} />
+                  </td>
                   <td className="px-4 py-3 text-gray-700">{u.joined}</td>
                   <td className="px-4 py-3 text-right">
                     {u.protected ? (
@@ -292,15 +330,33 @@ export default function AdminUsersPage() {
                         <Shield size={16} /> Protected
                       </span>
                     ) : !u.active ? (
-                      <span className="text-xs text-gray-400">Deactivated</span>
-                    ) : (
                       <button
-                        onClick={() => handleDelete(u)}
-                        className="hover:text-red-500"
-                        aria-label="Deactivate user"
+                        onClick={() => handleActivate(u)}
+                        className="inline-flex items-center gap-1 text-xs text-green-600 transition hover:text-green-700"
                       >
-                        <UserX size={16} />
+                        <UserCheck size={16} />
+                        Activate
                       </button>
+                    ) : (
+                      <div className="flex justify-end gap-3">
+                        {!u.verified && (
+                          <button
+                            onClick={() => handleVerify(u)}
+                            className="inline-flex items-center gap-1 text-xs text-[#6155F5] transition hover:text-[#4f45d4]"
+                          >
+                            <BadgeCheck size={16} />
+                            Verify
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDelete(u)}
+                          className="inline-flex items-center gap-1 text-xs text-red-500 transition hover:text-red-600"
+                          aria-label="Deactivate user"
+                        >
+                          <UserX size={16} />
+                          Deactivate
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -339,15 +395,32 @@ export default function AdminUsersPage() {
                       <Shield size={16} /> Protected
                     </span>
                   ) : !u.active ? (
-                    <span className="text-xs text-gray-400">Deactivated</span>
-                  ) : (
                     <button
-                      onClick={() => handleDelete(u)}
-                      className="text-gray-400 hover:text-red-500 transition"
-                      aria-label="Deactivate user"
+                      onClick={() => handleActivate(u)}
+                      className="inline-flex items-center gap-1 text-xs text-green-600 transition hover:text-green-700"
                     >
-                      <UserX size={18} />
+                      <UserCheck size={18} />
+                      Activate
                     </button>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      {!u.verified && (
+                        <button
+                          onClick={() => handleVerify(u)}
+                          className="text-[#6155F5] transition hover:text-[#4f45d4]"
+                          aria-label="Verify user"
+                        >
+                          <BadgeCheck size={18} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDelete(u)}
+                        className="text-gray-400 hover:text-red-500 transition"
+                        aria-label="Deactivate user"
+                      >
+                        <UserX size={18} />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -356,6 +429,7 @@ export default function AdminUsersPage() {
                 <div className="flex items-center gap-2">
                   <RolePill role={u.role} />
                   <StatusPill active={u.active} />
+                  <VerifiedPill verified={u.verified} />
                 </div>
                 <span className="text-xs text-gray-500">
                   Joined: {u.joined}
@@ -430,6 +504,21 @@ function StatusPill({ active }: { active: boolean }) {
   ) : (
     <span className={`${base} bg-gray-100 text-gray-600 border-gray-200`}>
       Deactivated
+    </span>
+  );
+}
+
+function VerifiedPill({ verified }: { verified: boolean }) {
+  const base =
+    "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border";
+
+  return verified ? (
+    <span className={`${base} bg-emerald-50 text-emerald-700 border-emerald-100`}>
+      Verified
+    </span>
+  ) : (
+    <span className={`${base} bg-amber-50 text-amber-700 border-amber-100`}>
+      Pending
     </span>
   );
 }

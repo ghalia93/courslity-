@@ -15,6 +15,7 @@ type UserListRow = RowDataPacket & {
   role: string;
   created_at: string | Date;
   deleted_at: string | Date | null;
+  email_verified_at: string | Date | null;
   university_name: string | null;
 };
 
@@ -60,6 +61,7 @@ export async function GET(req: NextRequest) {
         u.role,
         u.created_at,
         u.deleted_at,
+        u.email_verified_at,
         uni.name AS university_name
       FROM user u
       LEFT JOIN university uni 
@@ -79,6 +81,7 @@ export async function GET(req: NextRequest) {
       role: user.role,
       joined: user.created_at,
       active: !user.deleted_at,
+      verified: !!user.email_verified_at,
       isProtected: !user.deleted_at && user.role === "admin",
     }));
 

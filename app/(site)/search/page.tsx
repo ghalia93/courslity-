@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { Suspense, useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { SlidersHorizontal } from "lucide-react";
 import Searchbar from "@/components/Searchbar";
 import CourseCard from "@/components/CourseCard";
 import FiltersPanel from "@/components/FiltersPanel";
@@ -30,7 +31,7 @@ function uniqueSorted(values: string[]) {
   );
 }
 
-export default function SearchPage() {
+function SearchPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -147,20 +148,7 @@ export default function SearchPage() {
                         p-2.5 hover:bg-gray-50 transition"
             onClick={() => setShowFilters((prev) => !prev)}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-gray-700"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 12.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 019 17V12.414L3.293 6.707A1 1 0 013 6V4z"
-              />
-            </svg>
+            <SlidersHorizontal className="h-5 w-5 text-gray-700" />
           </button>
         </div>
 
@@ -205,5 +193,21 @@ export default function SearchPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-white px-4 py-8 md:px-8">
+          <div className="mx-auto max-w-6xl text-center text-sm text-gray-400">
+            Loading search...
+          </div>
+        </main>
+      }
+    >
+      <SearchPageContent />
+    </Suspense>
   );
 }

@@ -11,6 +11,12 @@ type Testimonial = {
   createdAt: string;
 };
 
+type TestimonialsApiResponse = {
+  success: boolean;
+  message?: string;
+  testimonials?: Testimonial[];
+};
+
 export default function TestimonialsSection({ limit = 8 }: { limit?: number }) {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,15 +32,17 @@ export default function TestimonialsSection({ limit = 8 }: { limit?: number }) {
           cache: "no-store",
         });
 
-        const data = await res.json();
+        const data = (await res.json()) as TestimonialsApiResponse;
 
         if (!res.ok || !data?.success) {
           throw new Error(data?.message || "Failed to fetch testimonials");
         }
 
         setTestimonials(data.testimonials || []);
-      } catch (e: any) {
-        setError(e.message || "Failed to fetch testimonials");
+      } catch (e: unknown) {
+        setError(
+          e instanceof Error ? e.message : "Failed to fetch testimonials",
+        );
       } finally {
         setLoading(false);
       }

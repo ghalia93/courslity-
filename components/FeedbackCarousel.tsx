@@ -12,6 +12,19 @@ type Feedback = {
   createdAt?: string;
 };
 
+type TestimonialApiItem = {
+  text: string;
+  username: string;
+  rating: number | string;
+  createdAt?: string;
+};
+
+type TestimonialsApiResponse = {
+  success: boolean;
+  message?: string;
+  testimonials?: TestimonialApiItem[];
+};
+
 function QuoteCard({ quote, user, rating }: Feedback) {
   return (
     <div
@@ -54,13 +67,13 @@ export default function FeedbackCarousel() {
         const res = await fetch("/api/testimonials?limit=12", {
           cache: "no-store",
         });
-        const data = await res.json();
+        const data = (await res.json()) as TestimonialsApiResponse;
 
         if (!res.ok || !data?.success) {
           throw new Error(data?.message || "Failed to fetch testimonials");
         }
 
-        const mapped: Feedback[] = (data.testimonials || []).map((t: any) => ({
+        const mapped: Feedback[] = (data.testimonials || []).map((t) => ({
           quote: t.text,
           user: t.username,
           rating: Number(t.rating) || 0,
@@ -68,8 +81,10 @@ export default function FeedbackCarousel() {
         }));
 
         setFeedbacks(mapped);
-      } catch (e: any) {
-        setError(e.message || "Failed to fetch testimonials");
+      } catch (e: unknown) {
+        setError(
+          e instanceof Error ? e.message : "Failed to fetch testimonials",
+        );
       } finally {
         setLoading(false);
       }

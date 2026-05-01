@@ -48,9 +48,13 @@ export default function AboutPage() {
             wouldRecommendPercentage: Number(data.wouldRecommendPercentage || 0),
           });
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error(e);
-        if (!cancelled) setStatsError(e?.message || "Failed to fetch stats");
+        if (!cancelled) {
+          setStatsError(
+            e instanceof Error ? e.message : "Failed to fetch stats",
+          );
+        }
       } finally {
         if (!cancelled) setLoadingStats(false);
       }

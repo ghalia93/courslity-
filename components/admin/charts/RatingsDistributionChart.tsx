@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -53,10 +54,16 @@ export default function RatingsDistributionChart({
 }: {
   data?: CourseRatingPoint[];
 }) {
+  const [mounted, setMounted] = useState(false);
   const chartData = [...data].map((point) => ({
     ...point,
     courseLabel: point.code,
   }));
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setMounted(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   return (
     <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
@@ -68,6 +75,9 @@ export default function RatingsDistributionChart({
       </p>
 
       <div className="h-64 w-full">
+        {!mounted ? (
+          <div className="h-full w-full rounded-lg bg-gray-50" />
+        ) : (
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
@@ -115,6 +125,7 @@ export default function RatingsDistributionChart({
             />
           </LineChart>
         </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
 import pool from "@/db";
+
+type ReviewIdRow = RowDataPacket & {
+  review_id: number;
+};
 
 /**
  * DELETE /api/admin/reviews/[id]
@@ -28,7 +33,7 @@ export async function DELETE(
     }
 
     // Check the review exists and isn't already deleted
-    const [rows]: any = await pool.query(
+    const [rows] = await pool.query<ReviewIdRow[]>(
       "SELECT review_id FROM review WHERE review_id = ? AND deleted_at IS NULL",
       [reviewId],
     );
@@ -50,7 +55,7 @@ export async function DELETE(
       success: true,
       message: "Review deleted successfully",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("DELETE REVIEW ERROR:", error);
     return NextResponse.json(
       { success: false, message: "UNAUTHORIZED" },

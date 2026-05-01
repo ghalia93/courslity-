@@ -22,10 +22,14 @@ export async function POST(req: Request) {
       hash,
       matches,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("HASH ERROR:", error);
     return NextResponse.json(
-      { success: false, message: "Hashing failed", error: error?.message },
+      {
+        success: false,
+        message: "Hashing failed",
+        error: error instanceof Error ? error.message : undefined,
+      },
       { status: 500 }
     );
   }

@@ -34,6 +34,15 @@ type ReviewRow = {
   created_at: string;
 };
 
+type ReviewsApiResponse = {
+  success: boolean;
+  message?: string;
+  reviews?: ReviewRow[];
+  pagination?: {
+    total?: number;
+  };
+};
+
 type SortKey =
   | "newest"
   | "oldest"
@@ -295,21 +304,21 @@ export default function AdminReviewsPage() {
         credentials: "include",
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as ReviewsApiResponse;
 
       if (!res.ok || !data?.success) {
         throw new Error(data?.message || "Failed to fetch reviews");
       }
 
-      const mapped: ReviewRow[] = (data.reviews || []).map((r: any) => ({
+      const mapped: ReviewRow[] = (data.reviews || []).map((r) => ({
         ...r,
         review_id: String(r.review_id),
       }));
 
       setReviews(mapped);
       setTotal(data.pagination?.total ?? 0);
-    } catch (e: any) {
-      setError(e?.message || "Something went wrong");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
       setReviews([]);
       setTotal(0);
     } finally {
@@ -355,7 +364,7 @@ export default function AdminReviewsPage() {
         credentials: "include",
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as { success: boolean; message?: string };
       if (!res.ok || !data?.success) {
         throw new Error(data?.message || "Failed to delete review");
       }
@@ -366,8 +375,8 @@ export default function AdminReviewsPage() {
       const isLastItemOnPage = reviews.length === 1 && page > 1;
       if (isLastItemOnPage) setPage((p) => p - 1);
       else fetchReviews();
-    } catch (e: any) {
-      alert(e?.message || "Delete failed");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Delete failed");
     }
   }
 

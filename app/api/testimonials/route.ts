@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
+
+type FeedbackTestimonialRow = RowDataPacket & {
+  feedback_id: number;
+  message: string;
+  user_id: number | null;
+  rating: number | string;
+  created_at: string | Date;
+};
 
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const limit = Math.min(Number(url.searchParams.get("limit") || 8), 20);
 
-    const [rows]: any = await pool.query(
+    const [rows] = await pool.query<FeedbackTestimonialRow[]>(
       `
       SELECT feedback_id, message, user_id, rating, created_at
       FROM feedback
@@ -17,7 +26,7 @@ export async function GET(req: Request) {
       [limit]
     );
 
-    const testimonials = rows.map((r: any) => ({
+    const testimonials = rows.map((r) => ({
       feedbackId: r.feedback_id,
       text: r.message,
       username: r.user_id ? `student#${r.user_id}` : "anonymous",
@@ -30,10 +39,16 @@ export async function GET(req: Request) {
       count: testimonials.length,
       testimonials,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("TESTIMONIALS ERROR:", error);
     return NextResponse.json(
-      { success: false, message: error?.message || "Failed to fetch testimonials" },
+      {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch testimonials",
+      },
       { status: 500 }
     );
   }

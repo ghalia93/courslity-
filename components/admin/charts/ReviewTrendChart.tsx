@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -13,10 +14,17 @@ import {
 type ChartPoint = { date: string; count: number };
 
 export default function ReviewsTrendChart({ data = [] }: { data?: ChartPoint[] }) {
+  const [mounted, setMounted] = useState(false);
   const chartData = data.map((d) => ({
     date: d.date,
     reviews: d.count,
   }));
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setMounted(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
       <h3 className="text-sm font-semibold mb-4 text-gray-700">
@@ -24,6 +32,9 @@ export default function ReviewsTrendChart({ data = [] }: { data?: ChartPoint[] }
       </h3>
 
       <div className="h-64 w-full">
+        {!mounted ? (
+          <div className="h-full w-full rounded-lg bg-gray-50" />
+        ) : (
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
@@ -47,6 +58,7 @@ export default function ReviewsTrendChart({ data = [] }: { data?: ChartPoint[] }
             <Bar dataKey="reviews" fill="#6155F5" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

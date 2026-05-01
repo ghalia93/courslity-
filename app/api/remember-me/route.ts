@@ -52,8 +52,8 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (error: any) {
-    if (error.message === "UNAUTHORIZED") {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json(
         { success: false, message: "You must be logged in to use Remember Me" },
         { status: 401 },
@@ -62,7 +62,11 @@ export async function POST(req: NextRequest) {
 
     console.error("REMEMBER ME ERROR:", error);
     return NextResponse.json(
-      { success: false, message: "Request failed", error: error?.message },
+      {
+        success: false,
+        message: "Request failed",
+        error: error instanceof Error ? error.message : undefined,
+      },
       { status: 500 },
     );
   }

@@ -45,7 +45,7 @@ export default function LoginForm() {
 
       await refresh();
       router.push("/");
-    } catch (error) {
+    } catch {
       setErrorMsg("Network error. Please try again.");
     } finally {
       setLoading(false);

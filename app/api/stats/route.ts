@@ -1,5 +1,6 @@
 //About page statistics
 import { NextResponse } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
 
 type AboutStatsResponse = {
@@ -9,9 +10,16 @@ type AboutStatsResponse = {
   wouldRecommendPercentage: number;
 };
 
+type AboutStatsRow = RowDataPacket & {
+  totalReviews: number | string;
+  totalStudents: number | string;
+  totalUniversities: number | string;
+  wouldRecommendPercentage: number | string;
+};
+
 export async function GET() {
   try {
-    const [[stats]]: any = await pool.query(`
+    const [rows] = await pool.query<AboutStatsRow[]>(`
       SELECT
         (SELECT COUNT(*) FROM review) AS totalReviews,
 
@@ -34,6 +42,7 @@ export async function GET() {
 
       FROM review;
     `);
+    const stats = rows[0];
 
     const response: AboutStatsResponse = {
       totalReviews: Number(stats?.totalReviews || 0),
@@ -43,10 +52,10 @@ export async function GET() {
     };
 
     return NextResponse.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
     return NextResponse.json(
-      { message: error.message },
+      { message: error instanceof Error ? error.message : "Failed to load stats" },
       { status: 500 }
     );
   }

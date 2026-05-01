@@ -1,6 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
 import pool from "@/db";
+
+type ReviewQueryParam = string | number;
+
+type CountRow = RowDataPacket & {
+  total: number;
+};
+
+type AdminReviewRow = RowDataPacket & {
+  review_id: number;
+  reviewer_name: string;
+  reviewer_email: string;
+  course_code: string;
+  course_title: string;
+  university: string;
+  department: string;
+  semester_taken: string;
+  review_text: string;
+  instructor_name: string;
+  overall_rating: number | string;
+  grading_rating: number | string;
+  workload_rating: number | string;
+  attendance_rating: number | string;
+  exam_difficulty_rating: number | string;
+  upvotes: number | string;
+  downvotes: number | string;
+  created_at: string;
+};
 
 /**
  * GET /api/admin/reviews
@@ -40,7 +68,7 @@ export async function GET(req: NextRequest) {
 
     // Build dynamic WHERE conditions
     const conditions: string[] = ["r.deleted_at IS NULL"];
-    const params: any[] = [];
+    const params: ReviewQueryParam[] = [];
 
     if (q) {
       conditions.push(`(
@@ -91,7 +119,7 @@ export async function GET(req: NextRequest) {
     const orderBy = sortClause[sort] ?? "r.created_at DESC";
 
     // Total count
-    const [countRows]: any = await pool.query(
+    const [countRows] = await pool.query<CountRow[]>(
       `SELECT COUNT(*) AS total
         FROM review r
         JOIN \`user\`    u   ON u.user_id       = r.user_id
@@ -105,7 +133,7 @@ export async function GET(req: NextRequest) {
     const total = countRows[0].total;
 
     // Data query — aggregate vote counts inline
-    const [rows]: any = await pool.query(
+    const [rows] = await pool.query<AdminReviewRow[]>(
       `SELECT
         r.review_id,
         u.full_name                                        AS reviewer_name,
@@ -148,7 +176,7 @@ export async function GET(req: NextRequest) {
       reviews: rows,
       pagination: { page, limit, total },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("GET REVIEWS ERROR:", error);
     return NextResponse.json(
       { success: false, message: "UNAUTHORIZED" },

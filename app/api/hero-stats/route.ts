@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
 
 export interface HeroStatsResponse {
@@ -6,16 +7,20 @@ export interface HeroStatsResponse {
   courses: number;
 }
 
+type CountRow = RowDataPacket & {
+  count: number;
+};
+
 export async function GET() {
   try {
-    const [[uniRows], [courseRows]] = (await Promise.all([
-      pool.query(
+    const [[uniRows], [courseRows]] = await Promise.all([
+      pool.query<CountRow[]>(
         "SELECT COUNT(*) AS count FROM `university` WHERE is_active = 1",
       ),
-      pool.query(
+      pool.query<CountRow[]>(
         "SELECT COUNT(*) AS count FROM `course` WHERE deleted_at IS NULL",
       ),
-    ])) as any;
+    ]);
 
     const data: HeroStatsResponse = {
       universities: uniRows[0].count,

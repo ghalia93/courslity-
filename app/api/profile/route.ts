@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
 import { requireAuth } from "@/lib/auth"; 
+
+type ProfileRow = RowDataPacket & {
+  user_id: number;
+  full_name: string;
+  email: string;
+  university_name: string | null;
+};
 
 export async function GET(req: NextRequest) {
   try {
     const user = await requireAuth(req);
 
     // Fetch full profile from DB
-    const [rows]: any = await pool.query(
+    const [rows] = await pool.query<ProfileRow[]>(
       `
       SELECT 
         u.user_id,

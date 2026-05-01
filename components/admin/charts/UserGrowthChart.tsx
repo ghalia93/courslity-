@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -13,12 +14,22 @@ import {
 type ChartPoint = { date: string; count: number };
 
 export default function UserGrowthChart({ data = [] }: { data?: ChartPoint[] }) {
+  const [mounted, setMounted] = useState(false);
   const chartData = data.map((d) => ({ date: d.date, users: d.count }));
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setMounted(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
       <h3 className="text-sm font-semibold mb-4 text-gray-700">User Growth</h3>
 
       <div className="h-64 w-full">
+        {!mounted ? (
+          <div className="h-full w-full rounded-lg bg-gray-50" />
+        ) : (
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
@@ -59,6 +70,7 @@ export default function UserGrowthChart({ data = [] }: { data?: ChartPoint[] }) 
             />
           </LineChart>
         </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

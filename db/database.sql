@@ -248,7 +248,7 @@ CREATE TABLE `feedback` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `password_reset_token` (
-  `user_id`    INT          NOT NULL,
+  `user_id`    INT UNSIGNED NOT NULL,
   `token`      TEXT         NOT NULL,          -- The raw JWT (can exceed 255 chars)
   `expires_at` DATETIME     NOT NULL,
   `used_at`    DATETIME     DEFAULT NULL,       -- Set when consumed; NULL = still valid
@@ -258,7 +258,7 @@ CREATE TABLE IF NOT EXISTS `password_reset_token` (
   CONSTRAINT `fk_prt_user`
     FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`)
     ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 

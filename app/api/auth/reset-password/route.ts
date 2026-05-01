@@ -1,7 +1,20 @@
 import { NextResponse } from "next/server";
+import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { ensurePasswordResetTable } from "@/lib/passwordReset";
+
+type ResetTokenRow = RowDataPacket & {
+  token: string;
+  expires_at: string | Date;
+  used_at: string | Date | null;
+  is_expired: number;
+};
+
+type UserIdRow = RowDataPacket & {
+  user_id: number;
+};
 
 /**
  * POST /api/auth/reset-password
@@ -65,9 +78,11 @@ export async function POST(req: Request) {
       );
     }
 
+    await ensurePasswordResetTable();
+
     // 3) Look up the stored token record
-    const [rows]: any = await pool.query(
-      `SELECT token, expires_at, used_at
+    const [rows] = await pool.query<ResetTokenRow[]>(
+      `SELECT token, expires_at, used_at, expires_at < NOW() AS is_expired
         FROM password_reset_token
         WHERE user_id = ?
         LIMIT 1`,
@@ -83,7 +98,7 @@ export async function POST(req: Request) {
 
     const record = rows[0];
 
-    const [userRows]: any = await pool.query(
+    const [userRows] = await pool.query<UserIdRow[]>(
       "SELECT user_id FROM `user` WHERE user_id = ? AND deleted_at IS NULL LIMIT 1",
       [payload.userId],
     );
@@ -104,7 +119,7 @@ export async function POST(req: Request) {
     }
 
     // 5) Ensure it hasn't expired in the DB (double-check beyond JWT expiry)
-    if (new Date(record.expires_at) < new Date()) {
+    if (Number(record.is_expired) === 1) {
       return NextResponse.json(
         {
           success: false,
@@ -128,11 +143,9 @@ export async function POST(req: Request) {
       );
 
       // Mark the reset token as used so it can't be replayed
-      const usedAt = new Date().toISOString().slice(0, 19).replace("T", " ");
-
       await conn.query(
-        "UPDATE password_reset_token SET used_at = ? WHERE user_id = ?",
-        [usedAt, payload.userId],
+        "UPDATE password_reset_token SET used_at = NOW() WHERE user_id = ?",
+        [payload.userId],
       );
 
       await conn.commit();
@@ -147,10 +160,14 @@ export async function POST(req: Request) {
       success: true,
       message: "Password has been successfully reset",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("RESET PASSWORD ERROR:", error);
     return NextResponse.json(
-      { success: false, message: "Reset failed", error: error?.message },
+      {
+        success: false,
+        message: "Reset failed",
+        error: error instanceof Error ? error.message : undefined,
+      },
       { status: 500 },
     );
   }

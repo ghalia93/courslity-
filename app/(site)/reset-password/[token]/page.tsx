@@ -5,6 +5,11 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
+type ResetPasswordResponse = {
+  success: boolean;
+  message?: string;
+};
+
 export default function ResetPasswordPage() {
   const { token } = useParams();
   const router = useRouter();
@@ -31,6 +36,11 @@ export default function ResetPasswordPage() {
     try {
       setError("");
       setLoading(true);
+      const resetToken = Array.isArray(token) ? token[0] : token;
+
+      if (!resetToken) {
+        throw new Error("Invalid reset link.");
+      }
 
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
@@ -38,18 +48,24 @@ export default function ResetPasswordPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          token,
+          token: resetToken,
           password,
         }),
       });
 
-      if (!res.ok) {
-        throw new Error("Reset failed");
+      const data = (await res.json().catch(() => null)) as
+        | ResetPasswordResponse
+        | null;
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Reset failed");
       }
 
       setSuccess(true);
-    } catch (err) {
-      setError("Invalid or expired reset link.");
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Invalid or expired reset link.",
+      );
     } finally {
       setLoading(false);
     }

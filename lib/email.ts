@@ -1,10 +1,36 @@
 import { Resend } from "resend";
 // npm install resend --legacy-peer-deps
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+export class EmailConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EmailConfigurationError";
+  }
+}
 
-const FROM_ADDRESS = process.env.EMAIL_FROM ?? "noreply@yourdomain.com";
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? "UniPortal";
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+
+  if (!apiKey) {
+    throw new EmailConfigurationError(
+      "RESEND_API_KEY is missing. Add it to .env.local to send password reset emails.",
+    );
+  }
+
+  return new Resend(apiKey);
+}
+
+function getFromAddress() {
+  return process.env.EMAIL_FROM?.trim() || "noreply@yourdomain.com";
+}
+
+function getAppName() {
+  return process.env.NEXT_PUBLIC_APP_NAME?.trim() || "UniPortal";
+}
+
+export function isEmailConfigured() {
+  return Boolean(process.env.RESEND_API_KEY?.trim());
+}
 
 interface SendPasswordResetEmailOptions {
   to: string;
@@ -24,13 +50,16 @@ export async function sendPasswordResetEmail({
   to,
   resetUrl,
 }: SendPasswordResetEmailOptions): Promise<void> {
+  const resend = getResendClient();
+  const appName = getAppName();
+
   const { error } = await resend.emails.send({
-    from: FROM_ADDRESS,
+    from: getFromAddress(),
     to,
-    subject: `Reset your ${APP_NAME} password`,
-    html: buildResetEmailHtml({ resetUrl, appName: APP_NAME }),
+    subject: `Reset your ${appName} password`,
+    html: buildResetEmailHtml({ resetUrl, appName }),
     // Plain-text fallback for email clients that don't render HTML
-    text: buildResetEmailText({ resetUrl, appName: APP_NAME }),
+    text: buildResetEmailText({ resetUrl, appName }),
   });
 
   if (error) {

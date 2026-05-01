@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BookOpen, Building2, GraduationCap, RotateCcw } from "lucide-react";
@@ -21,6 +22,10 @@ type RoadmapResponse = {
     years: number[];
   };
 };
+
+function getCourseSlug(code: string) {
+  return code.trim().toLowerCase().replace(/\s+/g, "-");
+}
 
 function RoadmapsPageContent() {
   const searchParams = useSearchParams();
@@ -276,9 +281,10 @@ function RoadmapsPageContent() {
 
                     <div className="flex flex-wrap gap-2">
                       {term.courses.map((course) => (
-                        <span
+                        <Link
                           key={course.course_id}
-                          className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-700"
+                          href={`/courses/${getCourseSlug(course.code)}`}
+                          className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-700 transition hover:border-[#6155F5]/50 hover:bg-[#EEF2FF] hover:text-[#4f45d4] focus:outline-none focus:ring-2 focus:ring-[#6155F5]/30"
                         >
                           <BookOpen size={14} className="text-[#6155F5]" />
                           <span className="font-medium text-gray-950">
@@ -288,7 +294,7 @@ function RoadmapsPageContent() {
                           <span className="text-xs text-gray-400">
                             {course.credits} cr.
                           </span>
-                        </span>
+                        </Link>
                       ))}
                     </div>
                   </div>

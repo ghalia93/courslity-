@@ -277,6 +277,13 @@ function RoadmapsPageContent() {
                       <p className="text-xs text-gray-500">
                         {formatRoadmapSemester(term.semester)}
                       </p>
+                      <p className="mt-1 text-xs font-medium text-gray-500">
+                        {term.courses.reduce(
+                          (sum, course) => sum + course.credits,
+                          0,
+                        )}{" "}
+                        cr.
+                      </p>
                     </div>
 
                     <div className="flex flex-wrap gap-2">

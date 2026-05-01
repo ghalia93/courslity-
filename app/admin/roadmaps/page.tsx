@@ -21,6 +21,11 @@ import {
   ROADMAP_SEMESTER_OPTIONS,
   formatRoadmapSemester,
 } from "@/lib/roadmapOptions";
+import {
+  ROADMAP_TERM_MAX_CREDITS,
+  ROADMAP_TERM_MIN_CREDITS,
+  findRoadmapTermCreditViolation,
+} from "@/lib/roadmapCredits";
 import type {
   RoadmapCourse,
   RoadmapDepartmentOption,
@@ -86,6 +91,22 @@ function sortTimeline(items: TimelineItem[]) {
     }
     return a.code.localeCompare(b.code);
   });
+}
+
+function formatCreditCount(credits: number) {
+  return `${credits} credit${credits === 1 ? "" : "s"}`;
+}
+
+function formatTermCreditViolation(
+  violation: ReturnType<typeof findRoadmapTermCreditViolation>,
+) {
+  if (!violation) return "";
+
+  return `Year ${violation.year_number} ${formatRoadmapSemester(
+    violation.semester,
+  )} has ${formatCreditCount(
+    violation.credits,
+  )}. Each semester must be between ${ROADMAP_TERM_MIN_CREDITS} and ${ROADMAP_TERM_MAX_CREDITS} credits.`;
 }
 
 export default function AdminRoadmapsPage() {
@@ -207,6 +228,7 @@ export default function AdminRoadmapsPage() {
         key,
         year_number: Number(year),
         semester: semester as RoadmapSemester,
+        credits: items.reduce((sum, item) => sum + item.credits, 0),
         items,
       };
     });
@@ -259,6 +281,27 @@ export default function AdminRoadmapsPage() {
 
     if (timeline.some((item) => item.course_id === selectedCourse.course_id)) {
       setError("This course is already in the roadmap.");
+      return;
+    }
+
+    const nextTermCredits =
+      timeline
+        .filter(
+          (item) =>
+            item.year_number === Number(selectedYear) &&
+            item.semester === selectedSemester,
+        )
+        .reduce((sum, item) => sum + item.credits, 0) +
+      selectedCourse.credits;
+
+    if (nextTermCredits > ROADMAP_TERM_MAX_CREDITS) {
+      setError(
+        `This would make Year ${selectedYear} ${formatRoadmapSemester(
+          selectedSemester,
+        )} ${formatCreditCount(
+          nextTermCredits,
+        )}. Each semester can have at most ${ROADMAP_TERM_MAX_CREDITS} credits.`,
+      );
       return;
     }
 
@@ -335,6 +378,12 @@ export default function AdminRoadmapsPage() {
 
     if (timeline.length === 0) {
       setError("Add at least one course to the timeline.");
+      return;
+    }
+
+    const termCreditViolation = findRoadmapTermCreditViolation(timeline);
+    if (termCreditViolation) {
+      setError(formatTermCreditViolation(termCreditViolation));
       return;
     }
 
@@ -677,6 +726,16 @@ export default function AdminRoadmapsPage() {
                         </p>
                         <p className="text-xs text-gray-500">
                           {formatRoadmapSemester(term.semester)}
+                        </p>
+                        <p
+                          className={`mt-1 text-xs font-medium ${
+                            term.credits < ROADMAP_TERM_MIN_CREDITS ||
+                            term.credits > ROADMAP_TERM_MAX_CREDITS
+                              ? "text-red-600"
+                              : "text-gray-500"
+                          }`}
+                        >
+                          {term.credits} cr.
                         </p>
                       </div>
 

@@ -3,7 +3,15 @@ import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import pool from "@/db";
 import { requireAdmin, requireUniversityAdmin } from "@/lib/auth";
 import { COURSE_LEVEL_VALUES, formatCourseLevel } from "@/lib/courseLevels";
-import { ROADMAP_SEMESTER_VALUES } from "@/lib/roadmapOptions";
+import {
+  ROADMAP_SEMESTER_VALUES,
+  formatRoadmapSemester,
+} from "@/lib/roadmapOptions";
+import {
+  ROADMAP_TERM_MAX_CREDITS,
+  ROADMAP_TERM_MIN_CREDITS,
+  findRoadmapTermCreditViolation,
+} from "@/lib/roadmapCredits";
 import { getRoadmaps } from "@/lib/roadmapQueries";
 import { ensureRoadmapTables } from "@/lib/roadmapsDb";
 import type { RoadmapSemester } from "@/types/roadmap";
@@ -17,6 +25,7 @@ type DepartmentRow = RowDataPacket & {
 
 type CourseIdRow = RowDataPacket & {
   course_id: number;
+  credits: number;
 };
 
 type MajorRow = RowDataPacket & {
@@ -78,6 +87,22 @@ function normalizeCourseItems(value: unknown): RoadmapCourseInput[] | null {
   }
 
   return normalized;
+}
+
+function formatCreditCount(credits: number) {
+  return `${credits} credit${credits === 1 ? "" : "s"}`;
+}
+
+function formatTermCreditViolation(
+  violation: ReturnType<typeof findRoadmapTermCreditViolation>,
+) {
+  if (!violation) return "";
+
+  return `Year ${violation.year_number} ${formatRoadmapSemester(
+    violation.semester,
+  )} has ${formatCreditCount(
+    violation.credits,
+  )}. Each semester must be between ${ROADMAP_TERM_MIN_CREDITS} and ${ROADMAP_TERM_MAX_CREDITS} credits.`;
 }
 
 export async function GET(req: NextRequest) {
@@ -183,7 +208,7 @@ export async function POST(req: NextRequest) {
     const courseIds = courseItems.map((item) => item.course_id);
     const placeholders = courseIds.map(() => "?").join(", ");
     const [courseRows] = await pool.query<CourseIdRow[]>(
-      `SELECT c.course_id
+      `SELECT c.course_id, c.credits
       FROM course c
       JOIN department d ON d.department_id = c.department_id
       JOIN university u ON u.university_id = d.university_id
@@ -201,6 +226,27 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           message: "Every roadmap course must belong to the selected department.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const creditsByCourseId = new Map(
+      courseRows.map((course) => [course.course_id, Number(course.credits)]),
+    );
+    const termCreditViolation = findRoadmapTermCreditViolation(
+      courseItems.map((item) => ({
+        credits: creditsByCourseId.get(item.course_id) ?? 0,
+        year_number: item.year_number,
+        semester: item.semester,
+      })),
+    );
+
+    if (termCreditViolation) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: formatTermCreditViolation(termCreditViolation),
         },
         { status: 400 },
       );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Button from "@/components/Button";
 import StarRating from "@/components/StarRating";
 import SliderRow from "@/components/SliderRow";
+import { calculateOverallRating } from "@/lib/reviewRatings";
 
 const SEMESTER_OPTIONS = ["Fall", "Spring", "Summer"];
 
@@ -18,7 +19,6 @@ export default function WriteReviewCard({
   onSubmit,
   onCancel,
 }: WriteReviewCardProps) {
-  const [overallRating, setOverallRating] = useState(0);
   const [instructor, setInstructor] = useState("");
   const [semester, setSemester] = useState("");
   const [examDifficulty, setExamDifficulty] = useState(3);
@@ -28,15 +28,19 @@ export default function WriteReviewCard({
   const [review, setReview] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const overallRating = calculateOverallRating({
+    examDifficulty,
+    attendanceStrictness,
+    workload,
+    gradingFairness,
+  });
 
   const canSubmit =
-    overallRating > 0 &&
     instructor.trim().length > 0 &&
     semester.trim().length > 0 &&
     review.trim().length > 0;
 
   function resetForm() {
-    setOverallRating(0);
     setInstructor("");
     setSemester("");
     setExamDifficulty(3);
@@ -61,7 +65,6 @@ export default function WriteReviewCard({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          overallRating,
           instructor: instructor.trim(),
           semester: semester.trim(),
           examDifficulty,
@@ -110,7 +113,7 @@ export default function WriteReviewCard({
           <div className="text-sm font-medium text-gray-700">
             Overall Rating
           </div>
-          <StarRating value={overallRating} onChange={setOverallRating} />
+          <StarRating value={overallRating} readOnly />
         </div>
 
         <div className="space-y-2">

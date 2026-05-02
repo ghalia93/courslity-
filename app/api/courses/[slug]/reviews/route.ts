@@ -3,6 +3,7 @@ import { createHash } from "crypto";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
 import { type AuthUser, requireAuth } from "@/lib/auth";
+import { calculateOverallRating } from "@/lib/reviewRatings";
 
 type CourseLookupRow = RowDataPacket & {
   course_id: number;
@@ -205,7 +206,6 @@ export async function POST(
     const body = await req.json();
 
     const {
-      overallRating,
       instructor,
       semester,
       examDifficulty,
@@ -214,18 +214,6 @@ export async function POST(
       gradingFairness,
       review,
     } = body;
-
-    if (
-      !overallRating ||
-      isNaN(Number(overallRating)) ||
-      Number(overallRating) < 1 ||
-      Number(overallRating) > 5
-    ) {
-      return NextResponse.json(
-        { success: false, message: "overallRating must be between 1 and 5" },
-        { status: 400 },
-      );
-    }
 
     if (!instructor || typeof instructor !== "string" || !instructor.trim()) {
       return NextResponse.json(
@@ -266,6 +254,13 @@ export async function POST(
       }
     }
 
+    const overallRating = calculateOverallRating({
+      examDifficulty: Number(examDifficulty),
+      attendanceStrictness: Number(attendanceStrictness),
+      workload: Number(workload),
+      gradingFairness: Number(gradingFairness),
+    });
+
     try {
       await pool.query(
         `
@@ -290,7 +285,7 @@ export async function POST(
           semesterTaken,
           review.trim(),
           instructor.trim(),
-          Number(overallRating),
+          overallRating,
           Number(examDifficulty),
           Number(attendanceStrictness),
           Number(workload),
@@ -312,6 +307,7 @@ export async function POST(
       {
         success: true,
         message: "Review submitted successfully",
+        overallRating,
       },
       { status: 201 },
     );

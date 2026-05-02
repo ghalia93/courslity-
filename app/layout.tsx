@@ -7,7 +7,8 @@ export const metadata: Metadata = {
   title: "Coursality",
   description: "University course reviews and insights",
   icons: {
-    icon: "../favicon.png",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
   },
 };
 

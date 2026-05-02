@@ -69,16 +69,16 @@ export default function AboutPage() {
 
   return (
     <main className="bg-[#FFFFFF]">
-      <section className="py-20 px-6 pt-40">
+      <section className="px-4 py-16 pt-20 sm:px-6 sm:pt-28 md:pt-36">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl text-[#111827] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+          <h1 className="mb-5 text-4xl font-bold tracking-tight text-[#111827] sm:text-5xl lg:text-6xl">
             Making Course Selection{" "}
             <span className="bg-gradient-to-r from-[#6155F5] to-teal-500 bg-clip-text text-transparent">
               Transparent
             </span>
           </h1>
 
-          <p className="text-l sm:text-l md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
+          <p className="mx-auto mb-8 max-w-2xl text-base leading-7 text-gray-600 sm:text-lg md:text-xl">
             We believe every student deserves honest insights into their courses
             before committing. Coursality brings transparency to higher
             education through authentic peer reviews.
@@ -86,8 +86,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="max-w-5xl mx-auto px-6 py-16 space-y-6 mt-0">
-        <div className="rounded-xl p-6 transition-shadow hover:shadow-lg">
+      <section className="mx-auto mt-0 max-w-5xl space-y-6 px-4 py-12 sm:px-6 sm:py-16">
+        <div className="rounded-xl p-4 transition-shadow hover:shadow-lg sm:p-6">
           <h2 className="text-xl font-semibold mb-4">The Problem We Solve</h2>
           <p className="text-gray-700 leading-7 mb-3">
             Selecting courses can be overwhelming. Students often lack clear
@@ -100,7 +100,7 @@ export default function AboutPage() {
           </ul>
         </div>
 
-        <div className="rounded-xl p-6 transition-shadow hover:shadow-lg">
+        <div className="rounded-xl p-4 transition-shadow hover:shadow-lg sm:p-6">
           <h2 className="text-xl font-semibold">Our Mission</h2>
           <p className="text-gray-700 leading-7">
             At Coursality, our mission is to make course selection transparent
@@ -112,7 +112,7 @@ export default function AboutPage() {
 
         <HowItWorks />
 
-        <div className="rounded-xl p-8 transition-shadow hover:shadow-lg">
+        <div className="rounded-xl p-4 transition-shadow hover:shadow-lg sm:p-8">
           <h2 className="text-xl font-semibold mb-4">What Makes Us Different</h2>
 
           <p className="text-gray-700 mb-6 leading-7">
@@ -227,7 +227,7 @@ export default function AboutPage() {
         )}
 
         <div className="text-center pt-10">
-          <h2 className="text-3xl font-bold mb-2">
+          <h2 className="mb-2 text-2xl font-bold sm:text-3xl">
             Start Making Better Course Decisions
           </h2>
           <p className="text-gray-600 mb-6">
@@ -236,7 +236,7 @@ export default function AboutPage() {
           </p>
           <div className="flex justify-center gap-4 flex-wrap">
             <Link href="/courses">
-              <Button className="h-13">Browse Courses</Button>
+              <Button className="h-11">Browse Courses</Button>
             </Link>
           </div>
         </div>

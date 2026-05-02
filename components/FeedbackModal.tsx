@@ -60,8 +60,8 @@ export default function FeedbackModal({ onClose, onSubmitted }: Props) {
   const isDisabled = loading || !feedback.trim() || rating === 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-      <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 px-4 py-6">
+      <div className="relative w-full max-w-lg rounded-2xl bg-white p-4 shadow-xl sm:p-6">
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-gray-500 hover:text-gray-900"
@@ -89,12 +89,14 @@ export default function FeedbackModal({ onClose, onSubmitted }: Props) {
 
         <div className="mt-4 flex justify-end">
           <div
-            className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
+            className={`w-full sm:w-auto ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
             onClick={() => {
               if (!isDisabled) handleSubmit();
             }}
           >
-            <Button>{loading ? "Submitting..." : "Submit"}</Button>
+            <Button className="w-full sm:w-auto">
+              {loading ? "Submitting..." : "Submit"}
+            </Button>
           </div>
         </div>
       </div>

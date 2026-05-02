@@ -159,9 +159,9 @@ function CoursesPageContent() {
   const isSearching = !!debouncedQuery;
 
   return (
-    <main className="min-h-screen bg-white px-4 md:px-8 py-10">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900">
+    <main className="min-h-screen bg-white px-4 py-8 sm:px-6 md:px-8 md:py-10">
+      <div className="mx-auto max-w-6xl">
+        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
           {isSearching
             ? `Search Results for "${debouncedQuery}"`
             : "Browse Courses"}
@@ -172,8 +172,8 @@ function CoursesPageContent() {
         </p>
 
         {/* Search bar + filter toggle */}
-        <div className="mt-6 flex items-center gap-3">
-          <div className="relative flex-1">
+        <div className="mt-6 flex min-w-0 items-center gap-3">
+          <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
@@ -223,7 +223,7 @@ function CoursesPageContent() {
         </AnimatePresence>
 
         {/* Course list */}
-        <div className="mt-8 grid justify-center gap-8 sm:grid-cols-1 md:grid-cols-2">
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
           {loading ? (
             <p className="text-gray-400 text-center py-10 md:col-span-2">
               Loading courses…

@@ -25,7 +25,7 @@ export default function HeroStats() {
   }, []);
 
   return (
-    <div className="mt-18 flex flex-wrap justify-center gap-6 text-sm text-gray-600">
+    <div className="mt-12 flex flex-wrap justify-center gap-4 text-sm text-gray-600 sm:mt-16 sm:gap-6">
       <Stat
         loading={loading}
         icon={
@@ -99,7 +99,7 @@ function Stat({
       {loading ? (
         <span className="h-5 w-28 animate-pulse rounded bg-gray-200" />
       ) : (
-        <span className="text-lg">{text}</span>
+        <span className="text-sm sm:text-lg">{text}</span>
       )}
     </div>
   );

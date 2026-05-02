@@ -146,7 +146,7 @@ function FeedbackDetailModal({
         </div>
 
         <div className="p-5 space-y-5">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
             <div>
               <p className="text-xs text-gray-400 mb-1">Rating</p>
               <RatingStars value={feedback.rating} large />
@@ -383,7 +383,7 @@ export default function AdminFeedbackPage() {
         ))}
       </div>
 
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
           {
             label: "Total submissions",

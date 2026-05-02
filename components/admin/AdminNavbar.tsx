@@ -320,7 +320,7 @@ export default function AdminNavbar() {
             onClick={() => setMobileOpen(false)}
           />
 
-          <div className="absolute left-0 top-0 h-full w-[220px] bg-white border-r border-gray-200">
+          <div className="absolute left-0 top-0 h-full w-[min(220px,85vw)] bg-white border-r border-gray-200">
             <div className="h-16 border-b border-gray-200 flex items-center px-4 gap-3">
               <button
                 type="button"

@@ -87,7 +87,7 @@ function MetricCard({
 
 export default function CourseInfo({ course }: { course: Course }) {
   return (
-    <div className="max-w-5xl mx-auto py-8 pt-0">
+    <div className="mx-auto max-w-5xl py-6 pt-0 sm:py-8">
       <Link
         href="/courses"
         className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600"
@@ -104,7 +104,7 @@ export default function CourseInfo({ course }: { course: Course }) {
         <span className="text-sm text-gray-400">{course.credits}</span>
       </div>
 
-      <h1 className="mt-3 text-4xl font-bold tracking-tight text-gray-900">
+      <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
         {course.title}
       </h1>
 
@@ -121,7 +121,7 @@ export default function CourseInfo({ course }: { course: Course }) {
       </div>
 
       {/* Rating row */}
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         {course.averageRating != null ? (
           <>
             <StarRating rating={course.averageRating} />
@@ -150,7 +150,7 @@ export default function CourseInfo({ course }: { course: Course }) {
         <h2 className="text-lg font-semibold text-gray-900">
           Course Description
         </h2>
-        <p className="mt-2 text-medium text-justify leading-relaxed text-gray-600">
+        <p className="mt-2 text-left leading-relaxed text-gray-600 sm:text-justify">
           {course.description}
         </p>
       </div>
@@ -180,7 +180,7 @@ export default function CourseInfo({ course }: { course: Course }) {
               <Link
                 key={prereq.course_id}
                 href={`/courses/${prereq.code.trim().toLowerCase().replace(/\s+/g, "-")}`}
-                className="rounded-full bg-[#6155F5]/10 px-3 py-1 text-sm font-medium text-[#6155F5] hover:bg-[#6155F5]/20 transition"
+                className="inline-flex max-w-full flex-wrap rounded-full bg-[#6155F5]/10 px-3 py-1 text-sm font-medium text-[#6155F5] transition hover:bg-[#6155F5]/20"
               >
                 {prereq.code} — {prereq.title}
               </Link>
@@ -192,7 +192,7 @@ export default function CourseInfo({ course }: { course: Course }) {
       {/* Ratings */}
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-gray-900">Course Ratings</h2>
-        <div className="m-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             label="Exam Difficulty"
             value={course.ratings?.exam ?? null}

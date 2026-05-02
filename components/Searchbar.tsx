@@ -163,9 +163,9 @@ export default function SearchPage({ query, setQuery }: SearchbarProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex-1">
-      <div className="flex gap-3">
-        <div ref={wrapperRef} className="relative flex-1">
+    <form onSubmit={handleSubmit} className="min-w-0 flex-1">
+      <div className="flex min-w-0 gap-3">
+        <div ref={wrapperRef} className="relative min-w-0 flex-1">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
 
           <input
@@ -183,7 +183,7 @@ export default function SearchPage({ query, setQuery }: SearchbarProps) {
                 ? `${suggestionListId}-option-${activeIndex}`
                 : undefined
             }
-            placeholder="Search for a course, university, department..."
+            placeholder="Search courses..."
             className="w-full h-11 pl-10 pr-4 text-gray-900 placeholder-gray-400
                       rounded-md border border-gray-300 transition-colors
                       focus:outline-none focus:border-[#6155F5] 
@@ -218,7 +218,7 @@ export default function SearchPage({ query, setQuery }: SearchbarProps) {
                       onMouseEnter={() => setActiveIndex(index)}
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => openSuggestion(suggestion)}
-                      className={`flex w-full items-start gap-3 px-4 py-3 text-left transition ${
+                      className={`flex w-full items-start gap-3 px-3 py-3 text-left transition sm:px-4 ${
                         isActive ? "bg-[#EEF2FF]" : "hover:bg-gray-50"
                       }`}
                     >
@@ -226,10 +226,10 @@ export default function SearchPage({ query, setQuery }: SearchbarProps) {
                         {suggestion.code}
                       </span>
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-gray-900">
+                        <span className="block text-sm font-semibold text-gray-900 sm:truncate">
                           {suggestion.title}
                         </span>
-                        <span className="mt-0.5 block truncate text-xs text-gray-500">
+                        <span className="mt-0.5 block text-xs text-gray-500 sm:truncate">
                           {suggestion.university} - {suggestion.department}
                         </span>
                       </span>

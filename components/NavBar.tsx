@@ -34,8 +34,8 @@ export default function NavBar() {
   const displayName = user?.email.split("@")[0] ?? "";
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 px-6 py-3">
-      <div className="flex items-center gap-4 w-full">
+    <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 px-4 py-3 sm:px-6">
+      <div className="flex w-full min-w-0 items-center gap-3 sm:gap-4">
         {/* Mobile hamburger */}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
@@ -46,9 +46,9 @@ export default function NavBar() {
           ☰
         </button>
 
-        <Link href="/" className="flex items-center gap-2 shrink-0">
+        <Link href="/" className="flex shrink-0 items-center gap-2">
           <Image src="/favicon.ico" alt="Logo" width={32} height={32} />
-          <span className="hidden md:inline text-[#6155F5] text-2xl font-bold">
+          <span className="hidden text-2xl font-bold text-[#6155F5] sm:inline">
             Coursality
           </span>
         </Link>
@@ -78,13 +78,13 @@ export default function NavBar() {
               <div className="relative">
                 <button
                   onClick={() => setAccountOpen(!accountOpen)}
-                  className="flex items-center gap-2 rounded-full pl-1 pr-3 py-1 bg-gray-100 hover:bg-gray-200 transition"
+                  className="flex max-w-[46vw] items-center gap-2 rounded-full bg-gray-100 py-1 pl-1 pr-2 transition hover:bg-gray-200 sm:max-w-none sm:pr-3"
                   aria-label="Account menu"
                 >
                   <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#6155F5] text-white text-xs font-semibold uppercase">
                     {displayName.charAt(0)}
                   </span>
-                  <span className="hidden sm:inline text-sm font-medium text-gray-700 max-w-[120px] truncate">
+                  <span className="hidden max-w-[120px] truncate text-sm font-medium text-gray-700 sm:inline">
                     {displayName}
                   </span>
                   <ChevronDown
@@ -96,7 +96,7 @@ export default function NavBar() {
                 </button>
 
                 {accountOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 flex flex-col py-1 overflow-hidden">
+                  <div className="absolute right-0 z-50 mt-2 flex w-48 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
                     <div className="px-4 py-2 border-b border-gray-100">
                       <p className="text-xs text-gray-400 truncate">
                         {user.email}
@@ -149,7 +149,7 @@ export default function NavBar() {
       </div>
 
       {menuOpen && (
-        <div className="lg:hidden mt-4 flex flex-col gap-3">
+        <div className="mt-4 flex flex-col gap-3 lg:hidden">
           <div onClick={() => setMenuOpen(false)}>
             <NavLink href="/">Home</NavLink>
           </div>
@@ -167,7 +167,7 @@ export default function NavBar() {
           </div>
 
           {!loading && !user && (
-            <div className="flex gap-2 mt-2">
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <Link href="/login" onClick={() => setMenuOpen(false)}>
                 <Button variant="elevated" className="w-full flex-1">
                   Login

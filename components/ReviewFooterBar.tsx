@@ -80,7 +80,7 @@ export default function ReviewFooterBar({
 
   return (
     <div className="mt-6 border-t border-gray-200 pt-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -115,7 +115,7 @@ export default function ReviewFooterBar({
           </button>
         </div>
 
-        <div className="text-base text-gray-500">{timeAgo}</div>
+        <div className="text-sm text-gray-500 sm:text-base">{timeAgo}</div>
       </div>
       {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
     </div>

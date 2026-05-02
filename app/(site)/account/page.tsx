@@ -137,12 +137,12 @@ export default function AccountPage() {
   if (!profile) return null;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center py-12 px-4">
-      <h1 className="text-3xl font-semibold mb-8 text-gray-800 text-center">
+    <div className="flex min-h-screen flex-col items-center bg-white px-4 py-10 sm:py-12">
+      <h1 className="mb-8 text-center text-2xl font-semibold text-gray-800 sm:text-3xl">
         Account Info
       </h1>
 
-      <section className="w-full max-w-md rounded-xl bg-white border border-gray-200 p-6 shadow-lg">
+      <section className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:p-6">
         <h2 className="text-xl font-medium mb-6 text-gray-700">Profile</h2>
 
         <div className="flex flex-col gap-5">
@@ -176,7 +176,7 @@ export default function AccountPage() {
             />
           </label>
 
-          <div className="flex gap-3 mt-4">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <Button
               variant="primary"
               className="flex-1"
@@ -197,7 +197,7 @@ export default function AccountPage() {
       </section>
 
       <section
-        className="w-full max-w-md mt-10 rounded-xl bg-white border border-gray-200 p-6 shadow-lg"
+        className="mt-10 w-full max-w-md rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:p-6"
       >
         <div id="report" ref={reportRef} className="scroll-mt-24" />
         <h2 className="text-xl font-medium text-gray-700">Report a Problem</h2>
@@ -230,7 +230,7 @@ export default function AccountPage() {
             disabled={
               reportLoading || !reportMessage.trim() || reportRating === 0
             }
-            className="disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             {reportLoading ? "Submitting..." : "Submit"}
           </Button>

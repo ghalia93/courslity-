@@ -9,12 +9,10 @@ export default function Hero() {
 
   return (
     <div
-      className="max-w-4xl mx-auto px-6 sm:px-8
-      pt-20 sm:pt-20 lg:pt-32
-      pb-10 sm:pb-12 lg:pb-12"
+      className="mx-auto max-w-4xl px-4 pt-14 pb-10 sm:px-8 sm:pt-20 sm:pb-12 lg:pt-28"
     >
       <div className="text-center">
-        <h1 className="text-5xl sm:text-4xl md:text-6xl lg:text-6xl font-bold tracking-tight mb-6">
+        <h1 className="mb-5 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
           The{" "}
           <span className="bg-gradient-to-r from-[#6155F5] to-teal-500 bg-clip-text text-transparent">
             Real Truth
@@ -22,7 +20,7 @@ export default function Hero() {
           About University Courses
         </h1>
 
-        <p className="text-l sm:text-l md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
+        <p className="mx-auto mb-8 max-w-2xl text-base leading-7 text-gray-600 sm:text-lg md:text-xl">
           Official descriptions lie. Get unfiltered reviews on workload, grading
           fairness, exam difficulty, and what professors won&apos;t tell you.
         </p>

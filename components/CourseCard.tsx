@@ -37,7 +37,7 @@ function StarIcon(props: React.SVGProps<SVGSVGElement>) {
 
 function MetricValue({ value }: { value: number | null }) {
   return (
-    <span className="text-[15px] text-gray-500">
+    <span className="shrink-0 text-sm text-gray-500 sm:text-[15px]">
       {value != null ? `${value}/5` : "N/A"}
     </span>
   );
@@ -66,29 +66,29 @@ export default function CourseCard({
   const slug = code.trim().toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <Link href={`/courses/${slug}`} className="block w-full">
+    <Link href={`/courses/${slug}`} className="block w-full min-w-0">
       <div
-        className={`w-full max-w-6xl min-h-[250px] rounded-2xl bg-white p-5
+        className={`w-full min-w-0 rounded-xl bg-white p-4 sm:min-h-[250px] sm:rounded-2xl sm:p-5
       shadow-[0_12px_40px_rgba(0,0,0,0.12)]
-      cursor-pointer transition-transform hover:scale-[1.01]
+      cursor-pointer transition-transform hover:scale-[1.005]
       hover:shadow-[0_20px_60px_rgba(0,0,0,0.15)]
       ${className}`}
       >
         {/* Title row */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0">
-            <h3 className="text-[20px] font-semibold tracking-tight text-[#111827]">
+            <h3 className="text-lg font-semibold tracking-tight text-[#111827] sm:text-[20px]">
               <span className="text-[#6155F5]">{code}</span> {title}
             </h3>
-            <p className="mt-1 text-[15px] text-gray-400">
+            <p className="mt-1 text-sm leading-5 text-gray-400 sm:text-[15px]">
               {university} · {department} · {credits}
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-2">
             {averageRating != null ? (
               <>
-                <span className="text-[20px] font-semibold text-[#111827]">
+                <span className="text-lg font-semibold text-[#111827] sm:text-[20px]">
                   {averageRating.toFixed(1)}
                 </span>
                 <StarIcon className="h-6 w-6 text-[#F5C542]" />
@@ -116,30 +116,36 @@ export default function CourseCard({
 
         {/* Metrics */}
         <div className="mt-4 rounded-xl border border-gray-300 p-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6">
-            <div className="flex justify-between">
-              <FileText className="h-5 w-5 text-[#6155F5]" />
-              <span className="text-[15px] text-gray-500">Exam:&nbsp;</span>
+          <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <FileText className="h-5 w-5 shrink-0 text-[#6155F5]" />
+              <span className="min-w-0 flex-1 text-sm text-gray-500 sm:text-[15px]">
+                Exam
+              </span>
               <MetricValue value={ratings.exam} />
             </div>
 
-            <div className="flex justify-between">
-              <Briefcase className="h-5 w-5 text-[#6155F5]" />
-              <span className="text-[15px] text-gray-500">Workload:&nbsp;</span>
+            <div className="flex min-w-0 items-center gap-2">
+              <Briefcase className="h-5 w-5 shrink-0 text-[#6155F5]" />
+              <span className="min-w-0 flex-1 text-sm text-gray-500 sm:text-[15px]">
+                Workload
+              </span>
               <MetricValue value={ratings.workload} />
             </div>
 
-            <div className="flex justify-between">
-              <MapPin className="h-5 w-5 text-[#6155F5]" />
-              <span className="text-[15px] text-gray-500">
-                Attendance:&nbsp;
+            <div className="flex min-w-0 items-center gap-2">
+              <MapPin className="h-5 w-5 shrink-0 text-[#6155F5]" />
+              <span className="min-w-0 flex-1 text-sm text-gray-500 sm:text-[15px]">
+                Attendance
               </span>
               <MetricValue value={ratings.attendance} />
             </div>
 
-            <div className="flex justify-between">
-              <Scale className="h-5 w-5 text-[#6155F5]" />
-              <span className="text-[15px] text-gray-500">Grading:&nbsp;</span>
+            <div className="flex min-w-0 items-center gap-2">
+              <Scale className="h-5 w-5 shrink-0 text-[#6155F5]" />
+              <span className="min-w-0 flex-1 text-sm text-gray-500 sm:text-[15px]">
+                Grading
+              </span>
               <MetricValue value={ratings.grading} />
             </div>
           </div>

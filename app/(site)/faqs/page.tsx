@@ -66,18 +66,18 @@ const highlights = [
 export default function FAQsPage() {
   return (
     <main className="bg-white">
-      <section className="px-6 pt-24 pb-12 sm:pt-28 md:pt-32">
+      <section className="px-4 pt-20 pb-12 sm:px-6 sm:pt-28 md:pt-32">
         <div className="mx-auto max-w-5xl">
           <div className="text-center">
             <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#6155F5]">
               <HelpCircle className="h-6 w-6" />
             </div>
 
-            <h1 className="text-4xl font-bold tracking-tight text-[#111827] sm:text-5xl">
+            <h1 className="text-3xl font-bold tracking-tight text-[#111827] sm:text-5xl">
               Frequently Asked Questions
             </h1>
 
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-gray-600">
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-gray-600 sm:text-lg sm:leading-8">
               Quick answers about searching courses, reading reviews, and using
               Coursality with confidence.
             </p>
@@ -102,7 +102,7 @@ export default function FAQsPage() {
         </div>
       </section>
 
-      <section className="px-6 pb-20">
+      <section className="px-4 pb-16 sm:px-6 sm:pb-20">
         <div className="mx-auto max-w-3xl">
           <div className="space-y-3">
             {faqs.map((faq) => (

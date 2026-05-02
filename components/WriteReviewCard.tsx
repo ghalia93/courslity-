@@ -99,7 +99,7 @@ export default function WriteReviewCard({
   }
 
   return (
-    <div className="w-full rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
+    <div className="w-full rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
       <h2 className="text-xl font-semibold text-gray-900">Leave Your Review</h2>
 
       {error && (
@@ -189,7 +189,7 @@ export default function WriteReviewCard({
         />
       </div>
 
-      <div className="mt-6 flex justify-end gap-3">
+      <div className="mt-6 grid gap-3 sm:flex sm:justify-end">
         <Button variant="elevated" onClick={handleCancel} disabled={submitting}>
           Cancel
         </Button>

@@ -28,7 +28,7 @@ export default async function CoursePage({ params }: Props) {
   if (!course) notFound();
 
   return (
-    <main className="min-h-screen bg-[#FFFFFF] px-6 py-10">
+    <main className="min-h-screen bg-[#FFFFFF] px-4 py-8 sm:px-6 sm:py-10">
       <section className="mx-auto max-w-5xl">
         <CourseInfo course={course} />
         <CoursePageClient slug={slug} />

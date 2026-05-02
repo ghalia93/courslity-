@@ -130,9 +130,9 @@ function RoadmapsPageContent() {
   }
 
   return (
-    <main className="min-h-screen bg-white px-4 py-10 md:px-8">
+    <main className="min-h-screen bg-white px-4 py-8 sm:px-6 md:px-8 md:py-10">
       <div className="mx-auto max-w-6xl">
-        <h1 className="text-3xl font-bold text-gray-900">Roadmaps</h1>
+        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Roadmaps</h1>
         <p className="mt-2 max-w-xl text-gray-500">
           Filter roadmaps by university, department, and year.
         </p>
@@ -145,7 +145,7 @@ function RoadmapsPageContent() {
                 setUniversityId(event.target.value);
                 setDepartmentId("");
               }}
-              className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30"
+              className="h-10 min-w-0 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30"
             >
               <option value="">All universities</option>
               {universities.map((university) => (
@@ -161,7 +161,7 @@ function RoadmapsPageContent() {
             <select
               value={departmentId}
               onChange={(event) => setDepartmentId(event.target.value)}
-              className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30"
+              className="h-10 min-w-0 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30"
             >
               <option value="">All departments</option>
               {visibleDepartments.map((department) => (
@@ -177,7 +177,7 @@ function RoadmapsPageContent() {
             <select
               value={year}
               onChange={(event) => setYear(event.target.value)}
-              className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30"
+              className="h-10 min-w-0 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30"
             >
               <option value="">All years</option>
               {years.map((item) => (
@@ -190,7 +190,7 @@ function RoadmapsPageContent() {
             <button
               type="button"
               onClick={resetFilters}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 text-sm text-gray-700 transition hover:bg-gray-50"
+              className="inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 text-sm text-gray-700 transition hover:bg-gray-50"
             >
               <RotateCcw size={15} />
               Reset
@@ -220,10 +220,10 @@ function RoadmapsPageContent() {
           {roadmaps.map((roadmap) => (
             <article
               key={roadmap.roadmap_id}
-              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
+              className="min-w-0 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5"
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div>
+                <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-[#6155F5]">
                     <span className="inline-flex items-center gap-1 rounded-full bg-[#EEF2FF] px-2 py-1">
                       <GraduationCap size={13} />
@@ -286,19 +286,19 @@ function RoadmapsPageContent() {
                       </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex min-w-0 flex-wrap gap-2">
                       {term.courses.map((course) => (
                         <Link
                           key={course.course_id}
                           href={`/courses/${getCourseSlug(course.code)}`}
-                          className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-700 transition hover:border-[#6155F5]/50 hover:bg-[#EEF2FF] hover:text-[#4f45d4] focus:outline-none focus:ring-2 focus:ring-[#6155F5]/30"
+                          className="inline-flex max-w-full items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-700 transition hover:border-[#6155F5]/50 hover:bg-[#EEF2FF] hover:text-[#4f45d4] focus:outline-none focus:ring-2 focus:ring-[#6155F5]/30"
                         >
                           <BookOpen size={14} className="text-[#6155F5]" />
-                          <span className="font-medium text-gray-950">
+                          <span className="shrink-0 font-medium text-gray-950">
                             {course.code}
                           </span>
-                          <span>{course.title}</span>
-                          <span className="text-xs text-gray-400">
+                          <span className="min-w-0 truncate">{course.title}</span>
+                          <span className="shrink-0 text-xs text-gray-400">
                             {course.credits} cr.
                           </span>
                         </Link>

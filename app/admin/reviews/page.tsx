@@ -147,7 +147,7 @@ function ReviewDetailModal({
         </div>
 
         <div className="p-5 space-y-5">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
             <div>
               <p className="text-xs text-gray-400 mb-0.5">Reviewer</p>
               <p className="text-gray-800 font-medium">{review.reviewer_name}</p>
@@ -204,7 +204,7 @@ function ReviewDetailModal({
 
           <div>
             <p className="text-xs text-gray-400 mb-2">Rating breakdown</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {[
                 {
                   label: "Exam difficulty",

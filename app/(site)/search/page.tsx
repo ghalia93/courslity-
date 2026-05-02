@@ -136,10 +136,10 @@ function SearchPageContent() {
   );
 
   return (
-    <main className="min-h-screen bg-white px-4 md:px-8 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex-1">
+    <main className="min-h-screen bg-white px-4 py-8 sm:px-6 md:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6 flex min-w-0 items-center gap-3">
+          <div className="min-w-0 flex-1">
             <Searchbar query={query} setQuery={setQuery} />
           </div>
 
@@ -185,7 +185,7 @@ function SearchPageContent() {
             No courses found.
           </div>
         ) : (
-          <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {filteredCourses.map((course) => (
               <CourseCard key={course.courseId} {...course} />
             ))}

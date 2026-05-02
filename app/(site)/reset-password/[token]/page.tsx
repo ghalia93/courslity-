@@ -72,8 +72,8 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="flex items-start justify-center min-h-screen px-6 pt-24">
-      <div className="w-full max-w-[420px] rounded-xl bg-white border border-gray-200 shadow-lg px-6 py-6">
+    <div className="flex min-h-screen items-start justify-center px-4 pt-20 sm:px-6 sm:pt-24">
+      <div className="w-full max-w-[420px] rounded-xl border border-gray-200 bg-white px-4 py-6 shadow-lg sm:px-6">
         {success ? (
           <>
             <h1 className="text-center text-2xl font-semibold text-[#111827]">

@@ -16,7 +16,7 @@ export default function Button({
   return (
     <button
       className={clsx(
-        "h-10 items-center justify-center rounded-lg px-6 text-md transition-all",
+        "inline-flex min-h-10 items-center justify-center rounded-lg px-4 text-sm font-medium transition-all sm:px-6 sm:text-base",
         "shadow-md hover:shadow-lg",
         variantStyles[variant],
         className,

@@ -77,8 +77,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-start justify-center px-6 pt-32">
-      <div className="w-full max-w-[420px] rounded-xl border border-gray-200 bg-white px-6 py-6 shadow-lg">
+    <div className="flex min-h-screen items-start justify-center px-4 pt-20 sm:px-6 sm:pt-32">
+      <div className="w-full max-w-[420px] rounded-xl border border-gray-200 bg-white px-4 py-6 shadow-lg sm:px-6">
         {success ? (
           <>
             <h1 className="text-center text-2xl font-semibold text-[#111827]">
@@ -107,7 +107,7 @@ export default function ForgotPasswordPage() {
                   value={resetUrl}
                   className="mt-2 h-10 w-full rounded-md border border-amber-200 bg-white px-3 text-xs text-gray-700 outline-none"
                 />
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   <button
                     type="button"
                     onClick={copyResetLink}

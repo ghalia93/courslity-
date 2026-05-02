@@ -32,10 +32,10 @@ export default function StatsSection({ stats }: { stats: StatsData }) {
   const recommend = { end: Math.round(clamp(stats.rating, 0, 100)), suffix: "%" };
 
   return (
-    <section className="text-[#6155F5] py-16" ref={ref}>
-      <div className="max-w-6xl mx-auto px-6 sm:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+    <section className="py-12 text-[#6155F5] sm:py-16" ref={ref}>
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 text-center sm:grid-cols-2 sm:px-8 md:grid-cols-4">
         <div>
-          <h2 className="text-4xl sm:text-4xl font-bold">
+          <h2 className="text-3xl font-bold sm:text-4xl">
             {inView ? (
               <CountUp end={reviews.end} duration={2} suffix={reviews.suffix} />
             ) : (
@@ -46,7 +46,7 @@ export default function StatsSection({ stats }: { stats: StatsData }) {
         </div>
 
         <div>
-          <h2 className="text-4xl sm:text-4xl font-bold">
+          <h2 className="text-3xl font-bold sm:text-4xl">
             {inView ? (
               <CountUp end={students.end} duration={2} suffix={students.suffix} />
             ) : (
@@ -57,7 +57,7 @@ export default function StatsSection({ stats }: { stats: StatsData }) {
         </div>
 
         <div>
-          <h2 className="text-4xl sm:text-4xl font-bold">
+          <h2 className="text-3xl font-bold sm:text-4xl">
             {inView ? (
               <CountUp end={unis.end} duration={2} suffix={unis.suffix} />
             ) : (
@@ -68,7 +68,7 @@ export default function StatsSection({ stats }: { stats: StatsData }) {
         </div>
 
         <div className="flex flex-col items-center">
-          <h2 className="text-4xl sm:text-4xl font-bold">
+          <h2 className="text-3xl font-bold sm:text-4xl">
             {inView ? (
               <CountUp end={recommend.end} duration={2} suffix={recommend.suffix} />
             ) : (

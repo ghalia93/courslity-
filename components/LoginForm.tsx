@@ -53,7 +53,7 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-[420px] rounded-xl bg-white border border-gray-200 shadow-lg px-6 py-6">
+    <div className="w-full max-w-[420px] rounded-xl border border-gray-200 bg-white px-4 py-6 shadow-lg sm:px-6">
       <h1 className="text-center text-2xl font-semibold text-[#111827]">
         Login
       </h1>
@@ -99,7 +99,7 @@ export default function LoginForm() {
           />
         </div>
 
-        <div className="flex items-center justify-between pt-1">
+        <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
           <label className="flex items-center gap-2 text-sm text-gray-600">
             <input
               type="checkbox"

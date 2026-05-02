@@ -32,35 +32,35 @@ export default async function Home() {
   const courses = await getRandomCourses();
 
   return (
-    <main className="min-h-screen bg-[#FFFFFF] px-6 py-10">
+    <main className="min-h-screen bg-[#FFFFFF] px-4 py-8 sm:px-6 sm:py-10">
       <section className="mx-auto max-w-7xl">
         <Hero />
 
         <div className="mt-6 grid gap-3 md:grid-cols-2">
           <Link
             href="/courses"
-            className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-[#111827] transition hover:border-[#6155F5]"
+            className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-[#111827] transition hover:border-[#6155F5]"
           >
-            <span className="inline-flex items-center gap-2 text-xl font-extrabold tracking-tight lg:text-2xl">
-              <BookOpen size={22} className="text-[#6155F5]" />
+            <span className="inline-flex min-w-0 items-center gap-2 text-lg font-extrabold tracking-tight sm:text-xl lg:text-2xl">
+              <BookOpen size={22} className="shrink-0 text-[#6155F5]" />
               Browse Courses
             </span>
-            <ArrowRight className="h-6 w-6 transition-transform duration-200 hover:translate-x-1" />
+            <ArrowRight className="h-6 w-6 shrink-0 transition-transform duration-200 hover:translate-x-1" />
           </Link>
 
           <Link
             href="/roadmaps"
-            className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-[#111827] transition hover:border-[#6155F5]"
+            className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-[#111827] transition hover:border-[#6155F5]"
           >
-            <span className="inline-flex items-center gap-2 text-xl font-extrabold tracking-tight lg:text-2xl">
-              <Map size={22} className="text-[#6155F5]" />
+            <span className="inline-flex min-w-0 items-center gap-2 text-lg font-extrabold tracking-tight sm:text-xl lg:text-2xl">
+              <Map size={22} className="shrink-0 text-[#6155F5]" />
               Explore Roadmaps
             </span>
-            <ArrowRight className="h-6 w-6 transition-transform duration-200 hover:translate-x-1" />
+            <ArrowRight className="h-6 w-6 shrink-0 transition-transform duration-200 hover:translate-x-1" />
           </Link>
         </div>
 
-        <div className="mt-8 grid justify-center gap-8 sm:grid-cols-1 md:grid-cols-2">
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
           {courses.length > 0 ? (
             courses.map((course) => (
               <CourseCard

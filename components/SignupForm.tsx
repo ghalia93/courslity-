@@ -154,7 +154,7 @@ export default function SignupForm() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="w-full max-w-[420px] rounded-xl bg-white border border-gray-200 shadow-lg px-6 py-6">
+    <div className="w-full max-w-[420px] rounded-xl border border-gray-200 bg-white px-4 py-6 shadow-lg sm:px-6">
       <h1 className="text-center text-2xl font-semibold text-[#111827]">
         Sign up
       </h1>

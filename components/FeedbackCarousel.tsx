@@ -29,7 +29,7 @@ function QuoteCard({ quote, user, rating }: Feedback) {
   return (
     <div
       className="
-        w-[230px] rounded-xl bg-white px-6 py-6
+        w-[min(230px,calc(100vw-4rem))] rounded-xl bg-white px-5 py-5 sm:px-6 sm:py-6
         border border-gray-100
         transition-all duration-300 ease-out
         hover:shadow-[0_12px_30px_rgba(0,0,0,0.15)]
@@ -105,8 +105,8 @@ export default function FeedbackCarousel() {
 
   return (
     <section className="w-full py-10">
-      <div className="mx-auto max-w-6xl px-6">
-        <h2 className="text-center text-4xl font-extrabold text-gray-900">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 className="text-center text-3xl font-extrabold text-gray-900 sm:text-4xl">
           What Our Users Think
         </h2>
 
@@ -114,7 +114,7 @@ export default function FeedbackCarousel() {
           <button
             type="button"
             onClick={slideLeft}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-9 w-9 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50"
+            className="absolute left-0 top-1/2 z-10 h-9 w-9 -translate-y-1/2 rounded-full border border-gray-200 bg-white shadow-sm hover:bg-gray-50"
             aria-label="Previous"
           >
             ‹
@@ -122,7 +122,7 @@ export default function FeedbackCarousel() {
 
           <div
             ref={rowRef}
-            className="flex gap-6 overflow-x-auto flex-nowrap px-12"
+            className="flex flex-nowrap gap-4 overflow-x-auto px-10 sm:gap-6 sm:px-12"
             style={{ scrollbarWidth: "none" }}
           >
             {loading && <p className="text-gray-500 px-2">Loading…</p>}
@@ -152,7 +152,7 @@ export default function FeedbackCarousel() {
           <button
             type="button"
             onClick={slideRight}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-9 w-9 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50"
+            className="absolute right-0 top-1/2 z-10 h-9 w-9 -translate-y-1/2 rounded-full border border-gray-200 bg-white shadow-sm hover:bg-gray-50"
             aria-label="Next"
           >
             ›

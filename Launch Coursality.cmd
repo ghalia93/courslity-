@@ -1,7 +1,7 @@
 @echo off
 setlocal
 
-set "SCRIPT=%~dp0scripts\launch-cousality.ps1"
+set "SCRIPT=%~dp0scripts\launch-coursality.ps1"
 
 if not exist "%SCRIPT%" (
   echo Could not find launcher script:

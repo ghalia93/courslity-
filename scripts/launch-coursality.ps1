@@ -81,7 +81,7 @@ function Wait-ForSite {
 }
 
 Write-Host ""
-Write-Host "Launching Cousality..." -ForegroundColor Cyan
+Write-Host "Launching Coursality..." -ForegroundColor Cyan
 Write-Host "Project: $ProjectRoot"
 Write-Host ""
 

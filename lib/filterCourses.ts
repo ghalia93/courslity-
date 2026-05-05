@@ -3,6 +3,7 @@ import {
   getSemesterFromCourseCode,
   getYearFromCourseCode,
 } from "@/lib/courseCode";
+import { getUniversityAliasSearchTerms } from "@/lib/universityAliases";
 
 interface CourseFilters {
   university?: string;
@@ -27,6 +28,9 @@ export function filterCourses(
   }: CourseFilters,
 ): Course[] {
   const normalizedQuery = query.toLowerCase().trim();
+  const universityAliasSearchTerms = getUniversityAliasSearchTerms(query).map(
+    (term) => term.toLowerCase(),
+  );
   const normalizedUniversity = university.toLowerCase().trim();
   const normalizedDepartment = department.toLowerCase().trim();
   const normalizedLanguage = language.toLowerCase().trim();
@@ -66,6 +70,9 @@ export function filterCourses(
       course.title.toLowerCase().includes(normalizedQuery) ||
       course.code.toLowerCase().includes(normalizedQuery) ||
       course.university.toLowerCase().includes(normalizedQuery) ||
+      universityAliasSearchTerms.some((term) =>
+        course.university.toLowerCase().includes(term),
+      ) ||
       course.department.toLowerCase().includes(normalizedQuery);
 
     return (

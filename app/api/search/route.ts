@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
+import { getUniversityAliasSearchTerms } from "@/lib/universityAliases";
 
 type SearchRow = RowDataPacket & {
   course_id: number;
@@ -9,53 +10,6 @@ type SearchRow = RowDataPacket & {
   department: string;
   university: string;
 };
-
-const UNIVERSITY_ALIAS_PATTERNS = [
-  {
-    aliases: ["bau"],
-    patterns: ["%Beirut Arab University%"],
-  },
-  {
-    aliases: ["aub"],
-    patterns: ["%American University of Beirut%"],
-  },
-  {
-    aliases: ["lau"],
-    patterns: ["%Lebanese American University%"],
-  },
-  {
-    aliases: ["liu"],
-    patterns: ["%Lebanese International University%"],
-  },
-  {
-    aliases: ["usj", "usjb"],
-    patterns: ["%Saint-Joseph%"],
-  },
-  {
-    aliases: ["uob"],
-    patterns: ["%Balamand%"],
-  },
-];
-
-function normalizeAlias(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function getUniversityAliasPatterns(query: string) {
-  const normalizedQuery = normalizeAlias(query);
-
-  if (normalizedQuery.length < 2) {
-    return [];
-  }
-
-  return UNIVERSITY_ALIAS_PATTERNS.flatMap(({ aliases, patterns }) =>
-    aliases.some(
-      (alias) => alias === normalizedQuery || alias.startsWith(normalizedQuery),
-    )
-      ? patterns
-      : [],
-  );
-}
 
 export async function GET(req: Request) {
   try {
@@ -72,7 +26,9 @@ export async function GET(req: Request) {
     }
 
     const like = `%${query}%`;
-    const universityAliasPatterns = getUniversityAliasPatterns(query);
+    const universityAliasPatterns = getUniversityAliasSearchTerms(query).map(
+      (term) => `%${term}%`,
+    );
     const universityAliasWhere = universityAliasPatterns.length
       ? `OR (${universityAliasPatterns.map(() => "u.name LIKE ?").join(" OR ")})`
       : "";

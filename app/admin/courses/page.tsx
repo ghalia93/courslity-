@@ -11,6 +11,7 @@ import {
   formatCourseLevel,
   sortCourseLevels,
 } from "@/lib/courseLevels";
+import { getUniversityAliasSearchTerms } from "@/lib/universityAliases";
 import {
   Pencil,
   Trash2,
@@ -762,12 +763,18 @@ export default function AdminCoursesPage() {
 
   const filteredCourses = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+    const universityAliasSearchTerms = getUniversityAliasSearchTerms(
+      searchQuery,
+    ).map((term) => term.toLowerCase());
     const result = courses.filter((c) => {
       const matchesSearch =
         !q ||
         c.title.toLowerCase().includes(q) ||
         c.code.toLowerCase().includes(q) ||
         c.university.toLowerCase().includes(q) ||
+        universityAliasSearchTerms.some((term) =>
+          c.university.toLowerCase().includes(term),
+        ) ||
         c.department.toLowerCase().includes(q);
       return (
         matchesSearch &&

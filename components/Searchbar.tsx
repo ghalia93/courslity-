@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable Searchbar UI component.
 import {
   Dispatch,
   SetStateAction,

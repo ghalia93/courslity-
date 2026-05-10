@@ -1,3 +1,4 @@
+// Handles API feedback requests.
 import { NextRequest, NextResponse } from "next/server";
 import type { ResultSetHeader } from "mysql2";
 import pool from "@/db";

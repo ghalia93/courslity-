@@ -1,3 +1,4 @@
+// Handles API admin reviews id requests.
 import { NextRequest, NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
@@ -12,7 +13,7 @@ type ReviewIdRow = RowDataPacket & {
  *
  * Soft-deletes a review by setting deleted_at.
  * Votes are preserved so historical aggregates remain consistent.
- * Hard-delete is intentionally avoided — reviews are user-generated content
+ * Hard-delete is intentionally avoided - reviews are user-generated content
  * and may be needed for auditing.
  */
 export async function DELETE(

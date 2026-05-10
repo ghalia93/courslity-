@@ -1,3 +1,4 @@
+// Filters course lists by search text and selected course facets.
 import { Course } from "@/types/course";
 import {
   getSemesterFromCourseCode,

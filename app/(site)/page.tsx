@@ -1,3 +1,4 @@
+// Renders the public home page with hero content, featured courses, and feedback.
 import Hero from "../../components/Hero";
 import Link from "next/link";
 import CourseCard from "../../components/CourseCard";

@@ -1,3 +1,4 @@
+// Renders the site signup page.
 import SignupForm from "@/components/SignupForm";
 
 export default function SignupPage() {

@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable Hero UI component.
 import { useState } from "react";
 import Stats from "./Stats";
 import Searchbar from "./Searchbar";

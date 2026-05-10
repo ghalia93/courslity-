@@ -1,3 +1,4 @@
+// Defines shared TypeScript types for course data.
 export interface Course {
   courseId: number;
   slug?: string;

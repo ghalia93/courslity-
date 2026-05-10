@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable ReviewFooterBar UI component.
 import { useEffect, useState } from "react";
 import { ArrowBigDown, ArrowBigUp } from "lucide-react";
 

@@ -1,3 +1,4 @@
+// Defines course level values and display helpers used across filters and forms.
 export const COURSE_LEVEL_OPTIONS = [
   { label: "Freshmen", value: "freshman" },
   { label: "Undergraduate", value: "undergraduate" },

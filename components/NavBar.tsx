@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable NavBar UI component.
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -43,7 +44,7 @@ export default function NavBar() {
           aria-label="Menu"
           type="button"
         >
-          ☰
+          Menu
         </button>
 
         <Link href="/" className="flex shrink-0 items-center gap-2">

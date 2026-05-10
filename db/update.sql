@@ -1,3 +1,4 @@
+-- Applies incremental schema and seed updates for existing course databases.
 USE course_checker;
 
 ALTER TABLE `user`

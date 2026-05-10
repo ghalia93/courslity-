@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable CoursePageClient UI component.
 import { useState } from "react";
 import Button from "@/components/Button";
 import WriteReviewCard from "@/components/WriteReviewCard";

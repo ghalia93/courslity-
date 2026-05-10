@@ -1,3 +1,4 @@
+// Provides server-side authentication and admin authorization helpers.
 import { NextRequest } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import jwt from "jsonwebtoken";

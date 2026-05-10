@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin dashboard RatingsDistributionChart chart.
 import { useEffect, useState } from "react";
 import {
   CartesianGrid,

@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin AddAdminCard interface component.
 import { X } from "lucide-react";
 import Button from "@/components/Button";
 import SearchableDropdownField from "@/components/SearchableDropdown";

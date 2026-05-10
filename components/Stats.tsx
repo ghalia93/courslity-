@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable Stats UI component.
 import { useEffect, useState } from "react";
 import type { HeroStatsResponse } from "@/app/api/hero-stats/route";
 
@@ -13,10 +14,15 @@ export default function HeroStats() {
     async function fetchStats() {
       try {
         const res = await fetch("/api/hero-stats");
-        if (!res.ok) throw new Error("Failed to fetch");
-        setStats(await res.json());
+        if (!res.ok) return;
+
+        const data = (await res.json()) as Partial<HeroStatsResponse>;
+        setStats({
+          universities: Number(data.universities ?? DEFAULTS.universities),
+          courses: Number(data.courses ?? DEFAULTS.courses),
+        });
       } catch (err) {
-        console.error("[HeroStats] Could not load stats:", err);
+        console.warn("[HeroStats] Could not load stats:", err);
       } finally {
         setLoading(false);
       }
@@ -48,7 +54,7 @@ export default function HeroStats() {
       />
 
       <Stat
-        loading={false} // static — no API needed
+        loading={false} // static - no API needed
         icon={
           <svg
             xmlns="http://www.w3.org/2000/svg"

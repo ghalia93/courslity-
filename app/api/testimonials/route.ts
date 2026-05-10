@@ -1,3 +1,4 @@
+// Handles API testimonials requests. It’s probably used for a section like: “What students are saying”
 import { NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";

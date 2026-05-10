@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the site search page.
 import { Suspense, useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";

@@ -1,3 +1,4 @@
+// Defines the layout shell for admin routes.
 import type { ReactNode } from "react";
 import AdminNavbar from "@/components/admin/AdminNavbar";
 

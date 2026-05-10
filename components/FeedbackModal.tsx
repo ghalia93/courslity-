@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable FeedbackModal UI component.
 import { useState } from "react";
 import StarRating from "./StarRating";
 import Button from "./Button";
@@ -69,7 +70,7 @@ export default function FeedbackModal({ onClose, onSubmitted }: Props) {
           type="button"
           disabled={loading}
         >
-          ✕
+          x
         </button>
 
         <h2 className="text-lg font-semibold text-gray-900">

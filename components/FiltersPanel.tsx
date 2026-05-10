@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable FiltersPanel UI component.
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
 import { Filters } from "@/types/filters";

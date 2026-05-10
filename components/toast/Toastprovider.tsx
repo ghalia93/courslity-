@@ -1,5 +1,6 @@
 "use client";
 
+// Provides toast notification UI for client-side feedback.
 import React, { createContext, useContext, useState } from "react";
 
 type ToastType = "success" | "error";
@@ -57,7 +58,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 type="button"
                 aria-label="Dismiss"
               >
-                ✕
+                x
               </button>
             </div>
           </div>

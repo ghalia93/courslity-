@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin dashboard ReviewTrendChart chart.
 import { useEffect, useState } from "react";
 import {
   BarChart,

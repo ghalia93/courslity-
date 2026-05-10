@@ -1,3 +1,4 @@
+// Handles API auth reset-password requests.
 import { NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
@@ -19,7 +20,7 @@ type UserIdRow = RowDataPacket & {
 /**
  * POST /api/auth/reset-password
  *
- * Public endpoint — the user arrives here via the emailed link and is not logged in.
+ * Public endpoint - the user arrives here via the emailed link and is not logged in.
  * Validates the token, ensures it hasn't been used or expired,
  * hashes the new password, and updates the user record.
  *

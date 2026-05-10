@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the site reset-password token page.
 import Link from "next/link";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";

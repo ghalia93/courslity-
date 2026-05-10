@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin feedback page.
 import { useMemo, useState, useEffect, useCallback } from "react";
 import {
   Search,
@@ -285,7 +286,7 @@ export default function AdminFeedbackPage() {
 
   const avgRating = feedbackList.length
     ? (feedbackList.reduce((s, f) => s + Number(f.rating || 0), 0) / feedbackList.length).toFixed(2)
-    : "—";
+    : " - ";
   const feedbackCount = feedbackList.filter((f) => f.kind === "feedback").length;
   const problemCount = feedbackList.filter((f) => f.kind === "problem").length;
 
@@ -474,9 +475,9 @@ export default function AdminFeedbackPage() {
                   className="h-9 pl-3 pr-8 rounded-md border border-gray-300 bg-white text-sm text-gray-700 appearance-none focus:outline-none focus:border-[#6155F5]"
                 >
                   <option value="all">All</option>
-                  <option value="positive">Positive (≥ 4★)</option>
-                  <option value="neutral">Neutral (3–4★)</option>
-                  <option value="negative">Negative (&lt; 3★)</option>
+                  <option value="positive">Positive (&gt;= 4*)</option>
+                  <option value="neutral">Neutral (3-4*)</option>
+                  <option value="negative">Negative (&lt; 3*)</option>
                 </select>
                 <ChevronDown
                   className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
@@ -517,7 +518,7 @@ export default function AdminFeedbackPage() {
         </div>
       )}
 
-      {loading && <p className="mt-4 text-sm text-gray-500">Loading…</p>}
+      {loading && <p className="mt-4 text-sm text-gray-500">Loading...</p>}
       {!loading && error && <p className="mt-4 text-sm text-red-500">{error}</p>}
 
       <p className="mt-3 text-xs text-gray-400">

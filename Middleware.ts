@@ -1,3 +1,4 @@
+// Protects authenticated and admin routes before requests reach the app.
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";

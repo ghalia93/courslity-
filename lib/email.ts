@@ -1,3 +1,4 @@
+// Sends application emails through the configured email provider.
 import { Resend } from "resend";
 // npm install resend --legacy-peer-deps
 
@@ -41,10 +42,10 @@ interface SendPasswordResetEmailOptions {
  * Sends a styled HTML password reset email via Resend.
  *
  * Required environment variables:
- *   RESEND_API_KEY          — your Resend API key (from resend.com/api-keys)
- *   EMAIL_FROM              — verified sender address e.g. noreply@yourdomain.com
- *   NEXT_PUBLIC_APP_NAME    — shown in the email subject and body (optional, defaults to "UniPortal")
- *   NEXT_PUBLIC_APP_URL     — used in forgot-password route to build the reset link
+ *   RESEND_API_KEY          - your Resend API key (from resend.com/api-keys)
+ *   EMAIL_FROM              - verified sender address e.g. noreply@yourdomain.com
+ *   NEXT_PUBLIC_APP_NAME    - shown in the email subject and body (optional, defaults to "UniPortal")
+ *   NEXT_PUBLIC_APP_URL     - used in forgot-password route to build the reset link
  */
 export async function sendPasswordResetEmail({
   to,
@@ -68,9 +69,9 @@ export async function sendPasswordResetEmail({
   }
 }
 
-// ---------------------------------------------------------------------------
+// ---
 // HTML template
-// ---------------------------------------------------------------------------
+// ---
 
 function buildResetEmailHtml({
   resetUrl,
@@ -158,7 +159,7 @@ function buildResetEmailHtml({
               </table>
 
               <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.6;">
-                If you didn't request a password reset, you can safely ignore this email —
+                If you didn't request a password reset, you can safely ignore this email  -
                 your password will not be changed.
               </p>
 
@@ -171,7 +172,7 @@ function buildResetEmailHtml({
                 style="background:#f9fafb;border-top:1px solid #e5e7eb;
                         padding:16px 40px;">
               <p style="margin:0;color:#9ca3af;font-size:12px;">
-                © ${new Date().getFullYear()} ${appName}. All rights reserved.
+                (c) ${new Date().getFullYear()} ${appName}. All rights reserved.
               </p>
             </td>
           </tr>
@@ -188,9 +189,9 @@ function buildResetEmailHtml({
   `.trim();
 }
 
-// ---------------------------------------------------------------------------
+// ---
 // Plain-text fallback
-// ---------------------------------------------------------------------------
+// ---
 
 function buildResetEmailText({
   resetUrl,
@@ -200,8 +201,8 @@ function buildResetEmailText({
   appName: string;
 }): string {
   return `
-${appName} — Reset your password
-----------------------------------
+${appName} - Reset your password
+---
 
 We received a request to reset the password for your ${appName} account.
 
@@ -209,8 +210,8 @@ Click the link below to choose a new password (valid for 1 hour):
 
 ${resetUrl}
 
-If you didn't request this, you can safely ignore this email — your password will not be changed.
+If you didn't request this, you can safely ignore this email - your password will not be changed.
 
-© ${new Date().getFullYear()} ${appName}
+(c) ${new Date().getFullYear()} ${appName}
   `.trim();
 }

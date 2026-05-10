@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable WriteReviewCard UI component.
 import { useState } from "react";
 import Button from "@/components/Button";
 import StarRating from "@/components/StarRating";
@@ -201,7 +202,7 @@ export default function WriteReviewCard({
             !canSubmit || submitting ? "opacity-50 cursor-not-allowed" : ""
           }
         >
-          {submitting ? "Submitting…" : "Submit Review"}
+          {submitting ? "Submitting..." : "Submit Review"}
         </Button>
       </div>
     </div>

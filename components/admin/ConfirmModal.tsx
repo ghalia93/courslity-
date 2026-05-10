@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin ConfirmModal interface component.
 import React from "react";
 
 type ConfirmModalProps = {

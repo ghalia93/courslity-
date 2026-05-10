@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the site courses page.
 import {
   Suspense,
   useState,
@@ -42,7 +43,7 @@ function CoursesPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // ── Initialise from URL params ──────────────────────────────────────────────
+  // -- Initialise from URL params ---
   const [query, setQuery] = useState(searchParams.get("query") || "");
   const [debouncedQuery, setDebouncedQuery] = useState(query);
   const [filters, setFilters] = useState<Filters>({
@@ -54,7 +55,7 @@ function CoursesPageContent() {
     semester: searchParams.get("semester") || "",
   });
 
-  // ── Courses from API ────────────────────────────────────────────────────────
+  // -- Courses from API ---
   const [courses, setCourses] = useState<Course[]>([]);
   const [universities, setUniversities] = useState<UniversityOption[]>([]);
   const [departments, setDepartments] = useState<DepartmentOption[]>([]);
@@ -95,13 +96,13 @@ function CoursesPageContent() {
     fetchCourses();
   }, []);
 
-  // ── Debounce search query (300 ms) ──────────────────────────────────────────
+  // -- Debounce search query (300 ms) ---
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query), 300);
     return () => clearTimeout(timer);
   }, [query]);
 
-  // ── Sync active search + filters → URL (skip on initial mount) ─────────────
+  // Sync active search and filters to the URL after the initial mount.
   const isMounted = useRef(false);
   useEffect(() => {
     if (!isMounted.current) {
@@ -116,7 +117,7 @@ function CoursesPageContent() {
     router.replace(`/courses?${params.toString()}`, { scroll: false });
   }, [debouncedQuery, filters, router]);
 
-  // ── Filter courses client-side ──────────────────────────────────────────────
+  // -- Filter courses client-side ---
   const filteredCourses = useMemo(
     () => filterCourses(courses, { ...filters, query: debouncedQuery }),
     [courses, filters, debouncedQuery],
@@ -226,7 +227,7 @@ function CoursesPageContent() {
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
           {loading ? (
             <p className="text-gray-400 text-center py-10 md:col-span-2">
-              Loading courses…
+              Loading courses...
             </p>
           ) : error ? (
             <p className="text-red-500 text-center py-10 md:col-span-2">

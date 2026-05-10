@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin AddCourseCard interface component.
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import Button from "@/components/Button";

@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable NavLink UI component.
 import Link from "next/link";
 
 type NavLinkProps = {

@@ -1,3 +1,4 @@
+// Filters roadmap lists by selected academic criteria.
 import type { Filters } from "@/types/filters";
 import type { RoadmapSummary } from "@/types/roadmap";
 

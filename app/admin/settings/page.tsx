@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin settings page.
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import {

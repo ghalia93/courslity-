@@ -1,4 +1,6 @@
+// Defines the root application layout, metadata, and global providers.
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/components/toast/Toastprovider";
@@ -15,7 +17,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <html lang="en">

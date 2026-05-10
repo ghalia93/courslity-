@@ -1,3 +1,4 @@
+// Renders the reusable StatsSection UI component.
 import CountUp from "react-countup";
 import { useInView } from "react-intersection-observer";
 

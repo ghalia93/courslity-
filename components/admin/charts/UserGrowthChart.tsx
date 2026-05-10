@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin dashboard UserGrowthChart chart.
 import { useEffect, useState } from "react";
 import {
   LineChart,

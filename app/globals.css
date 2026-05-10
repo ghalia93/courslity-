@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+/* Defines global Tailwind imports, theme tokens, and base element styles. */
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

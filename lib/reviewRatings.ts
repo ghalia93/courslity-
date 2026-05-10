@@ -1,3 +1,4 @@
+// Calculates overall review ratings from individual rating fields.
 export type ReviewRatingInputs = {
   examDifficulty: number;
   attendanceStrictness: number;

@@ -1,3 +1,4 @@
+// Renders the reusable HowItWorks UI component.
 export default function HowItWorks() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 text-center sm:px-8 sm:py-16 lg:py-20">

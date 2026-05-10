@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin universities page.
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
 import { Building2, GraduationCap, Plus, RefreshCw } from "lucide-react";

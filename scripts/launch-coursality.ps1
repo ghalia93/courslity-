@@ -1,3 +1,4 @@
+# Launches the local Coursality development workflow from a script.
 $ErrorActionPreference = "Stop"
 
 $ProjectRoot = Split-Path -Parent $PSScriptRoot

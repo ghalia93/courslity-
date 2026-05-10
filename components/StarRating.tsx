@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable StarRating UI component.
 import { useState } from "react";
 
 type StarRatingProps = {
@@ -50,7 +51,7 @@ export default function StarRating({
                 filled ? "text-[#F5B301]" : "text-gray-300",
               ].join(" ")}
             >
-              ★
+              {"\u2605"}
             </span>
           </button>
         );

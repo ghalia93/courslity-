@@ -1,3 +1,4 @@
+// Handles API auth hash requests.
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 

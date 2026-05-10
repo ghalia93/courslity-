@@ -1,6 +1,8 @@
+// Handles API admin users requests.
 import { NextRequest, NextResponse } from "next/server";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
+import { isAdminRole } from "@/lib/roles";
 import pool from "@/db";
 import bcrypt from "bcryptjs";
 
@@ -26,22 +28,40 @@ type ExistingUserRow = RowDataPacket & {
 //display users (admin: user management table)
 export async function GET(req: NextRequest) {
   try {
-    await requireAdmin(req);
+    const currentAdmin = await requireAdmin(req);
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") || 1));
     const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") || 10)));
     const q = (searchParams.get("q") || "").trim();
+    const verification = searchParams.get("verification");
+    const status = searchParams.get("status");
 
     const offset = (page - 1) * limit;
 
-    let where = "";
-    const params: string[] = [];
+    const conditions: string[] = [];
+    const params: Array<string | number> = [];
 
     if (q) {
-      where = `WHERE u.full_name LIKE ? OR u.email LIKE ?`;
+      conditions.push("(u.full_name LIKE ? OR u.email LIKE ?)");
       params.push(`%${q}%`, `%${q}%`);
     }
+
+    if (verification === "pending") {
+      conditions.push("u.email_verified_at IS NULL");
+    } else if (verification === "verified") {
+      conditions.push("u.email_verified_at IS NOT NULL");
+    }
+
+    if (status === "active") {
+      conditions.push("u.deleted_at IS NULL");
+    } else if (status === "deactivated") {
+      conditions.push("u.deleted_at IS NOT NULL");
+    }
+
+    const where = conditions.length
+      ? `WHERE ${conditions.join(" AND ")}`
+      : "";
 
     // Total count
     const [countRows] = await pool.query<CountRow[]>(
@@ -82,7 +102,9 @@ export async function GET(req: NextRequest) {
       joined: user.created_at,
       active: !user.deleted_at,
       verified: !!user.email_verified_at,
-      isProtected: !user.deleted_at && user.role === "admin",
+      isProtected:
+        !user.deleted_at &&
+        (user.user_id === currentAdmin.userId || isAdminRole(user.role)),
     }));
 
     return NextResponse.json({
@@ -94,7 +116,14 @@ export async function GET(req: NextRequest) {
       }
     });
 
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "FORBIDDEN") {
+      return NextResponse.json(
+        { error: "FORBIDDEN" },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(
       { error: "UNAUTHORIZED" },
       { status: 401 }
@@ -178,7 +207,7 @@ export async function POST(req: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await pool.query<ResultSetHeader>(
-      "INSERT INTO `user` (full_name, email, password, role) VALUES (?, ?, ?, ?)",
+      "INSERT INTO `user` (full_name, email, password, role, email_verified_at) VALUES (?, ?, ?, ?, NOW())",
       [fullName, email, hashedPassword, requestedRole]
     );
 
@@ -193,12 +222,20 @@ export async function POST(req: NextRequest) {
           id: result.insertId,
           name: fullName,
           email,
-          role: requestedRole
+          role: requestedRole,
+          verified: true,
         }
       },
       { status: 201 }
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "FORBIDDEN") {
+      return NextResponse.json(
+        { error: "FORBIDDEN" },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(
       { error: "UNAUTHORIZED" },
       { status: 401 }

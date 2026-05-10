@@ -1,3 +1,4 @@
+// Renders the site courses slug page.
 import { notFound } from "next/navigation";
 import CourseInfo from "@/components/CourseInfo";
 import CoursePageClient from "@/components/CoursePageClient";

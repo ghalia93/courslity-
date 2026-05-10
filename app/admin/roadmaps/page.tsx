@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin roadmaps page.
 import { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,

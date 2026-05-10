@@ -1,9 +1,11 @@
+// Handles API admin courses id requests.
 import { NextRequest, NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import { requireAdmin, requireUniversityAdmin } from "@/lib/auth";
 import pool from "@/db";
 import { COURSE_LEVEL_VALUES } from "@/lib/courseLevels";
 
+// Full course payload returned by the joined admin detail query.
 type CourseDetailRow = RowDataPacket & {
   course_id: number;
   code: string;
@@ -25,16 +27,19 @@ type CourseDetailRow = RowDataPacket & {
   grading: number | string;
 };
 
+// Minimal row used when we only need to prove a course exists.
 type CourseIdRow = RowDataPacket & {
   course_id: number;
 };
 
+// Prerequisite courses are fetched separately so the response can include a list.
 type PrerequisiteRow = RowDataPacket & {
   course_id: number;
   code: string;
   title: string;
 };
 
+// Minimal row used to validate a department before moving a course to it.
 type DepartmentIdRow = RowDataPacket & {
   department_id: number;
 };
@@ -50,8 +55,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    // Any admin can view course details in the admin dashboard.
     await requireAdmin(req);
 
+    // Dynamic route params arrive as strings, so convert and validate early.
     const { id } = await params;
     const courseId = parseInt(id, 10);
 
@@ -62,6 +69,7 @@ export async function GET(
       );
     }
 
+    // Load the course, its university/department labels, and review averages in one query.
     const [rows] = await pool.query<CourseDetailRow[]>(
       `SELECT
         c.course_id,
@@ -103,7 +111,7 @@ export async function GET(
 
     const row = rows[0];
 
-    // Fetch prerequisites
+    // Fetch active prerequisite courses separately because they are one-to-many.
     const [prereqs] = await pool.query<PrerequisiteRow[]>(
       `SELECT c.course_id, c.code, c.title
         FROM course_prerequisite cp
@@ -112,6 +120,7 @@ export async function GET(
       [courseId],
     );
 
+    // Normalize MySQL numeric aggregates into plain JavaScript numbers for the UI.
     const course = {
       course_id: row.course_id,
       code: row.code,
@@ -150,7 +159,7 @@ export async function GET(
  * PATCH /api/admin/courses/[id]
  *
  * Partially updates a course. Only fields present in the body are updated.
- * Course `code` is intentionally not patchable — changing a code breaks
+ * Course `code` is intentionally not patchable - changing a code breaks
  * existing references. Delete and recreate instead.
  *
  * Body (all optional): {
@@ -162,8 +171,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    // Only University Admins can mutate course records.
     await requireUniversityAdmin(req);
 
+    // Validate the route id before touching the database.
     const { id } = await params;
     const courseId = parseInt(id, 10);
 
@@ -174,7 +185,7 @@ export async function PATCH(
       );
     }
 
-    // Confirm the course exists and is not deleted
+    // Confirm the course exists and is not already soft-deleted.
     const [existing] = await pool.query<CourseIdRow[]>(
       "SELECT course_id FROM course WHERE course_id = ? AND deleted_at IS NULL LIMIT 1",
       [courseId],
@@ -191,9 +202,11 @@ export async function PATCH(
     const { title, description, credits, language, level, department_id } =
       body;
 
+    // Build the UPDATE statement only from fields that were actually provided.
     const setClauses: string[] = [];
     const values: Array<string | number> = [];
 
+    // Validate and queue a title update when the request includes one.
     if (title !== undefined) {
       if (typeof title !== "string" || !title.trim()) {
         return NextResponse.json(
@@ -205,6 +218,7 @@ export async function PATCH(
       values.push(title.trim());
     }
 
+    // Validate and queue a description update when the request includes one.
     if (description !== undefined) {
       if (typeof description !== "string" || !description.trim()) {
         return NextResponse.json(
@@ -216,6 +230,7 @@ export async function PATCH(
       values.push(description.trim());
     }
 
+    // Credits are limited to the schema's realistic 1-9 range.
     if (credits !== undefined) {
       const c = Number(credits);
       if (isNaN(c) || c < 1 || c > 9) {
@@ -228,6 +243,7 @@ export async function PATCH(
       values.push(c);
     }
 
+    // Keep languages aligned with the database enum.
     const validLanguages = [
       "English",
       "Arabic",
@@ -250,6 +266,7 @@ export async function PATCH(
       values.push(language);
     }
 
+    // Keep levels aligned with the shared course-level constants.
     const validLevels = COURSE_LEVEL_VALUES;
     if (level !== undefined) {
       if (!validLevels.includes(level)) {
@@ -265,6 +282,7 @@ export async function PATCH(
       values.push(level);
     }
 
+    // If the department changes, verify the target department exists and is active.
     if (department_id !== undefined) {
       const deptId = Number(department_id);
       if (isNaN(deptId)) {
@@ -287,6 +305,7 @@ export async function PATCH(
       values.push(deptId);
     }
 
+    // Avoid running an empty UPDATE when the request body had no supported fields.
     if (setClauses.length === 0) {
       return NextResponse.json(
         { success: false, message: "No valid fields provided to update" },
@@ -294,6 +313,7 @@ export async function PATCH(
       );
     }
 
+    // Append the route id last because it belongs to the WHERE clause.
     values.push(courseId);
     await pool.query(
       `UPDATE course SET ${setClauses.join(", ")} WHERE course_id = ?`,
@@ -332,8 +352,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    // Only University Admins can remove courses from the visible catalog.
     await requireUniversityAdmin(req);
 
+    // Validate the route id before looking up the course.
     const { id } = await params;
     const courseId = parseInt(id, 10);
 
@@ -344,6 +366,7 @@ export async function DELETE(
       );
     }
 
+    // Only active courses can be deleted; deleted courses should return 404 here.
     const [rows] = await pool.query<CourseIdRow[]>(
       "SELECT course_id FROM course WHERE course_id = ? AND deleted_at IS NULL LIMIT 1",
       [courseId],
@@ -356,6 +379,7 @@ export async function DELETE(
       );
     }
 
+    // Soft delete preserves reviews, votes, and historical references.
     await pool.query(
       "UPDATE course SET deleted_at = NOW() WHERE course_id = ?",
       [courseId],

@@ -1,3 +1,4 @@
+// Handles API hero-stats requests for homepage counters.
 import { NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
@@ -7,8 +8,13 @@ export interface HeroStatsResponse {
   courses: number;
 }
 
+const DEFAULT_HERO_STATS: HeroStatsResponse = {
+  universities: 0,
+  courses: 0,
+};
+
 type CountRow = RowDataPacket & {
-  count: number;
+  count: number | string;
 };
 
 export async function GET() {
@@ -23,8 +29,8 @@ export async function GET() {
     ]);
 
     const data: HeroStatsResponse = {
-      universities: uniRows[0].count,
-      courses: courseRows[0].count,
+      universities: Number(uniRows[0]?.count ?? 0),
+      courses: Number(courseRows[0]?.count ?? 0),
     };
 
     return NextResponse.json(data, {
@@ -34,10 +40,12 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("[hero-stats] Failed to fetch stats:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch stats" },
-      { status: 500 },
-    );
+    console.warn("[hero-stats] Using fallback stats:", error);
+    return NextResponse.json(DEFAULT_HERO_STATS, {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    });
   }
 }

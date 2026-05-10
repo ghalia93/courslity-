@@ -1,3 +1,4 @@
+// Defines shared TypeScript types for roadmap data.
 export type RoadmapSemester = "fall" | "spring" | "summer";
 
 export type RoadmapCourse = {

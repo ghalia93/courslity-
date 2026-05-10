@@ -1,3 +1,4 @@
+// Normalizes user roles and checks admin permission levels.
 export function normalizeRole(role: string | undefined | null) {
   const normalized = String(role ?? "")
     .trim()

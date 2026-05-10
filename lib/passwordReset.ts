@@ -1,3 +1,4 @@
+// Creates and sends password reset tokens for account recovery.
 import type { RowDataPacket } from "mysql2";
 import jwt from "jsonwebtoken";
 import pool from "@/db";

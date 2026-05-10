@@ -1,6 +1,7 @@
+// Handles API admin users id requests.
 import { NextRequest, NextResponse } from "next/server";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
-import { requireAdmin } from "@/lib/auth";
+import { isAdminRole, requireAdmin } from "@/lib/auth";
 import pool from "@/db";
 
 type UserRow = RowDataPacket & {
@@ -29,7 +30,7 @@ function isProtectedDeactivation(
   currentAdminId: number,
   targetUser: UserRow,
 ) {
-  return currentAdminId === targetUser.user_id || targetUser.role === "admin";
+  return currentAdminId === targetUser.user_id || isAdminRole(targetUser.role);
 }
 
 export async function PATCH(
@@ -64,13 +65,27 @@ export async function PATCH(
     }
 
     if (action === "verify") {
-      await pool.query(
+      if (targetUser.email_verified_at) {
+        return NextResponse.json({
+          success: true,
+          message: "User is already verified",
+        });
+      }
+
+      const [result] = await pool.query<ResultSetHeader>(
         `UPDATE user
-        SET email_verified_at = COALESCE(email_verified_at, NOW()),
+        SET email_verified_at = NOW(),
             email_verification_token = NULL
-        WHERE user_id = ?`,
+        WHERE user_id = ? AND email_verified_at IS NULL`,
         [userId],
       );
+
+      if (result.affectedRows === 0) {
+        return NextResponse.json(
+          { message: "User could not be verified" },
+          { status: 409 },
+        );
+      }
 
       return NextResponse.json({
         success: true,
@@ -128,6 +143,10 @@ export async function PATCH(
       message: "User deactivated successfully",
     });
   } catch (error) {
+    if (error instanceof Error && error.message === "FORBIDDEN") {
+      return NextResponse.json({ message: "FORBIDDEN" }, { status: 403 });
+    }
+
     console.error("PATCH USER ERROR:", error);
     return NextResponse.json({ message: "UNAUTHORIZED" }, { status: 401 });
   }
@@ -193,6 +212,13 @@ export async function DELETE(
     });
 
   } catch (error) {
+    if (error instanceof Error && error.message === "FORBIDDEN") {
+      return NextResponse.json(
+        { message: "FORBIDDEN" },
+        { status: 403 }
+      );
+    }
+
     console.error("DELETE USER ERROR:", error);
     return NextResponse.json(
       { message: "UNAUTHORIZED" },

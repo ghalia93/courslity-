@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin AdminNavbar interface component.
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -122,7 +123,7 @@ export default function AdminNavbar() {
             className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg hover:bg-gray-100"
             onClick={() => setMobileOpen(true)}
           >
-            ☰
+            Menu
           </button>
 
           <Link href="/admin" className="flex items-center gap-2 shrink-0">
@@ -328,7 +329,7 @@ export default function AdminNavbar() {
                 aria-label="Close menu"
                 onClick={() => setMobileOpen(false)}
               >
-                ✕
+                x
               </button>
               <div className="flex items-center gap-2">
                 <Image src="/favicon.ico" alt="Logo" width={28} height={28} />

@@ -1,3 +1,4 @@
+// Handles API stats requests.
 //About page statistics
 import { NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";

@@ -1,3 +1,4 @@
+// Defines shared roadmap option labels and ordering helpers.
 import type { RoadmapSemester } from "@/types/roadmap";
 
 export const ROADMAP_SEMESTER_OPTIONS: {

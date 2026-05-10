@@ -1,5 +1,6 @@
 "use client";
 
+// Provides client-side authentication state, refresh, and logout helpers.
 import {
   createContext,
   useCallback,
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         credentials: "include",
       });
     } catch {
-      // ignore network errors — clear state regardless
+      // ignore network errors - clear state regardless
     }
     setUser(null);
     router.push("/");

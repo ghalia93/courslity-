@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable Footer UI component.
 import NavLink from "./NavLink";
 
 export default function Footer() {
@@ -36,7 +37,7 @@ export default function Footer() {
       </div>
 
       <div className="py-8 text-center text-sm text-gray-400">
-        © 2026 Coursality
+        (c) 2026 Coursality
       </div>
 
     </footer>

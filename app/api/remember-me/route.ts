@@ -1,3 +1,4 @@
+// Handles API remember-me requests.
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { requireAuth } from "@/lib/auth";
@@ -8,7 +9,7 @@ const REMEMBER_ME_COOKIE = "remember_me_token";
 /**
  * POST /api/auth/remember-me
  *
- * Protected — requires a valid Bearer token (the user must be logged in).
+ * Protected - requires a valid Bearer token (the user must be logged in).
  * Call this right after login when the user has "Remember me" checked.
  *
  * Issues a long-lived httpOnly cookie so future visits can restore the session
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
  * DELETE /api/auth/remember-me
  *
  * Clears the remember-me cookie on logout.
- * No authentication required — a logged-out user may also call this to clean up.
+ * No authentication required - a logged-out user may also call this to clean up.
  */
 export async function DELETE() {
   const response = NextResponse.json({

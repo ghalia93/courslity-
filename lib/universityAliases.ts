@@ -1,3 +1,4 @@
+// Maps university aliases to normalized university names for search.
 type UniversityAliasGroup = {
   aliases: string[];
   searchTerms: string[];

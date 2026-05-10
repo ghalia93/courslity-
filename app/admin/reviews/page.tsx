@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin reviews page.
 import { useMemo, useState, useEffect, useCallback } from "react";
 import {
   Search,
@@ -131,10 +132,10 @@ function ReviewDetailModal({
         <div className="flex items-start justify-between gap-4 p-5 border-b border-gray-100">
           <div>
             <p className="font-semibold text-gray-900">
-              {review.course_code} — {review.course_title}
+              {review.course_code} - {review.course_title}
             </p>
             <p className="text-sm text-gray-400 mt-0.5">
-              {review.department} · {review.university}
+              {review.department} - {review.university}
             </p>
           </div>
           <button
@@ -425,7 +426,7 @@ export default function AdminReviewsPage() {
             <>
               Are you sure you want to delete the review for{" "}
               <span className="font-medium text-gray-700">
-                {pendingDelete.course_code} — {pendingDelete.course_title}
+                {pendingDelete.course_code} - {pendingDelete.course_title}
               </span>{" "}
               by{" "}
               <span className="font-medium text-gray-700">
@@ -554,7 +555,7 @@ export default function AdminReviewsPage() {
                   { value: "all", label: "All ratings" },
                   ...["5", "4", "3", "2", "1"].map((v) => ({
                     value: v,
-                    label: `${v} ★`,
+                    label: `${v} *`,
                   })),
                 ],
               },
@@ -775,7 +776,7 @@ export default function AdminReviewsPage() {
                   <h3 className="font-semibold text-gray-900">{r.course_code}</h3>
                   <p className="text-sm text-gray-500">{r.course_title}</p>
                   <p className="text-xs text-gray-400">
-                    {r.department} · {r.university}
+                    {r.department} - {r.university}
                   </p>
                 </div>
                 <div onClick={(e) => e.stopPropagation()}>

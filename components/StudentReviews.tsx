@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable StudentReviews UI component.
 import { useState, useEffect, useCallback } from "react";
 import StarRating from "@/components/StarRating";
 import ReviewFooterBar from "@/components/ReviewFooterBar";
@@ -26,8 +27,8 @@ type Review = {
 const SORT_OPTIONS = [
   { label: "Most Popular", value: "popular" },
   { label: "Newest", value: "newest" },
-  { label: "Highest Rated", value: "rating_high" },
-  { label: "Lowest Rated", value: "rating_low" },
+  { label: "Most Upvoted", value: "rating_high" },
+  { label: "Lowest Votes", value: "rating_low" },
 ];
 
 function timeAgo(dateStr: string): string {
@@ -102,7 +103,7 @@ export default function StudentReviews({ slug, refreshKey = 0 }: Props) {
       </div>
 
       {loading && (
-        <p className="text-gray-400 text-center py-10">Loading reviews…</p>
+        <p className="text-gray-400 text-center py-10">Loading reviews...</p>
       )}
 
       {!loading && error && (
@@ -128,7 +129,7 @@ export default function StudentReviews({ slug, refreshKey = 0 }: Props) {
                     {r.anonymous_name}
                   </h3>
                   <p className="text-sm text-gray-500 mt-0.5">
-                    Taken {r.semester_taken} · Instructor: {r.instructor_name}
+                    Taken {r.semester_taken} - Instructor: {r.instructor_name}
                   </p>
                 </div>
                 <StarRating value={r.overall_rating} readOnly />

@@ -1,3 +1,4 @@
+// Handles API auth forgot-password requests.
 import { NextResponse } from "next/server";
 import { EmailConfigurationError, sendPasswordResetEmail } from "@/lib/email";
 import {

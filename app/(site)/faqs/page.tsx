@@ -1,3 +1,4 @@
+// Renders the site faqs page.
 import Link from "next/link";
 import { HelpCircle, MessageSquareText, Search, ShieldCheck } from "lucide-react";
 import Button from "@/components/Button";

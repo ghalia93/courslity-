@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the site forgot-password page.
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowLeft, Clipboard, ExternalLink } from "lucide-react";

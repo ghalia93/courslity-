@@ -1,3 +1,4 @@
+// Handles API departments requests.
 import { NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";

@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable FeedbackCarousel UI component.
 import { useEffect, useRef, useState } from "react";
 import FeedbackModal from "./FeedbackModal";
 import Button from "./Button";
@@ -36,11 +37,11 @@ function QuoteCard({ quote, user, rating }: Feedback) {
         hover:-translate-y-1
       "
     >
-      {/* ⭐ Rating (same component styling) */}
+      {/* Rating display using the shared star component. */}
       <StarRating value={Number(rating) || 0} readOnly className="mb-2" />
 
       <p className="text-[13px] font-bold text-gray-900 leading-snug">
-        “{quote}”
+        &quot;{quote}&quot;
       </p>
       <p className="mt-3 text-[11px] text-gray-400">{user}</p>
     </div>
@@ -117,7 +118,7 @@ export default function FeedbackCarousel() {
             className="absolute left-0 top-1/2 z-10 h-9 w-9 -translate-y-1/2 rounded-full border border-gray-200 bg-white shadow-sm hover:bg-gray-50"
             aria-label="Previous"
           >
-            ‹
+            {"<"}
           </button>
 
           <div
@@ -125,7 +126,7 @@ export default function FeedbackCarousel() {
             className="flex flex-nowrap gap-4 overflow-x-auto px-10 sm:gap-6 sm:px-12"
             style={{ scrollbarWidth: "none" }}
           >
-            {loading && <p className="text-gray-500 px-2">Loading…</p>}
+            {loading && <p className="text-gray-500 px-2">Loading...</p>}
 
             {!loading && error && (
               <p className="text-red-500 px-2">{error}</p>
@@ -155,7 +156,7 @@ export default function FeedbackCarousel() {
             className="absolute right-0 top-1/2 z-10 h-9 w-9 -translate-y-1/2 rounded-full border border-gray-200 bg-white shadow-sm hover:bg-gray-50"
             aria-label="Next"
           >
-            ›
+            {">"}
           </button>
         </div>
 

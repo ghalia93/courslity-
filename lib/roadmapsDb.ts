@@ -1,3 +1,4 @@
+// Persists roadmap records and related course assignments.
 import pool from "@/db";
 
 let ensurePromise: Promise<void> | null = null;

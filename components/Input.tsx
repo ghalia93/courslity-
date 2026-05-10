@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable Input UI component.
 import React from "react";
 
 type InputProps = {

@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable SignupForm UI component.
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,15 +11,15 @@ type University = {
   email_domain?: string; // may or may not come from the API
 };
 
-// ─── Hardcoded fallback: used when the API doesn't return email_domain ────────
+// --- Hardcoded fallback: used when the API doesn't return email_domain ---
 // Once you add the email_domain column to your DB and return it from the API,
-// this map acts as a safety net — it will never be undefined either way.
+// this map acts as a safety net - it will never be undefined either way.
 const UNIVERSITY_DOMAINS: Record<string, string> = {
   "Beirut Arab University": "student.bau.edu.lb",
   "American University of Beirut": "mail.aub.edu",
   "Lebanese American University": "students.lau.edu.lb",
   "Lebanese International University": "students.liu.edu.lb",
-  "Université Saint-Joseph de Beyrouth": "net.usj.edu.lb",
+  "Universit\u00e9 Saint-Joseph de Beyrouth": "net.usj.edu.lb",
   "University of Balamand": "balamand.edu.lb",
 };
 
@@ -55,7 +56,7 @@ export default function SignupForm() {
     fetchUniversities();
   }, []);
 
-  // ── Domain validation ─────────────────────────────────────────────────────
+  // -- Domain validation ---
   function validateDomainMatch(
     currentEmail: string,
     currentUniversityId: number | "",
@@ -77,7 +78,7 @@ export default function SignupForm() {
       (u) => u.university_id === currentUniversityId,
     );
 
-    // University not found in list yet — skip silently
+    // University not found in list yet - skip silently
     if (!selected) {
       setDomainError(null);
       return true;
@@ -85,7 +86,7 @@ export default function SignupForm() {
 
     const expectedDomain = getExpectedDomain(selected);
 
-    // No domain configured for this university — skip validation
+    // No domain configured for this university - skip validation
     if (!expectedDomain) {
       setDomainError(null);
       return true;
@@ -104,7 +105,7 @@ export default function SignupForm() {
     return true;
   }
 
-  // ── Submit ────────────────────────────────────────────────────────────────
+  // -- Submit ---
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMsg(null);
@@ -139,7 +140,7 @@ export default function SignupForm() {
     }
   }
 
-  // ── Derived display values ────────────────────────────────────────────────
+  // -- Derived display values ---
   const selectedUni =
     universityId !== ""
       ? universities.find((u) => u.university_id === universityId)
@@ -152,7 +153,7 @@ export default function SignupForm() {
       ? null // university selected but list hasn't loaded yet
       : null;
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // -- Render ---
   return (
     <div className="w-full max-w-[420px] rounded-xl border border-gray-200 bg-white px-4 py-6 shadow-lg sm:px-6">
       <h1 className="text-center text-2xl font-semibold text-[#111827]">
@@ -185,7 +186,7 @@ export default function SignupForm() {
           />
         </div>
 
-        {/* University — placed before email so the domain hint is visible before typing */}
+        {/* University - placed before email so the domain hint is visible before typing */}
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-[#111827]">
             University
@@ -210,7 +211,7 @@ export default function SignupForm() {
             ))}
           </select>
 
-          {/* Domain hint — shows as soon as a university is selected */}
+          {/* Domain hint - shows as soon as a university is selected */}
           {universityId !== "" && expectedDomainHint && (
             <p className="text-xs text-gray-400 pl-1">
               Expected email domain:{" "}

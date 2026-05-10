@@ -1,3 +1,4 @@
+// Handles API admin feedback id requests.
 import { NextRequest, NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";

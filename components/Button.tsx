@@ -1,3 +1,4 @@
+// Renders the reusable Button UI component.
 import { ButtonHTMLAttributes } from "react";
 import clsx from "clsx";
 

@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the site roadmaps page.
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";

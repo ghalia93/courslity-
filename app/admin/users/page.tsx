@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin users page.
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/Button";
 import {
@@ -45,16 +46,29 @@ type ApiResponse = {
   };
 };
 
+type VerificationFilter = "all" | "pending" | "verified";
+
 function dateOnly(x: string | Date | null | undefined) {
   if (!x) return "";
   return String(x).slice(0, 10);
 }
+
+const verificationFilters: {
+  label: string;
+  value: VerificationFilter;
+}[] = [
+  { label: "All users", value: "all" },
+  { label: "Pending verification", value: "pending" },
+  { label: "Verified", value: "verified" },
+];
 
 export default function AdminUsersPage() {
   const { user } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [showAdminForm, setShowAdminForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [verificationFilter, setVerificationFilter] =
+    useState<VerificationFilter>("all");
   const [pendingDelete, setPendingDelete] = useState<UserRow | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -70,7 +84,11 @@ export default function AdminUsersPage() {
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  async function loadUsers(p: number, q: string) {
+  async function loadUsers(
+    p: number,
+    q: string,
+    verification: VerificationFilter,
+  ) {
     setLoading(true);
     setErrorMsg("");
 
@@ -79,6 +97,7 @@ export default function AdminUsersPage() {
       params.set("page", String(p));
       params.set("limit", String(limit));
       if (q.trim()) params.set("q", q.trim());
+      if (verification !== "all") params.set("verification", verification);
 
       const res = await fetch(`/api/admin/users?${params.toString()}`, {
         method: "GET",
@@ -117,8 +136,8 @@ export default function AdminUsersPage() {
   }
 
   useEffect(() => {
-    loadUsers(page, debouncedQ);
-  }, [page, debouncedQ]);
+    loadUsers(page, debouncedQ, verificationFilter);
+  }, [page, debouncedQ, verificationFilter]);
 
   const displayUsers = useMemo(() => {
     return [...users].sort((a, b) => {
@@ -151,7 +170,7 @@ export default function AdminUsersPage() {
       throw new Error(data?.message || `Failed to ${action} user`);
     }
 
-    loadUsers(page, debouncedQ);
+    loadUsers(page, debouncedQ, verificationFilter);
   }
 
   async function confirmDelete() {
@@ -204,7 +223,7 @@ export default function AdminUsersPage() {
 
     setShowAdminForm(false);
     setPage(1);
-    loadUsers(1, debouncedQ);
+    loadUsers(1, debouncedQ, verificationFilter);
   } catch {
     alert("Failed to create admin");
   }
@@ -281,6 +300,26 @@ export default function AdminUsersPage() {
         />
       </div>
 
+      <div className="mt-4 inline-flex flex-wrap gap-1 rounded-lg border border-gray-200 bg-white p-1">
+        {verificationFilters.map((filter) => (
+          <button
+            key={filter.value}
+            type="button"
+            onClick={() => {
+              setVerificationFilter(filter.value);
+              setPage(1);
+            }}
+            className={`rounded-md px-3 py-2 text-sm transition ${
+              verificationFilter === filter.value
+                ? "bg-[#6155F5] text-white"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
+
       {errorMsg && <div className="mt-4 text-sm text-red-600">{errorMsg}</div>}
 
       <div className="mt-6 hidden md:block rounded-xl border border-gray-200 bg-white overflow-x-auto">
@@ -325,29 +364,30 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-700">{u.joined}</td>
                   <td className="px-4 py-3 text-right">
-                    {u.protected ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-gray-400">
-                        <Shield size={16} /> Protected
-                      </span>
-                    ) : !u.active ? (
-                      <button
-                        onClick={() => handleActivate(u)}
-                        className="inline-flex items-center gap-1 text-xs text-green-600 transition hover:text-green-700"
-                      >
-                        <UserCheck size={16} />
-                        Activate
-                      </button>
-                    ) : (
-                      <div className="flex justify-end gap-3">
-                        {!u.verified && (
-                          <button
-                            onClick={() => handleVerify(u)}
-                            className="inline-flex items-center gap-1 text-xs text-[#6155F5] transition hover:text-[#4f45d4]"
-                          >
-                            <BadgeCheck size={16} />
-                            Verify
-                          </button>
-                        )}
+                    <div className="flex justify-end gap-3">
+                      {u.active && !u.verified && (
+                        <button
+                          onClick={() => handleVerify(u)}
+                          className="inline-flex items-center gap-1 text-xs text-[#6155F5] transition hover:text-[#4f45d4]"
+                        >
+                          <BadgeCheck size={16} />
+                          Verify
+                        </button>
+                      )}
+
+                      {u.protected ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                          <Shield size={16} /> Protected
+                        </span>
+                      ) : !u.active ? (
+                        <button
+                          onClick={() => handleActivate(u)}
+                          className="inline-flex items-center gap-1 text-xs text-green-600 transition hover:text-green-700"
+                        >
+                          <UserCheck size={16} />
+                          Activate
+                        </button>
+                      ) : (
                         <button
                           onClick={() => handleDelete(u)}
                           className="inline-flex items-center gap-1 text-xs text-red-500 transition hover:text-red-600"
@@ -356,8 +396,8 @@ export default function AdminUsersPage() {
                           <UserX size={16} />
                           Deactivate
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))
@@ -390,29 +430,30 @@ export default function AdminUsersPage() {
                 </div>
 
                 <div className="shrink-0">
-                  {u.protected ? (
-                    <span className="inline-flex items-center gap-1 text-xs text-gray-400">
-                      <Shield size={16} /> Protected
-                    </span>
-                  ) : !u.active ? (
-                    <button
-                      onClick={() => handleActivate(u)}
-                      className="inline-flex items-center gap-1 text-xs text-green-600 transition hover:text-green-700"
-                    >
-                      <UserCheck size={18} />
-                      Activate
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      {!u.verified && (
-                        <button
-                          onClick={() => handleVerify(u)}
-                          className="text-[#6155F5] transition hover:text-[#4f45d4]"
-                          aria-label="Verify user"
-                        >
-                          <BadgeCheck size={18} />
-                        </button>
-                      )}
+                  <div className="flex items-center gap-3">
+                    {u.active && !u.verified && (
+                      <button
+                        onClick={() => handleVerify(u)}
+                        className="text-[#6155F5] transition hover:text-[#4f45d4]"
+                        aria-label="Verify user"
+                      >
+                        <BadgeCheck size={18} />
+                      </button>
+                    )}
+
+                    {u.protected ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                        <Shield size={16} /> Protected
+                      </span>
+                    ) : !u.active ? (
+                      <button
+                        onClick={() => handleActivate(u)}
+                        className="inline-flex items-center gap-1 text-xs text-green-600 transition hover:text-green-700"
+                      >
+                        <UserCheck size={18} />
+                        Activate
+                      </button>
+                    ) : (
                       <button
                         onClick={() => handleDelete(u)}
                         className="text-gray-400 hover:text-red-500 transition"
@@ -420,8 +461,8 @@ export default function AdminUsersPage() {
                       >
                         <UserX size={18} />
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -442,7 +483,7 @@ export default function AdminUsersPage() {
 
       <div className="mt-6 flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          Page {page} of {totalPages} • Total: {total}
+          Page {page} of {totalPages} * Total: {total}
         </p>
 
         <div className="flex items-center gap-2">

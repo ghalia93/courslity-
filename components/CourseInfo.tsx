@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable CourseInfo UI component.
 import {
   ArrowLeft,
   School,
@@ -182,7 +183,7 @@ export default function CourseInfo({ course }: { course: Course }) {
                 href={`/courses/${prereq.code.trim().toLowerCase().replace(/\s+/g, "-")}`}
                 className="inline-flex max-w-full flex-wrap rounded-full bg-[#6155F5]/10 px-3 py-1 text-sm font-medium text-[#6155F5] transition hover:bg-[#6155F5]/20"
               >
-                {prereq.code} — {prereq.title}
+                {prereq.code} - {prereq.title}
               </Link>
             ))}
           </div>

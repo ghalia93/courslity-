@@ -1,3 +1,4 @@
+// Handles API admin settings password-reset requests.
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import {

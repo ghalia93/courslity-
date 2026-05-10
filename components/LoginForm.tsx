@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the reusable LoginForm UI component.
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";

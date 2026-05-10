@@ -1,3 +1,4 @@
+// Normalizes and formats course codes for matching and display.
 export function getCourseNumber(code: string): number | null {
   const match = code.match(/\d+/);
   if (!match) return null;

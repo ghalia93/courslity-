@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the site about page.
 import { useEffect, useState } from "react";
 import Button from "@/components/Button";
 import HowItWorks from "@/components/HowItWorks";
@@ -106,7 +107,7 @@ export default function AboutPage() {
             At Coursality, our mission is to make course selection transparent
             and stress-free. We provide honest, unfiltered student reviews so
             you can make informed decisions about workload, grading, and
-            teaching quality — no surprises, no guesswork.
+            teaching quality - no surprises, no guesswork.
           </p>
         </div>
 

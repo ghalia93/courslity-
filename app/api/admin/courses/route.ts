@@ -1,3 +1,4 @@
+// Handles API admin courses requests.
 import { NextRequest, NextResponse } from "next/server";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { requireAdmin, requireUniversityAdmin } from "@/lib/auth";
@@ -43,11 +44,11 @@ type ExistingCourseRow = RowDataPacket & {
  * with an "opacity-50 / Deleted" style and let the status filter work in-memory.
  *
  * Filtering by university, department, level, language, and status is handled
- * by the frontend useMemo — matching how the page is built.
+ * by the frontend useMemo - matching how the page is built.
  *
  * Query params:
- *   q     — search across code, title, department name, university name
- *   sort  — rating_high | rating_low | reviews_most  (default: rating_high)
+ *   q     - search across code, title, department name, university name
+ *   sort  - rating_high | rating_low | reviews_most  (default: rating_high)
  *
  * Response shape matches the Course type in the frontend exactly:
  * {
@@ -168,7 +169,7 @@ export async function GET(req: NextRequest) {
  *   code: string,
  *   title: string,
  *   description: string,
- *   credits: number,         // 1–9
+ *   credits: number,         // 1-9
  *   language: string,        // English | Arabic | French | German | Spanish | Other
  *   level: string,           // freshman | undergraduate | graduate | master_degree | doctoral
  *   department_id: number,

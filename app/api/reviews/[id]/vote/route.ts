@@ -1,3 +1,4 @@
+// Handles API reviews id vote requests.
 import { NextRequest, NextResponse } from "next/server";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import pool from "@/db";

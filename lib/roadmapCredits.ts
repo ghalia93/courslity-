@@ -1,3 +1,4 @@
+// Calculates roadmap credit totals from grouped roadmap courses.
 import type { RoadmapSemester } from "@/types/roadmap";
 
 export const ROADMAP_TERM_MIN_CREDITS = 3;

@@ -1,3 +1,4 @@
+// Handles API courses slug reviews requests.
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import type { RowDataPacket } from "mysql2";
@@ -105,8 +106,8 @@ export async function GET(
     const sortClause: Record<string, string> = {
       popular: "net_votes DESC, r.created_at DESC",
       newest: "r.created_at DESC",
-      rating_high: "r.overall_rating DESC",
-      rating_low: "r.overall_rating ASC",
+      rating_high: "upvotes DESC, net_votes DESC, r.created_at DESC",
+      rating_low: "upvotes ASC, net_votes ASC, r.created_at DESC",
     };
 
     const orderBy = sortClause[sort] ?? "r.created_at DESC";

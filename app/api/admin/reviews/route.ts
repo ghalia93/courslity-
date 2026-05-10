@@ -1,3 +1,4 @@
+// Handles API admin reviews requests.
 import { NextRequest, NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
@@ -37,15 +38,15 @@ type AdminReviewRow = RowDataPacket & {
  * expected by the frontend (AdminReviewsPage).
  *
  * Query params:
- *   page        — page number (default 1)
- *   limit       — results per page (default 20, max 50)
- *   q           — search across course code/title, reviewer name/email,
+ *   page        - page number (default 1)
+ *   limit       - results per page (default 20, max 50)
+ *   q           - search across course code/title, reviewer name/email,
  *                 instructor name, review text
- *   university  — filter by university name
- *   department  — filter by department name
- *   semester    — filter by semester_taken
- *   rating      — filter by floor(overall_rating): "1"–"5"
- *   sort        — newest | oldest | rating_high | rating_low | most_votes
+ *   university  - filter by university name
+ *   department  - filter by department name
+ *   semester    - filter by semester_taken
+ *   rating      - filter by floor(overall_rating): "1"-"5"
+ *   sort        - newest | oldest | rating_high | rating_low | most_votes
  */
 export async function GET(req: NextRequest) {
   try {
@@ -132,7 +133,7 @@ export async function GET(req: NextRequest) {
 
     const total = countRows[0].total;
 
-    // Data query — aggregate vote counts inline
+    // Data query - aggregate vote counts inline
     const [rows] = await pool.query<AdminReviewRow[]>(
       `SELECT
         r.review_id,

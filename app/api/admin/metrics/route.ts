@@ -1,3 +1,4 @@
+// Handles API admin metrics requests.
 import { NextRequest, NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
@@ -16,11 +17,22 @@ type CourseRatingPoint = {
   reviewCount: number;
 };
 
+type PendingVerificationUser = {
+  id: number;
+  name: string;
+  email: string;
+  university: string | null;
+  role: string;
+  joined: string | Date;
+};
+
 type MetricsResponse = {
   totalUsers: number;
   totalCourses: number;
   totalReviews: number;
   averageRating: number;
+  pendingVerificationCount: number;
+  pendingVerification: PendingVerificationUser[];
   userGrowth: ChartPoint[];
   reviewsTrend: ChartPoint[];
   ratingDistribution: CourseRatingPoint[];
@@ -38,6 +50,10 @@ type CountRow = RowDataPacket & {
   count: number;
 };
 
+type TotalRow = RowDataPacket & {
+  count: number;
+};
+
 type CourseRatingRow = RowDataPacket & {
   courseId: number;
   code: string;
@@ -45,6 +61,8 @@ type CourseRatingRow = RowDataPacket & {
   averageRating: number;
   reviewCount: number;
 };
+
+type PendingVerificationRow = RowDataPacket & PendingVerificationUser;
 
 export async function GET(req: NextRequest) {
   try {
@@ -61,7 +79,14 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const [[metricsRows], [userGrowthRows], [reviewsTrendRows], [ratingRows]] =
+    const [
+      [metricsRows],
+      [userGrowthRows],
+      [reviewsTrendRows],
+      [ratingRows],
+      [pendingCountRows],
+      [pendingRows],
+    ] =
       await Promise.all([
         pool.query<MetricsRow[]>(`
           SELECT
@@ -107,6 +132,30 @@ export async function GET(req: NextRequest) {
           HAVING COUNT(r.review_id) > 0
           ORDER BY averageRating DESC, reviewCount DESC, c.code ASC;
         `),
+
+        pool.query<TotalRow[]>(`
+          SELECT COUNT(*) AS count
+          FROM user
+          WHERE deleted_at IS NULL
+            AND email_verified_at IS NULL;
+        `),
+
+        pool.query<PendingVerificationRow[]>(`
+          SELECT
+            u.user_id AS id,
+            u.full_name AS name,
+            u.email,
+            uni.name AS university,
+            u.role,
+            u.created_at AS joined
+          FROM user u
+          LEFT JOIN university uni
+            ON uni.university_id = u.university_id
+          WHERE u.deleted_at IS NULL
+            AND u.email_verified_at IS NULL
+          ORDER BY u.created_at DESC
+          LIMIT 6;
+        `),
       ]);
 
     const metrics = metricsRows?.[0] || {};
@@ -116,6 +165,15 @@ export async function GET(req: NextRequest) {
       totalCourses: Number(metrics.totalCourses || 0),
       totalReviews: Number(metrics.totalReviews || 0),
       averageRating: Number(metrics.averageRating || 0),
+      pendingVerificationCount: Number(pendingCountRows?.[0]?.count || 0),
+      pendingVerification: (pendingRows || []).map((row) => ({
+        id: Number(row.id),
+        name: row.name,
+        email: row.email,
+        university: row.university,
+        role: row.role,
+        joined: row.joined,
+      })),
 
       userGrowth: (userGrowthRows || []).map((row) => ({
         date: row.date,

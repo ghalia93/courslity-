@@ -1,3 +1,4 @@
+// Defines the public site layout with the shared navigation and footer.
 import Footer from "@/components/Footer";
 import NavBar from "@/components/NavBar";
 import type { ReactNode } from "react";

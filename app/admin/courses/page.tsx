@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the admin courses page.
 import { useState, useMemo, useEffect, useCallback } from "react";
 import AddCourseCard from "@/components/admin/AddCourseCard";
 import Button from "@/components/Button";
@@ -69,7 +70,7 @@ function uniqueSorted(values: string[]) {
   return unique(values.filter(Boolean)).sort((a, b) => a.localeCompare(b));
 }
 
-// ─── Edit Modal ──────────────────────────────────────────────────────────────
+// Edit Modal
 
 const VALID_LANGUAGES = [
   "English",
@@ -285,7 +286,7 @@ function EditCourseModal({
             disabled={saving}
             className="px-4 py-2 text-sm rounded-md text-white bg-[#6155F5] hover:bg-[#4f45d4] transition disabled:opacity-50"
           >
-            {saving ? "Saving…" : "Save Changes"}
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
@@ -293,7 +294,7 @@ function EditCourseModal({
   );
 }
 
-// ─── Course Detail Modal ─────────────────────────────────────────────────────
+//  Course Detail Modal
 
 function CourseDetailModal({
   course,
@@ -499,7 +500,7 @@ function CourseDetailModal({
   );
 }
 
-// ─── Delete Confirm Modal ────────────────────────────────────────────────────
+//  Delete Confirm Modal
 
 function DeleteConfirmModal({
   courseName,
@@ -535,7 +536,7 @@ function DeleteConfirmModal({
             disabled={deleting}
             className="px-4 py-2 text-sm rounded-md bg-red-500 text-white hover:bg-red-600 transition disabled:opacity-50"
           >
-            {deleting ? "Deleting…" : "Delete"}
+            {deleting ? "Deleting..." : "Delete"}
           </button>
         </div>
       </div>
@@ -543,7 +544,7 @@ function DeleteConfirmModal({
   );
 }
 
-// ─── Filter Select ───────────────────────────────────────────────────────────
+//  Filter Select
 
 function FilterSelect({
   label,
@@ -581,7 +582,7 @@ function FilterSelect({
   );
 }
 
-// ─── Page ────────────────────────────────────────────────────────────────────
+// Page
 
 export default function AdminCoursesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -615,7 +616,7 @@ export default function AdminCoursesPage() {
   const showUniversityAdminWarning = !authLoading && !isUniversityAdmin;
   const universityAdminWarning = "You are not the University Admin";
 
-  // ── Fetch all courses ──────────────────────────────────────────────────────
+  //  Fetch all courses
   const loadCourses = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -810,7 +811,7 @@ export default function AdminCoursesPage() {
     sortKey,
   ]);
 
-  // ── Create ─────────────────────────────────────────────────────────────────
+  //  Create
   // AddCourseCard now calls the API itself and passes back the created Course object
   const handleSaveCourse = useCallback(
     (newCourse: Course) => {
@@ -825,7 +826,7 @@ export default function AdminCoursesPage() {
     [loadAcademicCatalog, loadCourses],
   );
 
-  // ── Delete ─────────────────────────────────────────────────────────────────
+  // Delete
   async function handleConfirmDelete() {
     if (!pendingDelete) return;
     setDeleting(true);
@@ -853,7 +854,7 @@ export default function AdminCoursesPage() {
     }
   }
 
-  // ── Edit ───────────────────────────────────────────────────────────────────
+  //  Edit
   function handleEdit(course: Course) {
     setEditingCourse(course);
   }
@@ -884,7 +885,7 @@ export default function AdminCoursesPage() {
 
       {pendingDelete && (
         <DeleteConfirmModal
-          courseName={`${pendingDelete.code} — ${pendingDelete.title}`}
+          courseName={`${pendingDelete.code} - ${pendingDelete.title}`}
           deleting={deleting}
           onConfirm={handleConfirmDelete}
           onCancel={() => setPendingDelete(null)}
@@ -1086,7 +1087,7 @@ export default function AdminCoursesPage() {
         </div>
       )}
 
-      {/* ── Desktop table ── */}
+      {/*  Desktop table */}
       <div className="hidden md:block mt-2 rounded-xl border border-gray-200 bg-white overflow-x-auto">
         <table className="w-full min-w-[1520px] text-sm table-fixed">
           <colgroup>
@@ -1254,7 +1255,7 @@ export default function AdminCoursesPage() {
         </table>
       </div>
 
-      {/* ── Mobile cards ── */}
+      {/*  Mobile cards */}
       <div className="md:hidden mt-2 flex flex-col gap-4">
         {loading ? (
           <p className="text-gray-400 text-sm text-center py-8">

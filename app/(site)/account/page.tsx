@@ -1,5 +1,6 @@
 "use client";
 
+// Renders the site account page.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
@@ -76,7 +77,7 @@ export default function AccountPage() {
 
       alert("Account deactivated successfully.");
 
-      // 🔥 Full reload to reset auth state everywhere
+      // Full reload Full reload to reset auth state everywhere
       window.location.href = "/";
     } catch {
       alert("Something went wrong. Please try again.");

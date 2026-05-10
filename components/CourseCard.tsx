@@ -1,4 +1,6 @@
 "use client";
+
+// Renders the reusable CourseCard UI component.
 import Link from "next/link";
 import React from "react";
 import { FileText, Briefcase, MapPin, Scale, User } from "lucide-react";
@@ -81,7 +83,7 @@ export default function CourseCard({
               <span className="text-[#6155F5]">{code}</span> {title}
             </h3>
             <p className="mt-1 text-sm leading-5 text-gray-400 sm:text-[15px]">
-              {university} · {department} · {credits}
+              {university} - {department} - {credits}
             </p>
           </div>
 

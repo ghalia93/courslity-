@@ -1,3 +1,4 @@
+// Creates the shared MySQL connection pool used by server routes.
 import mysql from "mysql2/promise";
 
 const pool = mysql.createPool({

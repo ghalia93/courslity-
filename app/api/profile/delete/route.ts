@@ -1,3 +1,4 @@
+// Handles API profile delete requests.
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/db";
 import { requireAuth } from "@/lib/auth";

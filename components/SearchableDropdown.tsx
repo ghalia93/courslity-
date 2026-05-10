@@ -1,3 +1,4 @@
+// Renders the reusable SearchableDropdown UI component.
 import { useState, useRef, useEffect } from "react";
 
 type Props = {

@@ -1,8 +1,9 @@
 "use client";
 
+// Renders the reusable SliderRow UI component used in review forms.
 type SliderRowProps = {
   label: string;
-  value: number; 
+  value: number;
   onChange: (v: number) => void;
   leftLabel: string;
   rightLabel: string;

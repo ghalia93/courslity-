@@ -1,4 +1,5 @@
 @echo off
+rem Launches the PowerShell helper that starts the local Coursality workflow.
 setlocal
 
 set "SCRIPT=%~dp0scripts\launch-coursality.ps1"

@@ -1,3 +1,4 @@
+// Queries roadmap data and shapes it for roadmap pages and APIs.
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
 import { ensureRoadmapTables } from "@/lib/roadmapsDb";

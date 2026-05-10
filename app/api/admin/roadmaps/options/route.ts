@@ -1,3 +1,4 @@
+// Handles API admin roadmaps options requests.
 import { NextRequest, NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";

@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
+    "seed:academic": "node scripts/apply-academic-catalog.mjs",
+    "seed:official": "node scripts/apply-official-catalog-corrections.mjs",
     "lint": "eslint"
   },
   "dependencies": {

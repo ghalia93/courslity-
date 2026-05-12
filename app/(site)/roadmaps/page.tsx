@@ -9,6 +9,7 @@ import { formatCourseLevel } from "@/lib/courseLevels";
 import { formatRoadmapSemester } from "@/lib/roadmapOptions";
 import type {
   RoadmapDepartmentOption,
+  RoadmapMajorOption,
   RoadmapSummary,
   RoadmapUniversityOption,
 } from "@/types/roadmap";
@@ -20,6 +21,7 @@ type RoadmapResponse = {
   filters?: {
     universities: RoadmapUniversityOption[];
     departments: RoadmapDepartmentOption[];
+    majors: RoadmapMajorOption[];
     years: number[];
   };
 };
@@ -38,12 +40,14 @@ function RoadmapsPageContent() {
   const [departmentId, setDepartmentId] = useState(
     searchParams.get("department_id") || "",
   );
+  const [majorId, setMajorId] = useState(searchParams.get("major_id") || "");
   const [year, setYear] = useState(searchParams.get("year") || "");
   const [roadmaps, setRoadmaps] = useState<RoadmapSummary[]>([]);
   const [universities, setUniversities] = useState<RoadmapUniversityOption[]>(
     [],
   );
   const [departments, setDepartments] = useState<RoadmapDepartmentOption[]>([]);
+  const [majors, setMajors] = useState<RoadmapMajorOption[]>([]);
   const [years, setYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -58,6 +62,7 @@ function RoadmapsPageContent() {
       const params = new URLSearchParams();
       if (universityId) params.set("university_id", universityId);
       if (departmentId) params.set("department_id", departmentId);
+      if (majorId) params.set("major_id", majorId);
       if (year) params.set("year", year);
 
       try {
@@ -74,6 +79,7 @@ function RoadmapsPageContent() {
         setRoadmaps(data.roadmaps ?? []);
         setUniversities(data.filters?.universities ?? []);
         setDepartments(data.filters?.departments ?? []);
+        setMajors(data.filters?.majors ?? []);
         setYears(data.filters?.years ?? []);
       } catch (err: unknown) {
         if (err instanceof DOMException && err.name === "AbortError") return;
@@ -86,7 +92,7 @@ function RoadmapsPageContent() {
     loadRoadmaps();
 
     return () => controller.abort();
-  }, [universityId, departmentId, year]);
+  }, [universityId, departmentId, majorId, year]);
 
   const isMounted = useRef(false);
   useEffect(() => {
@@ -98,10 +104,11 @@ function RoadmapsPageContent() {
     const params = new URLSearchParams();
     if (universityId) params.set("university_id", universityId);
     if (departmentId) params.set("department_id", departmentId);
+    if (majorId) params.set("major_id", majorId);
     if (year) params.set("year", year);
 
     router.replace(`/roadmaps?${params.toString()}`, { scroll: false });
-  }, [departmentId, router, universityId, year]);
+  }, [departmentId, majorId, router, universityId, year]);
 
   const visibleDepartments = useMemo(() => {
     const selectedUniversityId = Number(universityId);
@@ -111,6 +118,19 @@ function RoadmapsPageContent() {
         )
       : departments;
   }, [departments, universityId]);
+
+  const visibleMajors = useMemo(() => {
+    const selectedUniversityId = Number(universityId);
+    const selectedDepartmentId = Number(departmentId);
+
+    if (!departmentId) return [];
+
+    return majors.filter(
+      (major) =>
+        major.department_id === selectedDepartmentId &&
+        (!universityId || major.university_id === selectedUniversityId),
+    );
+  }, [departmentId, majors, universityId]);
 
   useEffect(() => {
     if (!departmentId) return;
@@ -124,9 +144,18 @@ function RoadmapsPageContent() {
     setDepartmentId("");
   }, [departmentId, visibleDepartments]);
 
+  useEffect(() => {
+    if (!majorId) return;
+    if (visibleMajors.some((major) => String(major.major_id) === majorId)) {
+      return;
+    }
+    setMajorId("");
+  }, [majorId, visibleMajors]);
+
   function resetFilters() {
     setUniversityId("");
     setDepartmentId("");
+    setMajorId("");
     setYear("");
   }
 
@@ -135,16 +164,17 @@ function RoadmapsPageContent() {
       <div className="mx-auto max-w-6xl">
         <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Roadmaps</h1>
         <p className="mt-2 max-w-xl text-gray-500">
-          Filter roadmaps by university, department, and year.
+          Filter roadmaps by university, department, major, and year.
         </p>
 
         <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="grid gap-3 md:grid-cols-[1fr_1fr_180px_auto]">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_160px_auto]">
             <select
               value={universityId}
               onChange={(event) => {
                 setUniversityId(event.target.value);
                 setDepartmentId("");
+                setMajorId("");
               }}
               className="h-10 min-w-0 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30"
             >
@@ -161,7 +191,10 @@ function RoadmapsPageContent() {
 
             <select
               value={departmentId}
-              onChange={(event) => setDepartmentId(event.target.value)}
+              onChange={(event) => {
+                setDepartmentId(event.target.value);
+                setMajorId("");
+              }}
               className="h-10 min-w-0 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30"
             >
               <option value="">All departments</option>
@@ -171,6 +204,22 @@ function RoadmapsPageContent() {
                   value={department.department_id}
                 >
                   {department.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={majorId}
+              onChange={(event) => setMajorId(event.target.value)}
+              disabled={!departmentId}
+              className="h-10 min-w-0 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30 disabled:bg-gray-50 disabled:text-gray-400"
+            >
+              <option value="">
+                {departmentId ? "All majors" : "Select department first"}
+              </option>
+              {visibleMajors.map((major) => (
+                <option key={major.major_id} value={major.major_id}>
+                  {major.name}
                 </option>
               ))}
             </select>

@@ -18,6 +18,15 @@ type DepartmentFilterRow = RowDataPacket & {
   university: string;
 };
 
+type MajorFilterRow = RowDataPacket & {
+  major_id: number;
+  name: string;
+  department_id: number;
+  department: string;
+  university_id: number;
+  university: string;
+};
+
 type YearFilterRow = RowDataPacket & {
   year_number: number;
 };
@@ -71,19 +80,35 @@ export async function GET(req: Request) {
     const departmentId = getPositiveIntParam(
       url.searchParams.get("department_id"),
     );
+    const majorId = getPositiveIntParam(url.searchParams.get("major_id"));
     const yearNumber = getPositiveIntParam(url.searchParams.get("year"));
 
-    const [roadmaps, universities, departments, years] = await Promise.all([
+    const [roadmaps, universities, departments, majors, years] =
+      await Promise.all([
       getRoadmaps({
         q,
         universityId,
         departmentId,
+        majorId,
         publishedOnly: true,
       }),
       pool.query<UniversityFilterRow[]>(
         `SELECT u.university_id, u.name
         FROM university u
         WHERE u.is_active = 1
+          AND EXISTS (
+            SELECT 1
+            FROM department d_public
+            JOIN major m_public ON m_public.department_id = d_public.department_id
+            JOIN roadmap r_public ON r_public.major_id = m_public.major_id
+            JOIN roadmap_course rc_public ON rc_public.roadmap_id = r_public.roadmap_id
+            JOIN course c_public ON c_public.course_id = rc_public.course_id
+            WHERE d_public.university_id = u.university_id
+              AND d_public.is_active = 1
+              AND m_public.is_active = 1
+              AND r_public.is_published = 1
+              AND c_public.deleted_at IS NULL
+          )
         ORDER BY u.name ASC`,
       ),
       pool.query<DepartmentFilterRow[]>(
@@ -96,7 +121,39 @@ export async function GET(req: Request) {
         JOIN university u ON u.university_id = d.university_id
         WHERE d.is_active = 1
           AND u.is_active = 1
+          AND EXISTS (
+            SELECT 1
+            FROM major m_public
+            JOIN roadmap r_public ON r_public.major_id = m_public.major_id
+            JOIN roadmap_course rc_public ON rc_public.roadmap_id = r_public.roadmap_id
+            JOIN course c_public ON c_public.course_id = rc_public.course_id
+            WHERE m_public.department_id = d.department_id
+              AND m_public.is_active = 1
+              AND r_public.is_published = 1
+              AND c_public.deleted_at IS NULL
+          )
         ORDER BY u.name ASC, d.name ASC`,
+      ),
+      pool.query<MajorFilterRow[]>(
+        `SELECT DISTINCT
+          m.major_id,
+          m.name,
+          d.department_id,
+          d.name AS department,
+          u.university_id,
+          u.name AS university
+        FROM major m
+        JOIN department d ON d.department_id = m.department_id
+        JOIN university u ON u.university_id = d.university_id
+        JOIN roadmap r_public ON r_public.major_id = m.major_id
+        JOIN roadmap_course rc_public ON rc_public.roadmap_id = r_public.roadmap_id
+        JOIN course c_public ON c_public.course_id = rc_public.course_id
+        WHERE m.is_active = 1
+          AND d.is_active = 1
+          AND u.is_active = 1
+          AND r_public.is_published = 1
+          AND c_public.deleted_at IS NULL
+        ORDER BY u.name ASC, d.name ASC, m.name ASC`,
       ),
       pool.query<YearFilterRow[]>(
         `SELECT DISTINCT rc.year_number
@@ -119,6 +176,7 @@ export async function GET(req: Request) {
       filters: {
         universities: universities[0],
         departments: departments[0],
+        majors: majors[0],
         years: years[0].map((row) => row.year_number),
       },
     });

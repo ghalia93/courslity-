@@ -19,11 +19,14 @@ export type AddCoursePayload = {
   language: string;
   level: CourseLevel;
   department_id: number;
+  major_id: number;
 };
 
 export type CreatedCourse = AddCoursePayload & {
   course_id: number;
   department: string;
+  majorIds: number[];
+  majors: string[];
   university_id: number;
   university: string;
   deleted_at: string | null;
@@ -48,6 +51,11 @@ type Department = {
   name: string;
 };
 
+type Major = {
+  major_id: number;
+  name: string;
+};
+
 type Props = {
   onClose: () => void;
   onSave: (course: CreatedCourse) => void;
@@ -58,8 +66,10 @@ const LANGUAGES = ["English", "Arabic", "French", "German", "Spanish", "Other"];
 export default function AddCourseCard({ onClose, onSave }: Props) {
   const [universities, setUniversities] = useState<University[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [majors, setMajors] = useState<Major[]>([]);
   const [loadingUniversities, setLoadingUniversities] = useState(true);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [loadingMajors, setLoadingMajors] = useState(false);
 
   const [universityInput, setUniversityInput] = useState("");
   const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(
@@ -69,6 +79,8 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(
     null,
   );
+  const [majorInput, setMajorInput] = useState("");
+  const [selectedMajorId, setSelectedMajorId] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     code: "",
@@ -95,8 +107,11 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
 
   useEffect(() => {
     setDepartments([]);
+    setMajors([]);
     setDepartmentInput("");
     setSelectedDepartmentId(null);
+    setMajorInput("");
+    setSelectedMajorId(null);
 
     if (selectedUniversityId == null) return;
 
@@ -111,6 +126,28 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
       .catch(() => setApiError("Failed to load departments."))
       .finally(() => setLoadingDepartments(false));
   }, [selectedUniversityId]);
+
+  useEffect(() => {
+    setMajors([]);
+    setMajorInput("");
+    setSelectedMajorId(null);
+
+    if (selectedUniversityId == null || selectedDepartmentId == null) return;
+
+    setLoadingMajors(true);
+    fetch(
+      `/api/admin/universities/${selectedUniversityId}/departments/${selectedDepartmentId}/majors`,
+      {
+        credentials: "include",
+      },
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setMajors(data.majors ?? []);
+      })
+      .catch(() => setApiError("Failed to load majors."))
+      .finally(() => setLoadingMajors(false));
+  }, [selectedDepartmentId, selectedUniversityId]);
 
   function handleTextChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -129,6 +166,11 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
 
     if (!selectedDepartmentId) {
       setApiError("Please select a department from the selected university.");
+      return;
+    }
+
+    if (!selectedMajorId) {
+      setApiError("Please select a major from the selected department.");
       return;
     }
 
@@ -156,6 +198,7 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
       language: formData.language,
       level: formData.level,
       department_id: selectedDepartmentId,
+      major_id: selectedMajorId,
     };
 
     try {
@@ -184,6 +227,7 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
 
   const universityNames = universities.map((university) => university.name);
   const departmentNames = departments.map((department) => department.name);
+  const majorNames = majors.map((major) => major.name);
   const departmentPlaceholder =
     selectedUniversityId == null
       ? "Select university first"
@@ -192,6 +236,14 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
         : departments.length === 0
           ? "Add departments in University Setup first"
           : "Select department";
+  const majorPlaceholder =
+    selectedDepartmentId == null
+      ? "Select department first"
+      : loadingMajors
+        ? "Loading majors..."
+        : majors.length === 0
+          ? "Add majors in University Setup first"
+          : "Select major";
   const levelLabel =
     selectedUniversityId == null ? "" : formatCourseLevel(formData.level);
 
@@ -203,7 +255,8 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
             Add New Course
           </h2>
           <p className="text-sm text-gray-500">
-            Select a university and department, then add the course details.
+            Select a university, department, and major, then add the course
+            details.
           </p>
         </div>
         <button
@@ -249,6 +302,20 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
                 department.name.toLowerCase() === typed.trim().toLowerCase(),
             );
             setSelectedDepartmentId(match?.department_id ?? null);
+          }}
+        />
+
+        <SearchableDropdownField
+          value={majorInput}
+          options={selectedDepartmentId == null ? [] : majorNames}
+          placeholder={majorPlaceholder}
+          onChange={(typed) => {
+            setMajorInput(typed);
+            const match = majors.find(
+              (major) =>
+                major.name.toLowerCase() === typed.trim().toLowerCase(),
+            );
+            setSelectedMajorId(match?.major_id ?? null);
           }}
         />
 

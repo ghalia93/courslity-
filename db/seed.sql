@@ -1414,7 +1414,7 @@ FROM department d
 JOIN university u ON u.university_id = d.university_id
 WHERE u.name = 'Lebanese International University'
   AND d.name = 'Computer and Communications Engineering'
-ON DUPLICATE KEY UPDATE is_active = 1;
+ON DUPLICATE KEY UPDATE major_id = major_id;
 
 INSERT INTO course (
   code,
@@ -1481,12 +1481,7 @@ JOIN department d ON d.name = 'Computer and Communications Engineering'
 JOIN university u ON u.university_id = d.university_id
 WHERE u.name = 'Lebanese International University'
 ON DUPLICATE KEY UPDATE
-  title = VALUES(title),
-  description = VALUES(description),
-  credits = VALUES(credits),
-  language = VALUES(language),
-  level = VALUES(level),
-  deleted_at = NULL;
+  course_id = course_id;
 
 INSERT INTO roadmap (
   major_id,
@@ -1510,22 +1505,9 @@ WHERE u.name = 'Lebanese International University'
   AND d.name = 'Computer and Communications Engineering'
   AND m.name = 'Computer Engineering'
 ON DUPLICATE KEY UPDATE
-  title = VALUES(title),
-  total_credits = VALUES(total_credits),
-  is_published = 1;
+  roadmap_id = roadmap_id;
 
-DELETE rc
-FROM roadmap_course rc
-JOIN roadmap r ON r.roadmap_id = rc.roadmap_id
-JOIN major m ON m.major_id = r.major_id
-JOIN department d ON d.department_id = m.department_id
-JOIN university u ON u.university_id = d.university_id
-WHERE u.name = 'Lebanese International University'
-  AND d.name = 'Computer and Communications Engineering'
-  AND m.name = 'Computer Engineering'
-  AND r.level = 'undergraduate';
-
-INSERT INTO roadmap_course (
+INSERT IGNORE INTO roadmap_course (
   roadmap_id,
   course_id,
   year_number,
@@ -1604,6 +1586,458 @@ ORDER BY
   roadmap_data.year_number,
   FIELD(roadmap_data.semester, 'fall', 'spring', 'summer'),
   roadmap_data.sequence_order;
+
+/*  5) GENERATED MAJORS AND STARTER ROADMAPS */
+
+/*
+  The rows below give every seeded computer-science department a matching major
+  and a starter roadmap built from that department's existing courses. These are
+  catalog-complete for the courses in this seed file, but they are not official
+  university term plans unless the school data above already provided one.
+*/
+DROP TEMPORARY TABLE IF EXISTS tmp_catalog_major_seed;
+CREATE TEMPORARY TABLE tmp_catalog_major_seed (
+  university_name VARCHAR(255) NOT NULL,
+  department_name VARCHAR(255) NOT NULL,
+  major_name VARCHAR(255) NOT NULL,
+  roadmap_title VARCHAR(255) NOT NULL,
+  PRIMARY KEY (university_name, department_name, major_name)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO tmp_catalog_major_seed (
+  university_name,
+  department_name,
+  major_name,
+  roadmap_title
+) VALUES
+  ('Beirut Arab University', 'Mathematics and Computer Science', 'Computer Science', 'Computer Science Undergraduate Roadmap'),
+  ('American University of Beirut', 'Computer Science', 'Computer Science', 'Computer Science Undergraduate Roadmap'),
+  ('Lebanese American University', 'Computer Science and Mathematics', 'Computer Science', 'Computer Science Undergraduate Roadmap'),
+  ('Lebanese International University', 'Computer Science and Information Technology', 'Computer Science', 'Computer Science Undergraduate Roadmap'),
+  ('Université Saint-Joseph de Beyrouth', 'Informatique', 'Informatique', 'Informatique Undergraduate Roadmap'),
+  ('University of Balamand', 'Computer Science', 'Computer Science', 'Computer Science Undergraduate Roadmap');
+
+INSERT INTO major (department_id, name)
+SELECT
+  d.department_id,
+  seed.major_name
+FROM tmp_catalog_major_seed seed
+JOIN university u ON u.name = seed.university_name
+JOIN department d
+  ON d.university_id = u.university_id
+  AND d.name = seed.department_name
+ON DUPLICATE KEY UPDATE major_id = major_id;
+
+INSERT INTO roadmap (
+  major_id,
+  level,
+  title,
+  total_credits,
+  is_published,
+  created_by
+)
+SELECT
+  m.major_id,
+  'undergraduate',
+  seed.roadmap_title,
+  COALESCE(SUM(c.credits), 0),
+  1,
+  NULL
+FROM tmp_catalog_major_seed seed
+JOIN university u ON u.name = seed.university_name
+JOIN department d
+  ON d.university_id = u.university_id
+  AND d.name = seed.department_name
+JOIN major m
+  ON m.department_id = d.department_id
+  AND m.name = seed.major_name
+JOIN course c
+  ON c.department_id = d.department_id
+  AND c.deleted_at IS NULL
+GROUP BY
+  m.major_id,
+  seed.roadmap_title
+HAVING COUNT(c.course_id) > 0
+ON DUPLICATE KEY UPDATE
+  roadmap_id = roadmap_id;
+
+SET @catalog_key := '';
+SET @catalog_rank := 0;
+
+INSERT IGNORE INTO roadmap_course (
+  roadmap_id,
+  course_id,
+  year_number,
+  semester,
+  sequence_order
+)
+SELECT
+  r.roadmap_id,
+  numbered.course_id,
+  FLOOR((numbered.rank_number - 1) / 10) + 1 AS year_number,
+  CASE
+    WHEN MOD(FLOOR((numbered.rank_number - 1) / 5), 2) = 0 THEN 'fall'
+    ELSE 'spring'
+  END AS semester,
+  MOD(numbered.rank_number - 1, 5) + 1 AS sequence_order
+FROM (
+  SELECT
+    ranked.course_id,
+    ranked.major_id,
+    ranked.rank_number
+  FROM (
+    SELECT
+      ordered.course_id,
+      ordered.major_id,
+      @catalog_rank := IF(@catalog_key = ordered.catalog_key, @catalog_rank + 1, 1) AS rank_number,
+      @catalog_key := ordered.catalog_key AS assigned_catalog_key
+    FROM (
+      SELECT
+        c.course_id,
+        m.major_id,
+        CONCAT(u.university_id, ':', d.department_id, ':', m.major_id) AS catalog_key,
+        u.name AS university_name,
+        d.name AS department_name,
+        m.name AS major_name,
+        c.level,
+        c.code
+      FROM tmp_catalog_major_seed seed
+      JOIN university u ON u.name = seed.university_name
+      JOIN department d
+        ON d.university_id = u.university_id
+        AND d.name = seed.department_name
+      JOIN major m
+        ON m.department_id = d.department_id
+        AND m.name = seed.major_name
+      JOIN course c
+        ON c.department_id = d.department_id
+        AND c.deleted_at IS NULL
+      ORDER BY
+        u.name ASC,
+        d.name ASC,
+        m.name ASC,
+        FIELD(c.level, 'freshman', 'undergraduate', 'graduate', 'master_degree', 'doctoral') ASC,
+        c.code ASC,
+        c.course_id ASC
+    ) ordered
+  ) ranked
+) numbered
+JOIN roadmap r
+  ON r.major_id = numbered.major_id
+  AND r.level = 'undergraduate';
+
+DROP TEMPORARY TABLE IF EXISTS tmp_catalog_major_seed;
+
+/*  6) REALISTIC DEPARTMENTS, MAJORS, COURSES, AND ROADMAPS */
+
+-- BEGIN CATALOG EXPANSION
+DROP TEMPORARY TABLE IF EXISTS tmp_full_catalog_department_seed;
+CREATE TEMPORARY TABLE tmp_full_catalog_department_seed (
+  university_name VARCHAR(255) NOT NULL,
+  department_name VARCHAR(255) NOT NULL,
+  department_kind VARCHAR(50) NOT NULL,
+  PRIMARY KEY (university_name, department_name)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO tmp_full_catalog_department_seed (
+  university_name,
+  department_name,
+  department_kind
+) VALUES
+  ('Beirut Arab University', 'Mathematics and Computer Science', 'computing'),
+  ('Beirut Arab University', 'Engineering', 'engineering'),
+  ('Beirut Arab University', 'Business Administration', 'business'),
+  ('American University of Beirut', 'Computer Science', 'computing'),
+  ('American University of Beirut', 'Engineering', 'engineering'),
+  ('American University of Beirut', 'Business', 'business'),
+  ('Lebanese American University', 'Computer Science and Mathematics', 'computing'),
+  ('Lebanese American University', 'Engineering', 'engineering'),
+  ('Lebanese American University', 'Business', 'business'),
+  ('Lebanese International University', 'Computer Science and Information Technology', 'computing'),
+  ('Lebanese International University', 'Engineering', 'engineering'),
+  ('Lebanese International University', 'Business', 'business'),
+  ('Université Saint-Joseph de Beyrouth', 'Informatique', 'computing'),
+  ('Université Saint-Joseph de Beyrouth', 'Engineering', 'engineering'),
+  ('Université Saint-Joseph de Beyrouth', 'Business and Management', 'business'),
+  ('University of Balamand', 'Computer Science', 'computing'),
+  ('University of Balamand', 'Engineering', 'engineering'),
+  ('University of Balamand', 'Business and Management', 'business');
+
+INSERT INTO tmp_full_catalog_department_seed (
+  university_name,
+  department_name,
+  department_kind
+)
+SELECT u.name, 'Computer Science', 'computing'
+FROM university u
+WHERE u.is_active = 1
+  AND NOT EXISTS (
+    SELECT 1
+    FROM tmp_full_catalog_department_seed seed
+    WHERE seed.university_name = u.name
+      AND seed.department_kind = 'computing'
+  );
+
+INSERT INTO tmp_full_catalog_department_seed (
+  university_name,
+  department_name,
+  department_kind
+)
+SELECT u.name, 'Engineering', 'engineering'
+FROM university u
+WHERE u.is_active = 1
+  AND NOT EXISTS (
+    SELECT 1
+    FROM tmp_full_catalog_department_seed seed
+    WHERE seed.university_name = u.name
+      AND seed.department_kind = 'engineering'
+  );
+
+INSERT INTO tmp_full_catalog_department_seed (
+  university_name,
+  department_name,
+  department_kind
+)
+SELECT u.name, 'Business', 'business'
+FROM university u
+WHERE u.is_active = 1
+  AND NOT EXISTS (
+    SELECT 1
+    FROM tmp_full_catalog_department_seed seed
+    WHERE seed.university_name = u.name
+      AND seed.department_kind = 'business'
+  );
+
+INSERT INTO department (name, university_id)
+SELECT
+  seed.department_name,
+  u.university_id
+FROM tmp_full_catalog_department_seed seed
+JOIN university u
+  ON u.name = seed.university_name
+  AND u.is_active = 1
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM department existing_department
+  WHERE existing_department.university_id = u.university_id
+    AND LOWER(existing_department.name) = LOWER(seed.department_name)
+);
+
+DROP TEMPORARY TABLE IF EXISTS tmp_full_catalog_major_template;
+CREATE TEMPORARY TABLE tmp_full_catalog_major_template (
+  department_kind VARCHAR(50) NOT NULL,
+  major_name VARCHAR(255) NOT NULL,
+  roadmap_title VARCHAR(255) NOT NULL,
+  PRIMARY KEY (department_kind, major_name)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO tmp_full_catalog_major_template (
+  department_kind,
+  major_name,
+  roadmap_title
+) VALUES
+  ('computing', 'Computer Science', 'Computer Science Undergraduate Roadmap'),
+  ('computing', 'Data Science', 'Data Science Undergraduate Roadmap'),
+  ('engineering', 'Computer Engineering', 'Computer Engineering Undergraduate Roadmap'),
+  ('engineering', 'Civil Engineering', 'Civil Engineering Undergraduate Roadmap'),
+  ('business', 'Business Administration', 'Business Administration Undergraduate Roadmap'),
+  ('business', 'Finance', 'Finance Undergraduate Roadmap');
+
+INSERT INTO major (department_id, name)
+SELECT
+  d.department_id,
+  major_template.major_name
+FROM tmp_full_catalog_department_seed seed
+JOIN university u
+  ON u.name = seed.university_name
+  AND u.is_active = 1
+JOIN department d
+  ON d.university_id = u.university_id
+  AND LOWER(d.name) = LOWER(seed.department_name)
+  AND d.is_active = 1
+JOIN tmp_full_catalog_major_template major_template
+  ON major_template.department_kind = seed.department_kind
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM major existing_major
+  WHERE existing_major.department_id = d.department_id
+    AND LOWER(existing_major.name) = LOWER(major_template.major_name)
+);
+
+DROP TEMPORARY TABLE IF EXISTS tmp_full_catalog_course_template;
+CREATE TEMPORARY TABLE tmp_full_catalog_course_template (
+  department_kind VARCHAR(50) NOT NULL,
+  major_name VARCHAR(255) NOT NULL,
+  code VARCHAR(50) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  credits TINYINT UNSIGNED NOT NULL,
+  language VARCHAR(20) NOT NULL,
+  level VARCHAR(32) NOT NULL,
+  year_number TINYINT UNSIGNED NOT NULL,
+  semester VARCHAR(20) NOT NULL,
+  sequence_order SMALLINT UNSIGNED NOT NULL,
+  PRIMARY KEY (department_kind, major_name, code)
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO tmp_full_catalog_course_template (
+  department_kind,
+  major_name,
+  code,
+  title,
+  description,
+  credits,
+  language,
+  level,
+  year_number,
+  semester,
+  sequence_order
+) VALUES
+  ('computing', 'Computer Science', 'CS 101', 'Introduction to Programming', 'Introduces problem solving, program structure, variables, control flow, functions, arrays, and debugging through practical programming exercises.', 3, 'English', 'undergraduate', 1, 'fall', 1),
+  ('computing', 'Computer Science', 'CS 201', 'Data Structures', 'Covers lists, stacks, queues, trees, hashing, recursion, sorting, searching, and algorithmic analysis for software development.', 3, 'English', 'undergraduate', 1, 'spring', 1),
+  ('computing', 'Computer Science', 'CS 301', 'Database Systems', 'Introduces relational modeling, SQL, normalization, transactions, indexing, and application-level database design.', 3, 'English', 'undergraduate', 2, 'fall', 1),
+  ('computing', 'Computer Science', 'CS 320', 'Software Engineering', 'Covers requirements, design, implementation, testing, version control, teamwork, and maintainable software project delivery.', 3, 'English', 'undergraduate', 2, 'spring', 1),
+  ('computing', 'Data Science', 'DS 201', 'Data Analytics', 'Introduces data collection, cleaning, descriptive analytics, visualization, and reproducible analysis with practical data sets.', 3, 'English', 'undergraduate', 1, 'fall', 1),
+  ('computing', 'Data Science', 'DS 220', 'Probability for Data Science', 'Covers probability models, random variables, distributions, sampling, estimation, and uncertainty for data-driven decisions.', 3, 'English', 'undergraduate', 1, 'spring', 1),
+  ('computing', 'Data Science', 'DS 310', 'Machine Learning', 'Introduces supervised and unsupervised learning, model evaluation, regression, classification, clustering, and applied machine-learning workflows.', 3, 'English', 'undergraduate', 2, 'fall', 1),
+  ('computing', 'Data Science', 'DS 330', 'Data Visualization', 'Covers visual encoding, dashboard design, exploratory graphics, storytelling with data, and interactive visualization tools.', 3, 'English', 'undergraduate', 2, 'spring', 1),
+  ('engineering', 'Computer Engineering', 'ENGR 101', 'Introduction to Engineering', 'Introduces engineering disciplines, design thinking, technical communication, ethics, teamwork, and project-based problem solving.', 3, 'English', 'undergraduate', 1, 'fall', 1),
+  ('engineering', 'Computer Engineering', 'ENGR 210', 'Engineering Mathematics', 'Builds mathematical foundations for engineering, including calculus applications, vectors, matrices, and differential equations.', 3, 'English', 'undergraduate', 1, 'spring', 1),
+  ('engineering', 'Computer Engineering', 'CENG 220', 'Digital Logic', 'Covers number systems, Boolean algebra, logic gates, combinational circuits, flip-flops, registers, and sequential logic design.', 3, 'English', 'undergraduate', 2, 'fall', 1),
+  ('engineering', 'Computer Engineering', 'CENG 320', 'Computer Organization', 'Studies processor datapaths, instruction sets, memory hierarchy, assembly basics, input/output, and hardware/software interaction.', 3, 'English', 'undergraduate', 2, 'spring', 1),
+  ('engineering', 'Civil Engineering', 'CIVE 201', 'Engineering Mechanics', 'Introduces statics, force systems, equilibrium, trusses, frames, friction, centroids, and moments of inertia.', 3, 'English', 'undergraduate', 1, 'fall', 1),
+  ('engineering', 'Civil Engineering', 'CIVE 220', 'Surveying', 'Covers measurement, leveling, traversing, mapping, coordinate systems, site data, and field surveying practice.', 3, 'English', 'undergraduate', 1, 'spring', 1),
+  ('engineering', 'Civil Engineering', 'CIVE 310', 'Structural Analysis', 'Develops analysis of beams, frames, trusses, influence lines, deflection, and structural behavior under loads.', 3, 'English', 'undergraduate', 2, 'fall', 1),
+  ('engineering', 'Civil Engineering', 'CIVE 330', 'Construction Materials', 'Studies concrete, steel, asphalt, timber, aggregates, testing methods, specifications, and material selection in construction.', 3, 'English', 'undergraduate', 2, 'spring', 1),
+  ('business', 'Business Administration', 'BUS 101', 'Principles of Management', 'Introduces planning, organizing, leadership, control, decision making, organizational structure, and management in contemporary workplaces.', 3, 'English', 'undergraduate', 1, 'fall', 1),
+  ('business', 'Business Administration', 'BUS 220', 'Organizational Behavior', 'Explores motivation, teams, communication, leadership, culture, decision making, and individual behavior in organizations.', 3, 'English', 'undergraduate', 1, 'spring', 1),
+  ('business', 'Business Administration', 'MKT 201', 'Principles of Marketing', 'Covers consumer behavior, segmentation, branding, product strategy, pricing, channels, promotion, and marketing planning.', 3, 'English', 'undergraduate', 2, 'fall', 1),
+  ('business', 'Business Administration', 'OPMT 301', 'Operations Management', 'Introduces process design, capacity, quality, forecasting, inventory, supply chains, and operational performance improvement.', 3, 'English', 'undergraduate', 2, 'spring', 1),
+  ('business', 'Finance', 'FIN 201', 'Financial Management', 'Introduces time value of money, financial statements, risk and return, budgeting, capital structure, and financial decisions.', 3, 'English', 'undergraduate', 1, 'fall', 1),
+  ('business', 'Finance', 'ACCT 201', 'Financial Accounting', 'Covers accounting cycles, statements, assets, liabilities, equity, revenue recognition, and financial reporting fundamentals.', 3, 'English', 'undergraduate', 1, 'spring', 1),
+  ('business', 'Finance', 'ECON 201', 'Microeconomics', 'Studies markets, supply and demand, elasticity, consumer choice, production, market structures, and public policy applications.', 3, 'English', 'undergraduate', 2, 'fall', 1),
+  ('business', 'Finance', 'FIN 320', 'Investments', 'Covers securities, portfolio risk, diversification, valuation, market efficiency, bonds, equities, and investment strategy.', 3, 'English', 'undergraduate', 2, 'spring', 1);
+
+INSERT INTO course (
+  code,
+  title,
+  description,
+  credits,
+  language,
+  level,
+  department_id
+)
+SELECT DISTINCT
+  course_template.code,
+  course_template.title,
+  course_template.description,
+  course_template.credits,
+  course_template.language,
+  course_template.level,
+  d.department_id
+FROM tmp_full_catalog_department_seed seed
+JOIN university u
+  ON u.name = seed.university_name
+  AND u.is_active = 1
+JOIN department d
+  ON d.university_id = u.university_id
+  AND LOWER(d.name) = LOWER(seed.department_name)
+  AND d.is_active = 1
+JOIN tmp_full_catalog_course_template course_template
+  ON course_template.department_kind = seed.department_kind
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM course existing_course
+  WHERE existing_course.department_id = d.department_id
+    AND LOWER(existing_course.code) = LOWER(course_template.code)
+);
+
+INSERT INTO roadmap (
+  major_id,
+  level,
+  title,
+  total_credits,
+  is_published,
+  created_by
+)
+SELECT
+  m.major_id,
+  'undergraduate',
+  major_template.roadmap_title,
+  SUM(course_template.credits),
+  1,
+  NULL
+FROM tmp_full_catalog_department_seed seed
+JOIN university u
+  ON u.name = seed.university_name
+  AND u.is_active = 1
+JOIN department d
+  ON d.university_id = u.university_id
+  AND LOWER(d.name) = LOWER(seed.department_name)
+  AND d.is_active = 1
+JOIN tmp_full_catalog_major_template major_template
+  ON major_template.department_kind = seed.department_kind
+JOIN major m
+  ON m.department_id = d.department_id
+  AND LOWER(m.name) = LOWER(major_template.major_name)
+  AND m.is_active = 1
+JOIN tmp_full_catalog_course_template course_template
+  ON course_template.department_kind = seed.department_kind
+  AND course_template.major_name = major_template.major_name
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM roadmap existing_roadmap
+  WHERE existing_roadmap.major_id = m.major_id
+    AND existing_roadmap.level = 'undergraduate'
+)
+GROUP BY
+  m.major_id,
+  major_template.roadmap_title;
+
+INSERT IGNORE INTO roadmap_course (
+  roadmap_id,
+  course_id,
+  year_number,
+  semester,
+  sequence_order
+)
+SELECT
+  r.roadmap_id,
+  c.course_id,
+  course_template.year_number,
+  course_template.semester,
+  course_template.sequence_order
+FROM tmp_full_catalog_department_seed seed
+JOIN university u
+  ON u.name = seed.university_name
+  AND u.is_active = 1
+JOIN department d
+  ON d.university_id = u.university_id
+  AND LOWER(d.name) = LOWER(seed.department_name)
+  AND d.is_active = 1
+JOIN tmp_full_catalog_major_template major_template
+  ON major_template.department_kind = seed.department_kind
+JOIN major m
+  ON m.department_id = d.department_id
+  AND LOWER(m.name) = LOWER(major_template.major_name)
+  AND m.is_active = 1
+JOIN roadmap r
+  ON r.major_id = m.major_id
+  AND r.level = 'undergraduate'
+  AND r.created_by IS NULL
+  AND r.title = major_template.roadmap_title
+JOIN tmp_full_catalog_course_template course_template
+  ON course_template.department_kind = seed.department_kind
+  AND course_template.major_name = major_template.major_name
+JOIN course c
+  ON c.department_id = d.department_id
+  AND LOWER(c.code) = LOWER(course_template.code)
+  AND c.deleted_at IS NULL;
+
+DROP TEMPORARY TABLE IF EXISTS tmp_full_catalog_course_template;
+DROP TEMPORARY TABLE IF EXISTS tmp_full_catalog_major_template;
+DROP TEMPORARY TABLE IF EXISTS tmp_full_catalog_department_seed;
+-- END CATALOG EXPANSION
 
 COMMIT;
 SET FOREIGN_KEY_CHECKS = 1;

@@ -33,6 +33,15 @@ type DepartmentOption = {
   university: string;
 };
 
+type MajorOption = {
+  major_id: number;
+  name: string;
+  department_id: number;
+  department: string;
+  university_id: number;
+  university: string;
+};
+
 function uniqueSorted(values: string[]) {
   return Array.from(new Set(values.filter(Boolean))).sort((a, b) =>
     a.localeCompare(b),
@@ -49,6 +58,7 @@ function CoursesPageContent() {
   const [filters, setFilters] = useState<Filters>({
     university: searchParams.get("university") || "",
     department: searchParams.get("department") || "",
+    major: searchParams.get("major") || "",
     language: searchParams.get("language") || "",
     level: searchParams.get("level") || "",
     year: searchParams.get("year") || "",
@@ -59,6 +69,7 @@ function CoursesPageContent() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [universities, setUniversities] = useState<UniversityOption[]>([]);
   const [departments, setDepartments] = useState<DepartmentOption[]>([]);
+  const [majors, setMajors] = useState<MajorOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,11 +78,13 @@ function CoursesPageContent() {
       try {
         setLoading(true);
         setError(null);
-        const [coursesRes, universitiesRes, departmentsRes] = await Promise.all([
-          fetch("/api/courses?limit=500&page=1", { cache: "no-store" }),
-          fetch("/api/universities", { cache: "no-store" }),
-          fetch("/api/departments", { cache: "no-store" }),
-        ]);
+        const [coursesRes, universitiesRes, departmentsRes, majorsRes] =
+          await Promise.all([
+            fetch("/api/courses?limit=5000&page=1", { cache: "no-store" }),
+            fetch("/api/universities", { cache: "no-store" }),
+            fetch("/api/departments", { cache: "no-store" }),
+            fetch("/api/majors", { cache: "no-store" }),
+          ]);
 
         if (!coursesRes.ok) throw new Error("Failed to fetch courses");
         if (!universitiesRes.ok) throw new Error("Failed to fetch universities");
@@ -85,6 +98,11 @@ function CoursesPageContent() {
         if (departmentsRes.ok) {
           const departmentsData = await departmentsRes.json();
           setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
+        }
+
+        if (majorsRes.ok) {
+          const majorsData = await majorsRes.json();
+          setMajors(Array.isArray(majorsData) ? majorsData : []);
         }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Something went wrong");
@@ -139,6 +157,20 @@ function CoursesPageContent() {
           university: course.university,
         })),
       ],
+      majors: [
+        ...majors.map((major) => ({
+          name: major.name,
+          department: major.department,
+          university: major.university,
+        })),
+        ...courses.flatMap((course) =>
+          (course.majors ?? []).map((major) => ({
+            name: major,
+            department: course.department,
+            university: course.university,
+          })),
+        ),
+      ],
       languages: uniqueSorted(courses.map((course) => course.language)),
       levels: [
         ...universities.flatMap((university) =>
@@ -153,7 +185,7 @@ function CoursesPageContent() {
         })),
       ],
     }),
-    [courses, departments, universities],
+    [courses, departments, majors, universities],
   );
 
   const [showFilters, setShowFilters] = useState(false);
@@ -214,6 +246,7 @@ function CoursesPageContent() {
                 setFilters={setFilters}
                 universities={filterOptions.universities}
                 departments={filterOptions.departments}
+                majors={filterOptions.majors}
                 languages={filterOptions.languages}
                 levels={filterOptions.levels}
                 onApply={() => setShowFilters(false)}

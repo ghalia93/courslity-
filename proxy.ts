@@ -5,7 +5,18 @@ import { jwtVerify } from "jose";
 
 const AUTH_COOKIE = "auth_token";
 
-export async function middleware(req: NextRequest) {
+function isAdminRole(role: string) {
+  const normalized = role.trim().toLowerCase();
+  return (
+    normalized === "admin" ||
+    normalized === "super_admin" ||
+    normalized === "administrator" ||
+    normalized === "university_admin" ||
+    normalized === "university admin"
+  );
+}
+
+export async function proxy(req: NextRequest) {
   const secret = process.env.JWT_SECRET;
   if (!secret) return NextResponse.next();
 
@@ -33,13 +44,7 @@ export async function middleware(req: NextRequest) {
       const role = String((payload as { role?: string }).role ?? "")
         .trim()
         .toLowerCase();
-      const isAdminRole =
-        role === "admin" ||
-        role === "super_admin" ||
-        role === "administrator" ||
-        role === "university_admin" ||
-        role === "university admin";
-      if (isAdminRoute && !isAdminRole) {
+      if (isAdminRoute && !isAdminRole(role)) {
         return NextResponse.redirect(new URL("/", req.url));
       }
 
@@ -50,8 +55,11 @@ export async function middleware(req: NextRequest) {
 
   if (isAuthPage && token) {
     try {
-      await jwtVerify(token, encodedSecret);
-      return NextResponse.redirect(new URL("/", req.url));
+      const { payload } = await jwtVerify(token, encodedSecret);
+      const role = String((payload as { role?: string }).role ?? "");
+      return NextResponse.redirect(
+        new URL(isAdminRole(role) ? "/admin" : "/", req.url),
+      );
     } catch {}
   }
 

@@ -2,8 +2,9 @@
 export interface Filters {
   university: string;
   department: string;
+  major: string;
   level: string;
   language: string;
-   year?: string;
+  year?: string;
   semester?: string;
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { isAdminRole } from "@/lib/roles";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -45,7 +46,7 @@ export default function LoginForm() {
       }
 
       await refresh();
-      router.push("/");
+      router.replace(isAdminRole(data.user?.role) ? "/admin" : "/");
     } catch {
       setErrorMsg("Network error. Please try again.");
     } finally {

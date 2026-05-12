@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    "appendix-b-screenshots/**",
     "next-env.d.ts",
   ]),
 ]);

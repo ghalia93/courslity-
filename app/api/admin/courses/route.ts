@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { requireAdmin, requireUniversityAdmin } from "@/lib/auth";
 import pool from "@/db";
-import { COURSE_LEVEL_VALUES } from "@/lib/courseLevels";
+import { getSemesterFromCourseCode, getYearFromCourseCode } from "@/lib/courseCode";
+import { COURSE_LEVEL_VALUES, formatCourseLevel } from "@/lib/courseLevels";
+import { ensureRoadmapTables } from "@/lib/roadmapsDb";
 
 type AdminCourseRow = RowDataPacket & {
   course_id: number;
@@ -17,6 +19,8 @@ type AdminCourseRow = RowDataPacket & {
   department: string;
   university_id: number;
   university: string;
+  majorIds: string | null;
+  majors: string | null;
   deleted_at: Date | string | null;
   rating: number | string;
   number_of_reviews: number | string;
@@ -37,11 +41,25 @@ type ExistingCourseRow = RowDataPacket & {
   course_id: number;
 };
 
+type MajorCourseRow = RowDataPacket & {
+  major_id: number;
+  name: string;
+};
+
+type RoadmapIdRow = RowDataPacket & {
+  roadmap_id: number;
+};
+
+type SequenceRow = RowDataPacket & {
+  next_order: number | string | null;
+};
+
 /**
  * GET /api/admin/courses
  *
- * Returns ALL courses (including soft-deleted) so the frontend can show them
- * with an "opacity-50 / Deleted" style and let the status filter work in-memory.
+ * Returns major-linked courses (including soft-deleted) so the frontend can
+ * show them with an "opacity-50 / Deleted" style and let the status filter
+ * work in-memory.
  *
  * Filtering by university, department, level, language, and status is handled
  * by the frontend useMemo - matching how the page is built.
@@ -61,12 +79,26 @@ type ExistingCourseRow = RowDataPacket & {
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin(req);
+    await ensureRoadmapTables();
 
     const { searchParams } = new URL(req.url);
     const q = (searchParams.get("q") || "").trim();
     const sort = (searchParams.get("sort") || "rating_high").trim();
 
-    const conditions: string[] = [];
+    const conditions = [
+      `EXISTS (
+        SELECT 1
+        FROM roadmap_course rc_required
+        INNER JOIN roadmap r_required
+          ON r_required.roadmap_id = rc_required.roadmap_id
+          AND r_required.is_published = 1
+        INNER JOIN major m_required
+          ON m_required.major_id = r_required.major_id
+          AND m_required.is_active = 1
+        WHERE rc_required.course_id = c.course_id
+          AND m_required.department_id = c.department_id
+      )`,
+    ];
     const params: string[] = [];
 
     if (q) {
@@ -74,10 +106,22 @@ export async function GET(req: NextRequest) {
         c.code  LIKE ? OR
         c.title LIKE ? OR
         d.name  LIKE ? OR
-        uni.name LIKE ?
+        uni.name LIKE ? OR
+        EXISTS (
+          SELECT 1
+          FROM roadmap_course rc_search
+          JOIN roadmap r_search
+            ON r_search.roadmap_id = rc_search.roadmap_id
+            AND r_search.is_published = 1
+          JOIN major m_search
+            ON m_search.major_id = r_search.major_id
+            AND m_search.is_active = 1
+          WHERE rc_search.course_id = c.course_id
+            AND m_search.name LIKE ?
+        )
       )`);
       const like = `%${q}%`;
-      params.push(like, like, like, like);
+      params.push(like, like, like, like, like);
     }
 
     const where =
@@ -103,9 +147,11 @@ export async function GET(req: NextRequest) {
         d.name                                              AS department,
         uni.university_id,
         uni.name                                            AS university,
+        GROUP_CONCAT(DISTINCT m.major_id ORDER BY m.name ASC) AS majorIds,
+        GROUP_CONCAT(DISTINCT m.name ORDER BY m.name ASC SEPARATOR '||') AS majors,
         c.deleted_at,
         COALESCE(ROUND(AVG(r.overall_rating),    2), 0)    AS rating,
-        COUNT(r.review_id)                                  AS number_of_reviews,
+        COUNT(DISTINCT r.review_id)                         AS number_of_reviews,
         COALESCE(ROUND(AVG(r.exam_difficulty_rating), 2), 0) AS exam,
         COALESCE(ROUND(AVG(r.workload_rating),        2), 0) AS workload,
         COALESCE(ROUND(AVG(r.attendance_rating),      2), 0) AS attendance,
@@ -114,6 +160,15 @@ export async function GET(req: NextRequest) {
       JOIN department  d   ON d.department_id   = c.department_id
       JOIN university  uni ON uni.university_id  = d.university_id
       LEFT JOIN review r   ON r.course_id = c.course_id AND r.deleted_at IS NULL
+      LEFT JOIN roadmap_course rc_major
+        ON rc_major.course_id = c.course_id
+      LEFT JOIN roadmap roadmap_major
+        ON roadmap_major.roadmap_id = rc_major.roadmap_id
+        AND roadmap_major.is_published = 1
+      LEFT JOIN major m
+        ON m.major_id = roadmap_major.major_id
+        AND m.department_id = c.department_id
+        AND m.is_active = 1
       ${where}
       GROUP BY
         c.course_id, c.code, c.title, c.description, c.credits,
@@ -136,6 +191,13 @@ export async function GET(req: NextRequest) {
       department: row.department,
       university_id: row.university_id,
       university: row.university,
+      majorIds: row.majorIds
+        ? row.majorIds
+            .split(",")
+            .map((id) => Number(id))
+            .filter((id) => Number.isInteger(id) && id > 0)
+        : [],
+      majors: row.majors ? row.majors.split("||").filter(Boolean) : [],
       deleted_at: row.deleted_at,
       rating: Number(row.rating),
       number_of_reviews: Number(row.number_of_reviews),
@@ -173,11 +235,13 @@ export async function GET(req: NextRequest) {
  *   language: string,        // English | Arabic | French | German | Spanish | Other
  *   level: string,           // freshman | undergraduate | graduate | master_degree | doctoral
  *   department_id: number,
+ *   major_id: number,
  * }
  */
 export async function POST(req: NextRequest) {
   try {
-    await requireUniversityAdmin(req);
+    const user = await requireUniversityAdmin(req);
+    await ensureRoadmapTables();
 
     const body = await req.json();
     const {
@@ -188,6 +252,7 @@ export async function POST(req: NextRequest) {
       language,
       level,
       department_id,
+      major_id,
     } = body;
 
     if (!code || typeof code !== "string") {
@@ -255,6 +320,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!major_id || isNaN(Number(major_id))) {
+      return NextResponse.json(
+        { success: false, message: "major_id is required" },
+        { status: 400 },
+      );
+    }
+
+    const departmentId = Number(department_id);
+    const majorId = Number(major_id);
+    const cleanCode = code.trim();
+    const cleanTitle = title.trim();
+    const cleanDescription = description.trim();
+
     // Verify department exists and is active
     const [deptRows] = await pool.query<DepartmentCourseRow[]>(
       `SELECT d.department_id, d.name, d.university_id, u.name AS university
@@ -262,7 +340,7 @@ export async function POST(req: NextRequest) {
         JOIN university u ON u.university_id = d.university_id
         WHERE d.department_id = ? AND d.is_active = 1 AND u.is_active = 1
         LIMIT 1`,
-      [department_id],
+      [departmentId],
     );
 
     if (!deptRows || deptRows.length === 0) {
@@ -272,10 +350,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const [majorRows] = await pool.query<MajorCourseRow[]>(
+      `SELECT major_id, name
+        FROM major
+        WHERE major_id = ?
+          AND department_id = ?
+          AND is_active = 1
+        LIMIT 1`,
+      [majorId, departmentId],
+    );
+
+    if (!majorRows.length) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Major not found in the selected department",
+        },
+        { status: 404 },
+      );
+    }
+
     // Prevent duplicate code within the same department
     const [existing] = await pool.query<ExistingCourseRow[]>(
       "SELECT course_id FROM course WHERE code = ? AND department_id = ? AND deleted_at IS NULL LIMIT 1",
-      [code.trim(), department_id],
+      [cleanCode, departmentId],
     );
 
     if (existing.length > 0) {
@@ -289,19 +387,92 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO course (code, title, description, credits, language, level, department_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        code.trim(),
-        title.trim(),
-        description.trim(),
-        creditsNum,
-        language,
-        level,
-        Number(department_id),
-      ],
-    );
+    const yearNumber = getYearFromCourseCode(cleanCode) ?? 1;
+    const semester = getSemesterFromCourseCode(cleanCode) ?? "fall";
+    const roadmapTitle = `${majorRows[0].name} ${formatCourseLevel(
+      level,
+    )} Roadmap`;
+
+    const connection = await pool.getConnection();
+    let courseId = 0;
+
+    try {
+      await connection.beginTransaction();
+
+      const [result] = await connection.query<ResultSetHeader>(
+        `INSERT INTO course (code, title, description, credits, language, level, department_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          cleanCode,
+          cleanTitle,
+          cleanDescription,
+          creditsNum,
+          language,
+          level,
+          departmentId,
+        ],
+      );
+
+      courseId = result.insertId;
+
+      await connection.query(
+        `INSERT INTO roadmap
+          (major_id, level, title, total_credits, is_published, created_by)
+        VALUES (?, ?, ?, 0, 1, ?)
+        ON DUPLICATE KEY UPDATE
+          title = IF(title = '', VALUES(title), title),
+          is_published = 1`,
+        [majorId, level, roadmapTitle, user.userId],
+      );
+
+      const [roadmapRows] = await connection.query<RoadmapIdRow[]>(
+        "SELECT roadmap_id FROM roadmap WHERE major_id = ? AND level = ? LIMIT 1",
+        [majorId, level],
+      );
+
+      const roadmapId = roadmapRows[0]?.roadmap_id;
+      if (!roadmapId) {
+        throw new Error("Failed to create or load roadmap for selected major");
+      }
+
+      const [sequenceRows] = await connection.query<SequenceRow[]>(
+        `SELECT COALESCE(MAX(sequence_order), 0) + 10 AS next_order
+        FROM roadmap_course
+        WHERE roadmap_id = ?
+          AND year_number = ?
+          AND semester = ?`,
+        [roadmapId, yearNumber, semester],
+      );
+
+      const sequenceOrder = Number(sequenceRows[0]?.next_order ?? 10);
+
+      await connection.query(
+        `INSERT IGNORE INTO roadmap_course
+          (roadmap_id, course_id, year_number, semester, sequence_order)
+        VALUES (?, ?, ?, ?, ?)`,
+        [roadmapId, courseId, yearNumber, semester, sequenceOrder],
+      );
+
+      await connection.query(
+        `UPDATE roadmap r
+        SET total_credits = (
+          SELECT COALESCE(SUM(c.credits), 0)
+          FROM roadmap_course rc
+          JOIN course c ON c.course_id = rc.course_id
+          WHERE rc.roadmap_id = r.roadmap_id
+            AND c.deleted_at IS NULL
+        )
+        WHERE r.roadmap_id = ?`,
+        [roadmapId],
+      );
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
 
     // Return the full Course shape so the frontend can prepend it to state directly
     return NextResponse.json(
@@ -309,15 +480,17 @@ export async function POST(req: NextRequest) {
         success: true,
         message: "Course created successfully",
         course: {
-          course_id: result.insertId,
-          code: code.trim(),
-          title: title.trim(),
-          description: description.trim(),
+          course_id: courseId,
+          code: cleanCode,
+          title: cleanTitle,
+          description: cleanDescription,
           credits: creditsNum,
           language,
           level,
-          department_id: Number(department_id),
+          department_id: departmentId,
           department: deptRows[0].name ?? "",
+          majorIds: [majorId],
+          majors: [majorRows[0].name],
           university_id: deptRows[0].university_id,
           university: deptRows[0].university ?? "",
           deleted_at: null,

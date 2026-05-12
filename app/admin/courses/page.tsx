@@ -34,6 +34,8 @@ type Course = {
   language: string;
   department_id: number;
   department: string;
+  majorIds: number[];
+  majors: string[];
   university_id: number;
   university: string;
   deleted_at: string | null;
@@ -60,7 +62,18 @@ type DepartmentOption = {
   university: string;
 };
 
+type MajorOption = {
+  major_id: number;
+  name: string;
+  department_id: number;
+  department: string;
+  university_id: number;
+  university: string;
+};
+
 type SortKey = "rating_high" | "rating_low" | "reviews_most";
+
+const COURSES_PER_PAGE = 10;
 
 function unique<T>(arr: T[]): T[] {
   return Array.from(new Set(arr));
@@ -363,6 +376,14 @@ function CourseDetailModal({
               <p className="text-gray-800 font-medium">{course.department}</p>
             </div>
             <div>
+              <p className="text-xs text-gray-400 mb-0.5">Major</p>
+              <p className="text-gray-800 font-medium">
+                {(course.majors ?? []).length > 0
+                  ? course.majors.join(", ")
+                  : "No major linked"}
+              </p>
+            </div>
+            <div>
               <p className="text-xs text-gray-400 mb-0.5">Level</p>
               <p className="text-gray-800 font-medium">
                 {formatCourseLevel(course.level)}
@@ -593,6 +614,7 @@ export default function AdminCoursesPage() {
   const [catalogDepartments, setCatalogDepartments] = useState<
     DepartmentOption[]
   >([]);
+  const [catalogMajors, setCatalogMajors] = useState<MajorOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -606,12 +628,14 @@ export default function AdminCoursesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [universityFilter, setUniversityFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [majorFilter, setMajorFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
   const [languageFilter, setLanguageFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "deleted"
   >("all");
   const [sortKey, setSortKey] = useState<SortKey>("rating_high");
+  const [page, setPage] = useState(1);
   const isUniversityAdmin = user?.role === "super_admin";
   const showUniversityAdminWarning = !authLoading && !isUniversityAdmin;
   const universityAdminWarning = "You are not the University Admin";
@@ -646,33 +670,21 @@ export default function AdminCoursesPage() {
 
   const loadAcademicCatalog = useCallback(async () => {
     try {
-      const [universitiesRes, departmentsRes] = await Promise.all([
-        fetch("/api/admin/universities", {
-          credentials: "include",
-          cache: "no-store",
-        }),
-        fetch("/api/departments", { cache: "no-store" }),
-      ]);
+      const res = await fetch("/api/admin/roadmaps/options", {
+        credentials: "include",
+        cache: "no-store",
+      });
+      const data = await res.json().catch(() => null);
 
-      const universitiesData = await universitiesRes.json().catch(() => null);
-      const departmentsData = await departmentsRes.json().catch(() => null);
-
-      if (universitiesRes.ok && universitiesData?.success) {
-        setCatalogUniversities(
-          (universitiesData.universities ?? []) as UniversityOption[],
-        );
-      }
-
-      if (departmentsRes.ok) {
-        setCatalogDepartments(
-          (Array.isArray(departmentsData)
-            ? departmentsData
-            : departmentsData?.departments ?? []) as DepartmentOption[],
-        );
+      if (res.ok && data?.success) {
+        setCatalogUniversities((data.universities ?? []) as UniversityOption[]);
+        setCatalogDepartments((data.departments ?? []) as DepartmentOption[]);
+        setCatalogMajors((data.majors ?? []) as MajorOption[]);
       }
     } catch {
       setCatalogUniversities([]);
       setCatalogDepartments([]);
+      setCatalogMajors([]);
     }
   }, []);
 
@@ -711,6 +723,31 @@ export default function AdminCoursesPage() {
     [catalogDepartments, courses, universityFilter],
   );
 
+  const majors = useMemo(
+    () =>
+      uniqueSorted([
+        ...catalogMajors
+          .filter(
+            (major) =>
+              (universityFilter === "all" ||
+                major.university === universityFilter) &&
+              (departmentFilter === "all" ||
+                major.department === departmentFilter),
+          )
+          .map((major) => major.name),
+        ...courses
+          .filter(
+            (course) =>
+              (universityFilter === "all" ||
+                course.university === universityFilter) &&
+              (departmentFilter === "all" ||
+                course.department === departmentFilter),
+          )
+          .flatMap((course) => course.majors ?? []),
+      ]),
+    [catalogMajors, courses, departmentFilter, universityFilter],
+  );
+
   const languages = useMemo(
     () => uniqueSorted(courses.map((course) => course.language)),
     [courses],
@@ -739,6 +776,12 @@ export default function AdminCoursesPage() {
   }, [departmentFilter, departments]);
 
   useEffect(() => {
+    if (majorFilter !== "all" && !majors.includes(majorFilter)) {
+      setMajorFilter("all");
+    }
+  }, [majorFilter, majors]);
+
+  useEffect(() => {
     if (levelFilter !== "all" && !levels.includes(levelFilter)) {
       setLevelFilter("all");
     }
@@ -747,6 +790,7 @@ export default function AdminCoursesPage() {
   const activeFilterCount = [
     universityFilter !== "all",
     departmentFilter !== "all",
+    majorFilter !== "all",
     levelFilter !== "all",
     languageFilter !== "all",
     statusFilter !== "all",
@@ -756,10 +800,12 @@ export default function AdminCoursesPage() {
   function resetFilters() {
     setUniversityFilter("all");
     setDepartmentFilter("all");
+    setMajorFilter("all");
     setLevelFilter("all");
     setLanguageFilter("all");
     setStatusFilter("all");
     setSortKey("rating_high");
+    setPage(1);
   }
 
   const filteredCourses = useMemo(() => {
@@ -776,11 +822,13 @@ export default function AdminCoursesPage() {
         universityAliasSearchTerms.some((term) =>
           c.university.toLowerCase().includes(term),
         ) ||
-        c.department.toLowerCase().includes(q);
+        c.department.toLowerCase().includes(q) ||
+        (c.majors ?? []).some((major) => major.toLowerCase().includes(q));
       return (
         matchesSearch &&
         (universityFilter === "all" || c.university === universityFilter) &&
         (departmentFilter === "all" || c.department === departmentFilter) &&
+        (majorFilter === "all" || (c.majors ?? []).includes(majorFilter)) &&
         (levelFilter === "all" || c.level === levelFilter) &&
         (languageFilter === "all" || c.language === languageFilter) &&
         (statusFilter === "all" ||
@@ -805,11 +853,46 @@ export default function AdminCoursesPage() {
     searchQuery,
     universityFilter,
     departmentFilter,
+    majorFilter,
     levelFilter,
     languageFilter,
     statusFilter,
     sortKey,
   ]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredCourses.length / COURSES_PER_PAGE),
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [
+    searchQuery,
+    universityFilter,
+    departmentFilter,
+    majorFilter,
+    levelFilter,
+    languageFilter,
+    statusFilter,
+    sortKey,
+  ]);
+
+  useEffect(() => {
+    setPage((currentPage) => Math.min(currentPage, totalPages));
+  }, [totalPages]);
+
+  const paginatedCourses = useMemo(() => {
+    const start = (page - 1) * COURSES_PER_PAGE;
+    return filteredCourses.slice(start, start + COURSES_PER_PAGE);
+  }, [filteredCourses, page]);
+
+  const firstCourseNumber =
+    filteredCourses.length === 0 ? 0 : (page - 1) * COURSES_PER_PAGE + 1;
+  const lastCourseNumber = Math.min(
+    page * COURSES_PER_PAGE,
+    filteredCourses.length,
+  );
 
   //  Create
   // AddCourseCard now calls the API itself and passes back the created Course object
@@ -951,8 +1034,11 @@ export default function AdminCoursesPage() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by code, title, university, or department..."
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search by code, title, university, department, or major..."
             className="w-full h-11 pl-10 pr-4 text-gray-900 placeholder-gray-400 rounded-md
               border border-gray-300 transition-colors focus:outline-none
               focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]"
@@ -961,7 +1047,10 @@ export default function AdminCoursesPage() {
         <div className="relative hidden sm:block">
           <select
             value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as SortKey)}
+            onChange={(e) => {
+              setSortKey(e.target.value as SortKey);
+              setPage(1);
+            }}
             className="h-11 pl-3 pr-9 rounded-md border border-gray-300 bg-white text-sm
               text-gray-700 appearance-none focus:outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]"
           >
@@ -998,6 +1087,7 @@ export default function AdminCoursesPage() {
               onChange={(v) => {
                 setUniversityFilter(v);
                 setDepartmentFilter("all");
+                setMajorFilter("all");
               }}
               options={[
                 { value: "all", label: "All universities" },
@@ -1007,10 +1097,22 @@ export default function AdminCoursesPage() {
             <FilterSelect
               label="Department"
               value={departmentFilter}
-              onChange={setDepartmentFilter}
+              onChange={(v) => {
+                setDepartmentFilter(v);
+                setMajorFilter("all");
+              }}
               options={[
                 { value: "all", label: "All departments" },
                 ...departments.map((d) => ({ value: d, label: d })),
+              ]}
+            />
+            <FilterSelect
+              label="Major"
+              value={majorFilter}
+              onChange={setMajorFilter}
+              options={[
+                { value: "all", label: "All majors" },
+                ...majors.map((major) => ({ value: major, label: major })),
               ]}
             />
             <FilterSelect
@@ -1051,7 +1153,10 @@ export default function AdminCoursesPage() {
               <div className="relative">
                 <select
                   value={sortKey}
-                  onChange={(e) => setSortKey(e.target.value as SortKey)}
+                  onChange={(e) => {
+                    setSortKey(e.target.value as SortKey);
+                    setPage(1);
+                  }}
                   className="h-9 pl-3 pr-8 rounded-md border border-gray-300 bg-white text-sm text-gray-700 appearance-none focus:outline-none focus:border-[#6155F5]"
                 >
                   <option value="rating_high">Highest rated</option>
@@ -1079,7 +1184,11 @@ export default function AdminCoursesPage() {
       <p className="mt-3 text-xs text-gray-400">
         {loading
           ? "Loading..."
-          : `${filteredCourses.length} course${filteredCourses.length !== 1 ? "s" : ""} found`}
+          : `${filteredCourses.length} course${filteredCourses.length !== 1 ? "s" : ""} found${
+              filteredCourses.length > 0
+                ? ` - showing ${firstCourseNumber}-${lastCourseNumber}`
+                : ""
+            }`}
       </p>
       {error && (
         <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -1148,7 +1257,7 @@ export default function AdminCoursesPage() {
                 </td>
               </tr>
             ) : (
-              filteredCourses.map((course) => (
+              paginatedCourses.map((course) => (
                 <tr
                   key={course.course_id}
                   onClick={() => setDetailCourse(course)}
@@ -1163,6 +1272,11 @@ export default function AdminCoursesPage() {
                     </p>
                     <p className="text-xs text-gray-400 max-w-45 truncate">
                       {course.department}
+                    </p>
+                    <p className="text-xs text-gray-400 max-w-45 truncate">
+                      {(course.majors ?? []).length > 0
+                        ? course.majors.join(", ")
+                        : "No major linked"}
                     </p>
                   </td>
                   <td className="px-4 py-3 max-w-40">
@@ -1266,7 +1380,7 @@ export default function AdminCoursesPage() {
             No courses match your search or filters.
           </p>
         ) : (
-          filteredCourses.map((course) => (
+          paginatedCourses.map((course) => (
             <div
               key={course.course_id}
               onClick={() => setDetailCourse(course)}
@@ -1293,6 +1407,11 @@ export default function AdminCoursesPage() {
                   </p>
                   <p className="text-xs text-gray-400 truncate">
                     {course.department}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate">
+                    {(course.majors ?? []).length > 0
+                      ? course.majors.join(", ")
+                      : "No major linked"}
                   </p>
                 </div>
                 <div
@@ -1321,6 +1440,12 @@ export default function AdminCoursesPage() {
                 <p>
                   <span className="text-gray-400">University:</span>{" "}
                   {course.university}
+                </p>
+                <p>
+                  <span className="text-gray-400">Major:</span>{" "}
+                  {(course.majors ?? []).length > 0
+                    ? course.majors.join(", ")
+                    : "No major linked"}
                 </p>
                 <p>
                   <span className="text-gray-400">Level:</span>{" "}
@@ -1369,6 +1494,34 @@ export default function AdminCoursesPage() {
           ))
         )}
       </div>
+
+      {!loading && filteredCourses.length > 0 && (
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-gray-500">
+            Page {page} of {totalPages} - Showing {firstCourseNumber}-
+            {lastCourseNumber} of {filteredCourses.length}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+              disabled={page <= 1}
+              className="h-9 rounded-md border border-gray-300 px-3 text-sm text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Prev
+            </button>
+            <button
+              onClick={() =>
+                setPage((currentPage) => Math.min(totalPages, currentPage + 1))
+              }
+              disabled={page >= totalPages}
+              className="h-9 rounded-md border border-gray-300 px-3 text-sm text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

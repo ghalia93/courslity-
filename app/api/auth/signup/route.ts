@@ -13,6 +13,12 @@ type UniversityRow = RowDataPacket & {
   email_domain: string | null;
 };
 
+function domainMatches(typedDomain: string, expectedDomain: string): boolean {
+  const typed = typedDomain.trim().toLowerCase();
+  const expected = expectedDomain.trim().toLowerCase();
+  return typed === expected || typed.endsWith(`.${expected}`);
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -20,7 +26,7 @@ export async function POST(req: Request) {
     const fullName = body?.fullName;
     const email = body?.email;
     const password = body?.password;
-    const universityId = body?.universityId;
+    const universityId = Number(body?.universityId);
 
     if (!fullName || typeof fullName !== "string") {
       return NextResponse.json(
@@ -43,9 +49,26 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!universityId || typeof universityId !== "number") {
+    if (!Number.isInteger(universityId) || universityId < 1) {
       return NextResponse.json(
         { success: false, message: "Valid universityId is required" },
+        { status: 400 },
+      );
+    }
+
+    const normalizedFullName = fullName.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedFullName) {
+      return NextResponse.json(
+        { success: false, message: "fullName is required" },
+        { status: 400 },
+      );
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return NextResponse.json(
+        { success: false, message: "Valid email is required" },
         { status: 400 },
       );
     }
@@ -79,7 +102,7 @@ export async function POST(req: Request) {
 
     const [existing] = await pool.query<ExistingUserRow[]>(
       "SELECT user_id FROM `user` WHERE email = ? LIMIT 1",
-      [email],
+      [normalizedEmail],
     );
 
     if (existing.length > 0) {
@@ -102,9 +125,9 @@ export async function POST(req: Request) {
     }
 
     const expectedDomain = uni[0].email_domain?.trim().toLowerCase();
-    const typedDomain = email.split("@")[1]?.trim().toLowerCase() ?? "";
+    const typedDomain = normalizedEmail.split("@")[1]?.trim().toLowerCase() ?? "";
 
-    if (expectedDomain && typedDomain !== expectedDomain) {
+    if (expectedDomain && !domainMatches(typedDomain, expectedDomain)) {
       return NextResponse.json(
         {
           success: false,
@@ -118,7 +141,7 @@ export async function POST(req: Request) {
 
     const [result] = await pool.query<ResultSetHeader>(
       "INSERT INTO `user` (full_name, email, password, role, university_id) VALUES (?, ?, ?, ?, ?)",
-      [fullName, email, hashedPassword, "student", universityId],
+      [normalizedFullName, normalizedEmail, hashedPassword, "student", universityId],
     );
 
     return NextResponse.json(
@@ -127,8 +150,8 @@ export async function POST(req: Request) {
         message: "User registered successfully",
         user: {
           id: result.insertId,
-          fullName,
-          email,
+          fullName: normalizedFullName,
+          email: normalizedEmail,
           universityId,
         },
       },

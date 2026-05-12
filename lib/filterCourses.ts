@@ -9,6 +9,7 @@ import { getUniversityAliasSearchTerms } from "@/lib/universityAliases";
 interface CourseFilters {
   university?: string;
   department?: string;
+  major?: string;
   level?: string;
   language?: string;
   year?: string;
@@ -21,6 +22,7 @@ export function filterCourses(
   {
     university = "",
     department = "",
+    major = "",
     language = "",
     level = "",
     year = "",
@@ -34,6 +36,7 @@ export function filterCourses(
   );
   const normalizedUniversity = university.toLowerCase().trim();
   const normalizedDepartment = department.toLowerCase().trim();
+  const normalizedMajor = major.toLowerCase().trim();
   const normalizedLanguage = language.toLowerCase().trim();
   const normalizedLevel = level.toLowerCase().trim();
   const normalizedYear = year.trim();
@@ -48,6 +51,12 @@ export function filterCourses(
       !normalizedDepartment ||
       course.department.toLowerCase() === normalizedDepartment;
 
+    const matchesMajor =
+      !normalizedMajor ||
+      (course.majors ?? []).some(
+        (courseMajor) => courseMajor.toLowerCase() === normalizedMajor,
+      );
+
     const matchesLanguage =
       !normalizedLanguage ||
       course.language.toLowerCase() === normalizedLanguage;
@@ -55,16 +64,29 @@ export function filterCourses(
     const matchesLevel =
       !normalizedLevel || course.level.toLowerCase() === normalizedLevel;
 
-    const courseYear = course.year ?? getYearFromCourseCode(course.code);
-    const courseSemester =
-      course.semester ?? getSemesterFromCourseCode(course.code);
+    const courseYears =
+      course.years && course.years.length > 0
+        ? course.years
+        : [course.year ?? getYearFromCourseCode(course.code)].filter(
+            (value): value is number => value !== null && value !== undefined,
+          );
+    const courseSemesters =
+      course.semesters && course.semesters.length > 0
+        ? course.semesters
+        : [course.semester ?? getSemesterFromCourseCode(course.code)].filter(
+            (value): value is string => Boolean(value),
+          );
 
     const matchesYear =
-      !normalizedYear || String(courseYear ?? "") === normalizedYear;
+      !normalizedYear ||
+      courseYears.some((courseYear) => String(courseYear) === normalizedYear);
 
     const matchesSemester =
       !normalizedSemester ||
-      String(courseSemester ?? "").toLowerCase() === normalizedSemester;
+      courseSemesters.some(
+        (courseSemester) =>
+          String(courseSemester).toLowerCase() === normalizedSemester,
+      );
 
     const matchesQuery =
       !normalizedQuery ||
@@ -79,6 +101,7 @@ export function filterCourses(
     return (
       matchesUniversity &&
       matchesDepartment &&
+      matchesMajor &&
       matchesLanguage &&
       matchesLevel &&
       matchesYear &&

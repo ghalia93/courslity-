@@ -28,6 +28,12 @@ function getExpectedDomain(uni: University): string | null {
   return uni.email_domain?.trim() || UNIVERSITY_DOMAINS[uni.name] || null;
 }
 
+function domainMatches(typedDomain: string, expectedDomain: string): boolean {
+  const typed = typedDomain.trim().toLowerCase();
+  const expected = expectedDomain.trim().toLowerCase();
+  return typed === expected || typed.endsWith(`.${expected}`);
+}
+
 export default function SignupForm() {
   const router = useRouter();
 
@@ -38,19 +44,28 @@ export default function SignupForm() {
 
   const [universities, setUniversities] = useState<University[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingUniversities, setLoadingUniversities] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [universitiesError, setUniversitiesError] = useState<string | null>(
+    null,
+  );
   const [domainError, setDomainError] = useState<string | null>(null);
 
   // Fetch universities on mount
   useEffect(() => {
     async function fetchUniversities() {
       try {
+        setLoadingUniversities(true);
+        setUniversitiesError(null);
         const res = await fetch("/api/universities");
         if (!res.ok) throw new Error("Failed to load universities");
         const data: University[] = await res.json();
         setUniversities(data);
       } catch (error) {
         console.error("Could not load universities:", error);
+        setUniversitiesError("Could not load universities. Please refresh.");
+      } finally {
+        setLoadingUniversities(false);
       }
     }
     fetchUniversities();
@@ -92,9 +107,9 @@ export default function SignupForm() {
       return true;
     }
 
-    const typedDomain = currentEmail.split("@")[1]?.toLowerCase() ?? "";
+    const typedDomain = currentEmail.split("@")[1]?.trim().toLowerCase() ?? "";
 
-    if (typedDomain && typedDomain !== expectedDomain.toLowerCase()) {
+    if (typedDomain && !domainMatches(typedDomain, expectedDomain)) {
       setDomainError(
         `Email domain @${typedDomain} doesn't match ${selected.name}. Expected: @${expectedDomain}`,
       );
@@ -114,12 +129,13 @@ export default function SignupForm() {
 
     setLoading(true);
     try {
+      const normalizedEmail = email.trim().toLowerCase();
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fullName,
-          email,
+          fullName: fullName.trim(),
+          email: normalizedEmail,
           password,
           universityId: universityId || null,
         }),
@@ -195,14 +211,15 @@ export default function SignupForm() {
             required
             value={universityId}
             onChange={(e) => {
-              const id = Number(e.target.value);
+              const id = e.target.value === "" ? "" : Number(e.target.value);
               setUniversityId(id);
               validateDomainMatch(email, id);
             }}
+            disabled={loadingUniversities}
             className="w-full h-11 rounded-full border border-gray-200 bg-[#EEF4FF] px-4 text-sm text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#6155F5]/40"
           >
             <option value="" disabled>
-              Select your university
+              {loadingUniversities ? "Loading universities..." : "Select your university"}
             </option>
             {universities.map((uni) => (
               <option key={uni.university_id} value={uni.university_id}>
@@ -210,6 +227,10 @@ export default function SignupForm() {
               </option>
             ))}
           </select>
+
+          {universitiesError && (
+            <p className="text-xs text-red-500 pl-1">{universitiesError}</p>
+          )}
 
           {/* Domain hint - shows as soon as a university is selected */}
           {universityId !== "" && expectedDomainHint && (

@@ -15,6 +15,7 @@ export function filterRoadmaps(
   {
     university = "",
     department = "",
+    major = "",
     level = "",
     year = "",
     semester = "",
@@ -24,6 +25,7 @@ export function filterRoadmaps(
   const normalizedQuery = normalize(query);
   const normalizedUniversity = normalize(university);
   const normalizedDepartment = normalize(department);
+  const normalizedMajor = normalize(major);
   const normalizedLevel = normalize(level);
   const normalizedYear = String(year ?? "").trim();
   const normalizedSemester = normalize(semester);
@@ -36,6 +38,9 @@ export function filterRoadmaps(
     const matchesDepartment =
       !normalizedDepartment ||
       normalize(roadmap.department) === normalizedDepartment;
+
+    const matchesMajor =
+      !normalizedMajor || normalize(roadmap.major) === normalizedMajor;
 
     const matchesLevel =
       !normalizedLevel || normalize(roadmap.level) === normalizedLevel;
@@ -68,6 +73,7 @@ export function filterRoadmaps(
     return (
       matchesUniversity &&
       matchesDepartment &&
+      matchesMajor &&
       matchesLevel &&
       matchesTerm &&
       matchesQuery

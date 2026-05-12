@@ -44,6 +44,7 @@ type RoadmapFilters = {
   q?: string;
   universityId?: number;
   departmentId?: number;
+  majorId?: number;
   major?: string;
   level?: string;
   roadmapId?: number;
@@ -174,6 +175,12 @@ export async function getRoadmaps(filters: RoadmapFilters = {}) {
   if (departmentId) {
     conditions.push("d.department_id = ?");
     params.push(departmentId);
+  }
+
+  const majorId = toPositiveInt(filters.majorId);
+  if (majorId) {
+    conditions.push("m.major_id = ?");
+    params.push(majorId);
   }
 
   if (filters.major) {

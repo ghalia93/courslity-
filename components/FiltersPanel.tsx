@@ -20,11 +20,20 @@ export type LevelFilterOption =
       university?: string;
     };
 
+export type MajorFilterOption =
+  | string
+  | {
+      name: string;
+      department?: string;
+      university?: string;
+    };
+
 interface FiltersPanelProps {
   filters: Filters;
   setFilters: (filters: Filters) => void;
   universities: string[];
   departments: DepartmentFilterOption[];
+  majors: MajorFilterOption[];
   languages: string[];
   levels: LevelFilterOption[];
   onApply?: () => void;
@@ -50,6 +59,10 @@ function getLevelValue(level: LevelFilterOption) {
   return typeof level === "string" ? level : level.value;
 }
 
+function getMajorName(major: MajorFilterOption) {
+  return typeof major === "string" ? major : major.name;
+}
+
 function departmentBelongsToUniversity(
   department: DepartmentFilterOption,
   university: string,
@@ -58,6 +71,20 @@ function departmentBelongsToUniversity(
     !university ||
     typeof department === "string" ||
     department.university === university
+  );
+}
+
+function majorBelongsToSelection(
+  major: MajorFilterOption,
+  university: string,
+  department: string,
+) {
+  if (!department) return false;
+  if (typeof major === "string") return true;
+
+  return (
+    (!university || major.university === university) &&
+    major.department === department
   );
 }
 
@@ -72,6 +99,7 @@ export default function FiltersPanel({
   setFilters,
   universities,
   departments,
+  majors,
   languages,
   levels,
   onApply,
@@ -96,10 +124,27 @@ export default function FiltersPanel({
     [departments, draftFilters.university],
   );
 
+  const majorOptions = useMemo(
+    () =>
+      uniqueSorted(
+        majors
+          .filter((major) =>
+            majorBelongsToSelection(
+              major,
+              draftFilters.university,
+              draftFilters.department,
+            ),
+          )
+          .map(getMajorName),
+      ),
+    [draftFilters.department, draftFilters.university, majors],
+  );
+
   const options = useMemo(
     () => ({
       universities: uniqueSorted(universities),
       departments: departmentOptions,
+      majors: majorOptions,
       languages: uniqueSorted(languages),
       levels: uniqueInOrder(
         levels
@@ -109,7 +154,14 @@ export default function FiltersPanel({
           .map(getLevelValue),
       ),
     }),
-    [departmentOptions, draftFilters.university, languages, levels, universities],
+    [
+      departmentOptions,
+      draftFilters.university,
+      languages,
+      levels,
+      majorOptions,
+      universities,
+    ],
   );
 
   useEffect(() => {
@@ -118,9 +170,19 @@ export default function FiltersPanel({
       draftFilters.department &&
       !departmentOptions.includes(draftFilters.department)
     ) {
-      setDraftFilters((prev) => ({ ...prev, department: "" }));
+      setDraftFilters((prev) => ({ ...prev, department: "", major: "" }));
     }
   }, [departmentOptions, departments.length, draftFilters.department]);
+
+  useEffect(() => {
+    if (
+      majors.length > 0 &&
+      draftFilters.major &&
+      !options.majors.includes(draftFilters.major)
+    ) {
+      setDraftFilters((prev) => ({ ...prev, major: "" }));
+    }
+  }, [draftFilters.major, majors.length, options.majors]);
 
   useEffect(() => {
     if (
@@ -137,7 +199,8 @@ export default function FiltersPanel({
     setDraftFilters((prev) => ({
       ...prev,
       [name]: value,
-      ...(name === "university" ? { department: "", level: "" } : {}),
+      ...(name === "university" ? { department: "", major: "", level: "" } : {}),
+      ...(name === "department" ? { major: "" } : {}),
     }));
   };
 
@@ -150,6 +213,7 @@ export default function FiltersPanel({
     const reset: Filters = {
       university: "",
       department: "",
+      major: "",
       language: "",
       level: "",
       year: "",
@@ -183,12 +247,34 @@ export default function FiltersPanel({
               name="department"
               value={draftFilters.department}
               onChange={handleDraftChange}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-[#6155F5] focus:outline-none lg:w-auto"
+              disabled={!draftFilters.university}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-[#6155F5] focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 lg:w-auto"
             >
-              <option value="">All Departments</option>
+              <option value="">
+                {draftFilters.university
+                  ? "All Departments"
+                  : "Select University First"}
+              </option>
               {options.departments.map((department) => (
                 <option key={department} value={department}>
                   {department}
+                </option>
+              ))}
+            </select>
+
+            <select
+              name="major"
+              value={draftFilters.major}
+              onChange={handleDraftChange}
+              disabled={!draftFilters.department}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-[#6155F5] focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 lg:w-auto"
+            >
+              <option value="">
+                {draftFilters.department ? "All Majors" : "Select Department First"}
+              </option>
+              {options.majors.map((major) => (
+                <option key={major} value={major}>
+                  {major}
                 </option>
               ))}
             </select>

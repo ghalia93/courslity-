@@ -91,10 +91,63 @@ export async function GET(req: NextRequest) {
         pool.query<MetricsRow[]>(`
           SELECT
             (SELECT COUNT(*) FROM user WHERE deleted_at IS NULL) AS totalUsers,
-            (SELECT COUNT(*) FROM course) AS totalCourses,
-            (SELECT COUNT(*) FROM review) AS totalReviews,
-            COALESCE(ROUND(AVG(r.overall_rating), 1), 0) AS averageRating
-          FROM review r;
+            (
+              SELECT COUNT(*)
+              FROM course c
+              WHERE c.deleted_at IS NULL
+                AND EXISTS (
+                  SELECT 1
+                  FROM roadmap_course rc
+                  INNER JOIN roadmap roadmap_filter
+                    ON roadmap_filter.roadmap_id = rc.roadmap_id
+                    AND roadmap_filter.is_published = 1
+                  INNER JOIN major m
+                    ON m.major_id = roadmap_filter.major_id
+                    AND m.is_active = 1
+                  WHERE rc.course_id = c.course_id
+                    AND m.department_id = c.department_id
+                )
+            ) AS totalCourses,
+            (
+              SELECT COUNT(*)
+              FROM review r
+              INNER JOIN course c
+                ON c.course_id = r.course_id
+              WHERE r.deleted_at IS NULL
+                AND c.deleted_at IS NULL
+                AND EXISTS (
+                  SELECT 1
+                  FROM roadmap_course rc
+                  INNER JOIN roadmap roadmap_filter
+                    ON roadmap_filter.roadmap_id = rc.roadmap_id
+                    AND roadmap_filter.is_published = 1
+                  INNER JOIN major m
+                    ON m.major_id = roadmap_filter.major_id
+                    AND m.is_active = 1
+                  WHERE rc.course_id = c.course_id
+                    AND m.department_id = c.department_id
+                )
+            ) AS totalReviews,
+            (
+              SELECT COALESCE(ROUND(AVG(r.overall_rating), 1), 0)
+              FROM review r
+              INNER JOIN course c
+                ON c.course_id = r.course_id
+              WHERE r.deleted_at IS NULL
+                AND c.deleted_at IS NULL
+                AND EXISTS (
+                  SELECT 1
+                  FROM roadmap_course rc
+                  INNER JOIN roadmap roadmap_filter
+                    ON roadmap_filter.roadmap_id = rc.roadmap_id
+                    AND roadmap_filter.is_published = 1
+                  INNER JOIN major m
+                    ON m.major_id = roadmap_filter.major_id
+                    AND m.is_active = 1
+                  WHERE rc.course_id = c.course_id
+                    AND m.department_id = c.department_id
+                )
+            ) AS averageRating;
         `),
 
         pool.query<CountRow[]>(`
@@ -128,6 +181,19 @@ export async function GET(req: NextRequest) {
           JOIN review r
             ON r.course_id = c.course_id
            AND r.deleted_at IS NULL
+          WHERE c.deleted_at IS NULL
+            AND EXISTS (
+              SELECT 1
+              FROM roadmap_course rc
+              INNER JOIN roadmap roadmap_filter
+                ON roadmap_filter.roadmap_id = rc.roadmap_id
+                AND roadmap_filter.is_published = 1
+              INNER JOIN major m
+                ON m.major_id = roadmap_filter.major_id
+                AND m.is_active = 1
+              WHERE rc.course_id = c.course_id
+                AND m.department_id = c.department_id
+            )
           GROUP BY c.course_id, c.code, c.title
           HAVING COUNT(r.review_id) > 0
           ORDER BY averageRating DESC, reviewCount DESC, c.code ASC;

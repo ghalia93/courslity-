@@ -25,7 +25,6 @@ type Review = {
 };
 
 const SORT_OPTIONS = [
-  { label: "Most Popular", value: "popular" },
   { label: "Newest", value: "newest" },
   { label: "Most Upvoted", value: "rating_high" },
   { label: "Lowest Votes", value: "rating_low" },
@@ -52,7 +51,7 @@ interface Props {
 
 export default function StudentReviews({ slug, refreshKey = 0 }: Props) {
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [sort, setSort] = useState("popular");
+  const [sort, setSort] = useState("newest");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

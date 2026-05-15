@@ -47,6 +47,7 @@ type AdminReviewRow = RowDataPacket & {
  *   semester    - filter by semester_taken
  *   rating      - filter by floor(overall_rating): "1"-"5"
  *   sort        - newest | oldest | rating_high | rating_low | most_votes
+ *                 rating_high/rating_low use community votes, not star rating
  */
 export async function GET(req: NextRequest) {
   try {
@@ -106,16 +107,20 @@ export async function GET(req: NextRequest) {
 
     const where = `WHERE ${conditions.join(" AND ")}`;
 
+    const upvotesExpr =
+      "COALESCE(SUM(CASE WHEN rv.vote_value = 1 THEN 1 ELSE 0 END), 0)";
+    const downvotesExpr =
+      "COALESCE(SUM(CASE WHEN rv.vote_value = -1 THEN 1 ELSE 0 END), 0)";
+    const netVotesExpr = `(${upvotesExpr} - ${downvotesExpr})`;
+    const totalVotesExpr = `(${upvotesExpr} + ${downvotesExpr})`;
+
     // Sort mapping
     const sortClause: Record<string, string> = {
       newest: "r.created_at DESC",
       oldest: "r.created_at ASC",
-      rating_high: "r.overall_rating DESC",
-      rating_low: "r.overall_rating ASC",
-      most_votes: `(
-  COALESCE(SUM(CASE WHEN rv.vote_value =  1 THEN 1 ELSE 0 END), 0) +
-  COALESCE(SUM(CASE WHEN rv.vote_value = -1 THEN 1 ELSE 0 END), 0)
-) DESC`,
+      rating_high: `${netVotesExpr} DESC, ${upvotesExpr} DESC, r.created_at DESC`,
+      rating_low: `${netVotesExpr} ASC, ${downvotesExpr} DESC, r.created_at DESC`,
+      most_votes: `${totalVotesExpr} DESC, ${netVotesExpr} DESC, r.created_at DESC`,
     };
     const orderBy = sortClause[sort] ?? "r.created_at DESC";
 

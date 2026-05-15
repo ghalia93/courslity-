@@ -100,11 +100,10 @@ export async function GET(
     }
 
     const { searchParams } = new URL(req.url);
-    const sort = (searchParams.get("sort") || "popular").trim();
+    const sort = (searchParams.get("sort") || "newest").trim();
     const currentUser = await getOptionalUser(req);
 
     const sortClause: Record<string, string> = {
-      popular: "net_votes DESC, r.created_at DESC",
       newest: "r.created_at DESC",
       rating_high: "upvotes DESC, net_votes DESC, r.created_at DESC",
       rating_low: "upvotes ASC, net_votes ASC, r.created_at DESC",

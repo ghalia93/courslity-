@@ -1,8 +1,8 @@
 // Renders the site courses slug page.
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import CourseInfo from "@/components/CourseInfo";
 import CoursePageClient from "@/components/CoursePageClient";
+import { getCourseDetailBySlug } from "@/lib/courseDetails";
 
 export const dynamic = "force-dynamic";
 
@@ -12,20 +12,7 @@ interface Props {
 
 async function getCourse(slug: string) {
   try {
-    const requestHeaders = await headers();
-    const host = requestHeaders.get("host") ?? "localhost:3000";
-    const protocol =
-      requestHeaders.get("x-forwarded-proto") ??
-      (host.startsWith("localhost") ? "http" : "https");
-
-    const res = await fetch(
-      `${protocol}://${host}/api/courses/${encodeURIComponent(slug)}`,
-      { cache: "no-store" },
-    );
-    if (res.status === 404) return null;
-    if (!res.ok) throw new Error("Failed to fetch course");
-    const data = await res.json();
-    return data.course ?? null;
+    return await getCourseDetailBySlug(slug);
   } catch {
     return null;
   }

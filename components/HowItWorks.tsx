@@ -7,7 +7,7 @@ export default function HowItWorks() {
         Get insights from students who have been there.
       </p>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-10">
+      <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
         <div className="flex flex-col items-center text-center transform transition duration-300 hover:scale-105">
           <div className="bg-purple-200 rounded-lg p-5 mb-4 transition-colors duration-300 hover:bg-purple-300">
             <svg
@@ -76,6 +76,29 @@ export default function HowItWorks() {
           <h3 className="text-lg font-bold mb-1">Make Smart Choices</h3>
           <p className="text-gray-500">
             Choose courses that match your learning style and goals.
+          </p>
+        </div>
+
+        <div className="flex flex-col items-center text-center transform transition duration-300 hover:scale-105">
+          <div className="bg-blue-200 rounded-lg p-5 mb-4 transition-colors duration-300 hover:bg-blue-300">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 text-blue-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 18h6m-9 3h12M6 3h12v12H6zM9 6h6M9 10h6"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-bold mb-1">Explore Roadmaps</h3>
+          <p className="text-gray-500">
+            Follow university roadmaps to plan courses by year and semester.
           </p>
         </div>
       </div>

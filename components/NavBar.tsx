@@ -58,9 +58,10 @@ export default function NavBar() {
           <div className="hidden lg:flex gap-6">
             <NavLink href="/">Home</NavLink>
             <NavLink href="/courses">Courses</NavLink>
+            <NavLink href="/university">University</NavLink>
             <NavLink href="/roadmaps">Roadmaps</NavLink>
-            <NavLink href="/about">About</NavLink>
             <NavLink href="/faqs">FAQs</NavLink>
+            <NavLink href="/about">About</NavLink>
           </div>
         </div>
 
@@ -158,13 +159,16 @@ export default function NavBar() {
             <NavLink href="/courses">Courses</NavLink>
           </div>
           <div onClick={() => setMenuOpen(false)}>
+            <NavLink href="/university">University</NavLink>
+          </div>
+          <div onClick={() => setMenuOpen(false)}>
             <NavLink href="/roadmaps">Roadmaps</NavLink>
           </div>
           <div onClick={() => setMenuOpen(false)}>
-            <NavLink href="/about">About</NavLink>
+            <NavLink href="/faqs">FAQs</NavLink>
           </div>
           <div onClick={() => setMenuOpen(false)}>
-            <NavLink href="/faqs">FAQs</NavLink>
+            <NavLink href="/about">About</NavLink>
           </div>
 
           {!loading && !user && (

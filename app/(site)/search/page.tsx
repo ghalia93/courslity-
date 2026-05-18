@@ -1,7 +1,7 @@
 "use client";
 
 // Renders the site search page.
-import { Suspense, useState, useMemo, useEffect } from "react";
+import { Suspense, useCallback, useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { SlidersHorizontal } from "lucide-react";
@@ -65,45 +65,64 @@ function SearchPageContent() {
     semester: searchParams.get("semester") || "",
   });
 
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
+  const loadData = useCallback(async (showPageLoading = true) => {
+    if (showPageLoading) setLoading(true);
 
-      try {
-        const [coursesRes, universitiesRes, departmentsRes, majorsRes] =
-          await Promise.all([
-            fetch("/api/courses?limit=5000&page=1", { cache: "no-store" }),
-            fetch("/api/universities", { cache: "no-store" }),
-            fetch("/api/departments", { cache: "no-store" }),
-            fetch("/api/majors", { cache: "no-store" }),
-          ]);
+    try {
+      const [coursesRes, universitiesRes, departmentsRes, majorsRes] =
+        await Promise.all([
+          fetch("/api/courses?limit=5000&page=1", { cache: "no-store" }),
+          fetch("/api/universities", { cache: "no-store" }),
+          fetch("/api/departments", { cache: "no-store" }),
+          fetch("/api/majors", { cache: "no-store" }),
+        ]);
 
-        if (coursesRes.ok) {
-          const coursesData = await coursesRes.json();
-          setCourses(coursesData.courses ?? []);
-        }
-
-        if (universitiesRes.ok) {
-          const universitiesData = await universitiesRes.json();
-          setUniversities(universitiesData ?? []);
-        }
-
-        if (departmentsRes.ok) {
-          const departmentsData = await departmentsRes.json();
-          setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
-        }
-
-        if (majorsRes.ok) {
-          const majorsData = await majorsRes.json();
-          setMajors(Array.isArray(majorsData) ? majorsData : []);
-        }
-      } finally {
-        setLoading(false);
+      if (coursesRes.ok) {
+        const coursesData = await coursesRes.json();
+        setCourses(coursesData.courses ?? []);
       }
-    }
 
-    loadData();
+      if (universitiesRes.ok) {
+        const universitiesData = await universitiesRes.json();
+        setUniversities(universitiesData ?? []);
+      }
+
+      if (departmentsRes.ok) {
+        const departmentsData = await departmentsRes.json();
+        setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
+      }
+
+      if (majorsRes.ok) {
+        const majorsData = await majorsRes.json();
+        setMajors(Array.isArray(majorsData) ? majorsData : []);
+      }
+    } finally {
+      if (showPageLoading) setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    if (showFilters) void loadData(false);
+  }, [loadData, showFilters]);
+
+  useEffect(() => {
+    const refreshCatalog = () => void loadData(false);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refreshCatalog();
+    };
+
+    window.addEventListener("focus", refreshCatalog);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      window.removeEventListener("focus", refreshCatalog);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [loadData]);
 
   useEffect(() => {
     const params = new URLSearchParams();

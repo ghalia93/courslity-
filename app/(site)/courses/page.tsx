@@ -3,14 +3,14 @@
 // Renders the site courses page.
 import {
   Suspense,
+  useCallback,
   useState,
   useMemo,
   useEffect,
   useRef,
-  ChangeEvent,
 } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { filterCourses } from "@/lib/filterCourses";
@@ -18,6 +18,7 @@ import { Filters } from "@/types/filters";
 import { Course } from "@/types/course";
 import FiltersPanel from "@/components/FiltersPanel";
 import CourseCard from "@/components/CourseCard";
+import Searchbar from "@/components/Searchbar";
 import { COURSE_LEVEL_VALUES } from "@/lib/courseLevels";
 
 type UniversityOption = {
@@ -42,6 +43,8 @@ type MajorOption = {
   university: string;
 };
 
+type CourseSortKey = "most_reviewed" | "highest_rated" | "lowest_rated";
+
 function uniqueSorted(values: string[]) {
   return Array.from(new Set(values.filter(Boolean))).sort((a, b) =>
     a.localeCompare(b),
@@ -55,6 +58,7 @@ function CoursesPageContent() {
   // -- Initialise from URL params ---
   const [query, setQuery] = useState(searchParams.get("query") || "");
   const [debouncedQuery, setDebouncedQuery] = useState(query);
+  const [sortKey, setSortKey] = useState<CourseSortKey>("most_reviewed");
   const [filters, setFilters] = useState<Filters>({
     university: searchParams.get("university") || "",
     department: searchParams.get("department") || "",
@@ -73,46 +77,67 @@ function CoursesPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const [coursesRes, universitiesRes, departmentsRes, majorsRes] =
-          await Promise.all([
-            fetch("/api/courses?limit=5000&page=1", { cache: "no-store" }),
-            fetch("/api/universities", { cache: "no-store" }),
-            fetch("/api/departments", { cache: "no-store" }),
-            fetch("/api/majors", { cache: "no-store" }),
-          ]);
+  const loadData = useCallback(async (showPageLoading = true) => {
+    try {
+      if (showPageLoading) setLoading(true);
+      setError(null);
+      const [coursesRes, universitiesRes, departmentsRes, majorsRes] =
+        await Promise.all([
+          fetch("/api/courses?limit=5000&page=1", { cache: "no-store" }),
+          fetch("/api/universities", { cache: "no-store" }),
+          fetch("/api/departments", { cache: "no-store" }),
+          fetch("/api/majors", { cache: "no-store" }),
+        ]);
 
-        if (!coursesRes.ok) throw new Error("Failed to fetch courses");
-        if (!universitiesRes.ok) throw new Error("Failed to fetch universities");
+      if (!coursesRes.ok) throw new Error("Failed to fetch courses");
+      if (!universitiesRes.ok) throw new Error("Failed to fetch universities");
 
-        const coursesData = await coursesRes.json();
-        const universitiesData = await universitiesRes.json();
+      const coursesData = await coursesRes.json();
+      const universitiesData = await universitiesRes.json();
 
-        setCourses(coursesData.courses ?? []);
-        setUniversities(universitiesData ?? []);
+      setCourses(coursesData.courses ?? []);
+      setUniversities(universitiesData ?? []);
 
-        if (departmentsRes.ok) {
-          const departmentsData = await departmentsRes.json();
-          setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
-        }
-
-        if (majorsRes.ok) {
-          const majorsData = await majorsRes.json();
-          setMajors(Array.isArray(majorsData) ? majorsData : []);
-        }
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Something went wrong");
-      } finally {
-        setLoading(false);
+      if (departmentsRes.ok) {
+        const departmentsData = await departmentsRes.json();
+        setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
       }
+
+      if (majorsRes.ok) {
+        const majorsData = await majorsRes.json();
+        setMajors(Array.isArray(majorsData) ? majorsData : []);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      if (showPageLoading) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    if (showFilters) void loadData(false);
+  }, [loadData, showFilters]);
+
+  useEffect(() => {
+    const refreshCatalog = () => void loadData(false);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refreshCatalog();
     };
 
-    fetchCourses();
-  }, []);
+    window.addEventListener("focus", refreshCatalog);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      window.removeEventListener("focus", refreshCatalog);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [loadData]);
 
   // -- Debounce search query (300 ms) ---
   useEffect(() => {
@@ -140,6 +165,21 @@ function CoursesPageContent() {
     () => filterCourses(courses, { ...filters, query: debouncedQuery }),
     [courses, filters, debouncedQuery],
   );
+
+  const sortedCourses = useMemo(() => {
+    return [...filteredCourses].sort((a, b) => {
+      if (sortKey === "highest_rated") {
+        return (b.averageRating ?? -1) - (a.averageRating ?? -1);
+      }
+
+      if (sortKey === "lowest_rated") {
+        return (a.averageRating ?? Number.MAX_SAFE_INTEGER) -
+          (b.averageRating ?? Number.MAX_SAFE_INTEGER);
+      }
+
+      return b.reviewCount - a.reviewCount;
+    });
+  }, [filteredCourses, sortKey]);
 
   const filterOptions = useMemo(
     () => ({
@@ -188,7 +228,6 @@ function CoursesPageContent() {
     [courses, departments, majors, universities],
   );
 
-  const [showFilters, setShowFilters] = useState(false);
   const isSearching = !!debouncedQuery;
 
   return (
@@ -206,19 +245,8 @@ function CoursesPageContent() {
 
         {/* Search bar + filter toggle */}
         <div className="mt-6 flex min-w-0 items-center gap-3">
-          <div className="relative min-w-0 flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search courses, codes, universities..."
-              value={query}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setQuery(e.target.value)
-              }
-              className="w-full border border-gray-300 rounded-xl pl-10 pr-4 py-2.5
-                        focus:outline-none focus:ring-2 focus:ring-[#6155F5]
-                        focus:border-transparent transition"
-            />
+          <div className="min-w-0 flex-1">
+            <Searchbar query={query} setQuery={setQuery} />
           </div>
 
           <button
@@ -228,6 +256,22 @@ function CoursesPageContent() {
           >
             <SlidersHorizontal className="h-5 w-5 text-gray-700" />
           </button>
+
+          <div className="relative hidden sm:block">
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as CourseSortKey)}
+              className="h-11 rounded-xl border border-gray-300 bg-white pl-3 pr-9 text-sm text-gray-700 appearance-none focus:outline-none focus:ring-2 focus:ring-[#6155F5]"
+            >
+              <option value="most_reviewed">Most reviewed</option>
+              <option value="highest_rated">Highest rated</option>
+              <option value="lowest_rated">Lowest rated</option>
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+              size={15}
+            />
+          </div>
         </div>
 
         {/* Filters panel */}
@@ -252,6 +296,28 @@ function CoursesPageContent() {
                 onApply={() => setShowFilters(false)}
                 onReset={() => setShowFilters(false)}
               />
+              <div className="mt-4 sm:hidden">
+                <label className="text-xs font-medium text-gray-500">
+                  Sort by
+                </label>
+                <div className="relative mt-1">
+                  <select
+                    value={sortKey}
+                    onChange={(e) =>
+                      setSortKey(e.target.value as CourseSortKey)
+                    }
+                    className="h-10 w-full rounded-lg border border-gray-300 bg-white pl-3 pr-9 text-sm text-gray-700 appearance-none focus:outline-none focus:ring-2 focus:ring-[#6155F5]"
+                  >
+                    <option value="most_reviewed">Most reviewed</option>
+                    <option value="highest_rated">Highest rated</option>
+                    <option value="lowest_rated">Lowest rated</option>
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                    size={15}
+                  />
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -266,12 +332,12 @@ function CoursesPageContent() {
             <p className="text-red-500 text-center py-10 md:col-span-2">
               {error}
             </p>
-          ) : filteredCourses.length === 0 ? (
+          ) : sortedCourses.length === 0 ? (
             <p className="text-gray-500 text-center py-10 md:col-span-2">
               No courses match your search or filters.
             </p>
           ) : (
-            filteredCourses.map((course) => (
+            sortedCourses.map((course) => (
               <CourseCard key={course.courseId} {...course} />
             ))
           )}

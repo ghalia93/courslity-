@@ -103,10 +103,19 @@ export async function GET(
     const sort = (searchParams.get("sort") || "newest").trim();
     const currentUser = await getOptionalUser(req);
 
+    const upvotesExpr =
+      "COALESCE(SUM(CASE WHEN rv.vote_value = 1 THEN 1 ELSE 0 END), 0)";
+    const downvotesExpr =
+      "COALESCE(SUM(CASE WHEN rv.vote_value = -1 THEN 1 ELSE 0 END), 0)";
+    const netVotesExpr = `(${upvotesExpr} - ${downvotesExpr})`;
+    const totalVotesExpr = `(${upvotesExpr} + ${downvotesExpr})`;
+
     const sortClause: Record<string, string> = {
       newest: "r.created_at DESC",
-      rating_high: "upvotes DESC, net_votes DESC, r.created_at DESC",
-      rating_low: "upvotes ASC, net_votes ASC, r.created_at DESC",
+      oldest: "r.created_at ASC",
+      rating_high: `${netVotesExpr} DESC, ${upvotesExpr} DESC, r.created_at DESC`,
+      rating_low: `${netVotesExpr} ASC, ${downvotesExpr} DESC, r.created_at DESC`,
+      most_votes: `${totalVotesExpr} DESC, ${netVotesExpr} DESC, r.created_at DESC`,
     };
 
     const orderBy = sortClause[sort] ?? "r.created_at DESC";

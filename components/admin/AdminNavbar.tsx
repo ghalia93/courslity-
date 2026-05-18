@@ -72,7 +72,7 @@ export default function AdminNavbar() {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--admin-sidebar-width",
-      collapsed ? "72px" : "220px",
+      collapsed ? "64px" : "200px",
     );
   }, [collapsed]);
 
@@ -107,28 +107,28 @@ export default function AdminNavbar() {
   const avatarLetter = displayName.charAt(0).toUpperCase();
   const canManageAcademicData = isAdminRole(user?.role);
 
-  const itemBase = `flex items-center gap-3 px-3 py-2 text-sm transition rounded-lg ${
+  const itemBase = `flex items-center gap-2.5 px-2.5 py-1.5 text-sm transition rounded-lg ${
     collapsed ? "justify-center" : ""
   }`;
-  const mobileItem = `flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition w-full`;
+  const mobileItem = `flex items-center gap-2.5 px-2.5 py-1.5 text-sm rounded-lg transition w-full`;
   const activePill = "bg-[#C9C6FF] text-[#5B5BFF] font-medium";
   const inactivePill = "text-gray-600 hover:bg-gray-50";
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 h-16 w-full bg-white border-b border-gray-200">
-        <div className="flex h-full items-center px-4 md:px-8 gap-3">
+      <header className="fixed inset-x-0 top-0 z-50 h-14 w-full bg-white border-b border-gray-200">
+        <div className="flex h-full items-center px-3 gap-3 md:px-5">
           <button
             type="button"
-            className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg hover:bg-gray-100"
+            className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-gray-100"
             onClick={() => setMobileOpen(true)}
           >
             Menu
           </button>
 
           <Link href="/admin" className="flex items-center gap-2 shrink-0">
-            <Image src="/favicon.ico" alt="Logo" width={32} height={32} />
-            <span className="hidden lg:inline text-[#6155F5] text-2xl font-bold">
+            <Image src="/favicon.ico" alt="Logo" width={28} height={28} />
+            <span className="hidden lg:inline text-[#6155F5] text-xl font-bold">
               Coursality
             </span>
           </Link>
@@ -138,7 +138,7 @@ export default function AdminNavbar() {
               className="flex items-center gap-3 rounded-lg px-2 py-1 hover:bg-gray-50"
               onClick={() => setUserMenuOpen((v) => !v)}
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#6155F5] text-sm font-semibold text-white uppercase">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#6155F5] text-sm font-semibold text-white uppercase">
                 {avatarLetter}
               </div>
 
@@ -183,21 +183,21 @@ export default function AdminNavbar() {
         </div>
       </header>
       <aside
-        className={`hidden md:block fixed left-0 top-16 h-[calc(100vh-64px)] bg-white border-r border-gray-200
-        ${collapsed ? "w-[72px]" : "w-[220px]"} transition-all duration-300`}
+        className={`hidden md:block fixed left-0 top-14 h-[calc(100vh-56px)] overflow-y-auto bg-white border-r border-gray-200
+        ${collapsed ? "w-[64px]" : "w-[200px]"} transition-all duration-300`}
       >
-        <div className={`${collapsed ? "p-3" : "p-6"} space-y-2`}>
+        <div className={`${collapsed ? "p-2" : "p-3"} space-y-1`}>
           <div
-            className={`flex ${collapsed ? "justify-center" : "justify-between"} mb-4`}
+            className={`flex ${collapsed ? "justify-center" : "justify-between"} mb-2`}
           >
             {!collapsed && (
-              <span className="text-xs font-semibold text-gray-500 mt-2">
+              <span className="text-[11px] font-semibold text-gray-500 mt-2">
                 NAVIGATION
               </span>
             )}
             <button
               onClick={() => setSidebarPreference(!collapsed)}
-              className="p-2 rounded-lg hover:bg-gray-100"
+              className="p-1.5 rounded-lg hover:bg-gray-100"
             >
               {collapsed ? (
                 <PanelLeftOpen size={18} />
@@ -218,7 +218,7 @@ export default function AdminNavbar() {
           </Link>
 
           {!collapsed && (
-            <div className="pt-3 text-xs text-gray-500">Manage</div>
+            <div className="pt-2 text-xs text-gray-500">Manage</div>
           )}
 
           {canManageAcademicData && (
@@ -282,13 +282,23 @@ export default function AdminNavbar() {
           </Link>
 
           <Link
+            href="/admin/chat"
+            className={`${itemBase} ${
+              isActive(pathname, "/admin/chat") ? activePill : inactivePill
+            }`}
+          >
+            <MessageSquare size={18} />
+            {!collapsed && "Chat"}
+          </Link>
+
+          <Link
             href="/admin/feedback"
             className={`${itemBase} ${
               isActive(pathname, "/admin/feedback") ? activePill : inactivePill
             }`}
           >
             <MessageSquare size={18} />
-            {!collapsed && "Feedback"}
+            {!collapsed && "Feedback & Problems"}
           </Link>
 
           <Link
@@ -301,7 +311,7 @@ export default function AdminNavbar() {
             {!collapsed && "Settings"}
           </Link>
 
-          <div className="pt-4 border-t border-gray-100 mt-2">
+          <div className="pt-2 border-t border-gray-100 mt-1">
             <Link
               href="/"
               className={`${itemBase} text-gray-500 hover:bg-gray-50 hover:text-[#6155F5]`}
@@ -321,25 +331,25 @@ export default function AdminNavbar() {
             onClick={() => setMobileOpen(false)}
           />
 
-          <div className="absolute left-0 top-0 h-full w-[min(220px,85vw)] bg-white border-r border-gray-200">
-            <div className="h-16 border-b border-gray-200 flex items-center px-4 gap-3">
+          <div className="absolute left-0 top-0 h-full w-[min(210px,85vw)] overflow-y-auto bg-white border-r border-gray-200">
+            <div className="h-14 border-b border-gray-200 flex items-center px-3 gap-3">
               <button
                 type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg hover:bg-gray-100"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-gray-100"
                 aria-label="Close menu"
                 onClick={() => setMobileOpen(false)}
               >
                 x
               </button>
               <div className="flex items-center gap-2">
-                <Image src="/favicon.ico" alt="Logo" width={28} height={28} />
-                <span className="text-xl font-bold text-[#6155F5]">
+                <Image src="/favicon.ico" alt="Logo" width={26} height={26} />
+                <span className="text-lg font-bold text-[#6155F5]">
                   Coursality
                 </span>
               </div>
             </div>
 
-            <div className="p-4 space-y-2">
+            <div className="p-3 space-y-1">
               <Link
                 href="/admin"
                 className={`${mobileItem} ${
@@ -350,7 +360,7 @@ export default function AdminNavbar() {
                 Dashboard
               </Link>
 
-              <div className="pt-3 text-xs text-gray-500">Manage</div>
+              <div className="pt-2 text-xs text-gray-500">Manage</div>
 
               {canManageAcademicData && (
                 <>
@@ -415,6 +425,16 @@ export default function AdminNavbar() {
               </Link>
 
               <Link
+                href="/admin/chat"
+                className={`${mobileItem} ${
+                  isActive(pathname, "/admin/chat") ? activePill : inactivePill
+                }`}
+              >
+                <MessageSquare size={18} className="shrink-0" />
+                Chat
+              </Link>
+
+              <Link
                 href="/admin/feedback"
                 className={`${mobileItem} ${
                   isActive(pathname, "/admin/feedback")
@@ -423,7 +443,7 @@ export default function AdminNavbar() {
                 }`}
               >
                 <MessageSquare size={18} className="shrink-0" />
-                Feedback
+                Feedback & Problems
               </Link>
 
               <Link
@@ -438,7 +458,7 @@ export default function AdminNavbar() {
                 Settings
               </Link>
 
-              <div className="border-t border-gray-100 pt-3 mt-3">
+              <div className="border-t border-gray-100 pt-2 mt-2">
                 <Link
                   href="/"
                   className={`${mobileItem} text-gray-500 hover:bg-gray-50 hover:text-[#6155F5]`}

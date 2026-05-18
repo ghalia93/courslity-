@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
 import pool from "@/db";
+import { ensureFeedbackHiddenColumn } from "@/lib/feedbackDb";
 
 type FeedbackKind = "feedback" | "problem";
 
@@ -20,13 +21,14 @@ type FeedbackRow = RowDataPacket & {
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin(req);
+    await ensureFeedbackHiddenColumn();
 
     const { searchParams } = new URL(req.url);
     const q = (searchParams.get("q") || "").trim();
     const sort = (searchParams.get("sort") || "newest").trim();
     const kind = (searchParams.get("kind") || "all").trim();
 
-    const conditions: string[] = [];
+    const conditions: string[] = ["f.hidden_at IS NULL"];
     const params: string[] = [];
 
     if (kind === "feedback" || kind === "problem") {

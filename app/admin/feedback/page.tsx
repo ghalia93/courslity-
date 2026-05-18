@@ -11,6 +11,7 @@ import {
   X,
   MessageSquare,
   AlertTriangle,
+  EyeOff,
 } from "lucide-react";
 
 type FeedbackKind = "feedback" | "problem";
@@ -107,10 +108,12 @@ function FeedbackDetailModal({
   feedback,
   onClose,
   onDelete,
+  onHide,
 }: {
   feedback: FeedbackRow;
   onClose: () => void;
   onDelete: (id: string) => void;
+  onHide: (feedback: FeedbackRow) => void;
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -194,6 +197,15 @@ function FeedbackDetailModal({
         <div className="flex justify-end gap-3 px-5 py-4 border-t border-gray-100">
           <button
             onClick={() => {
+              onHide(feedback);
+              onClose();
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-md text-gray-600 border border-gray-200 hover:bg-gray-50 transition"
+          >
+            <EyeOff size={14} /> Hide
+          </button>
+          <button
+            onClick={() => {
               onDelete(feedback.feedback_id);
               onClose();
             }}
@@ -214,6 +226,7 @@ export default function AdminFeedbackPage() {
   const [ratingFilter, setRatingFilter] = useState<"all" | "positive" | "neutral" | "negative">("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [pendingHide, setPendingHide] = useState<FeedbackRow | null>(null);
   const [detailFeedback, setDetailFeedback] = useState<FeedbackRow | null>(null);
 
   const [feedbackList, setFeedbackList] = useState<FeedbackRow[]>([]);
@@ -284,6 +297,23 @@ export default function AdminFeedbackPage() {
     }
   }
 
+  async function handleHide(feedback_id: string) {
+    try {
+      setPendingHide(null);
+      const res = await fetch(`/api/admin/feedback/${feedback_id}`, {
+        method: "PATCH",
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to hide feedback");
+      }
+      setFeedbackList((prev) => prev.filter((f) => f.feedback_id !== feedback_id));
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to hide feedback";
+      alert(message);
+    }
+  }
+
   const avgRating = feedbackList.length
     ? (feedbackList.reduce((s, f) => s + Number(f.rating || 0), 0) / feedbackList.length).toFixed(2)
     : " - ";
@@ -328,7 +358,41 @@ export default function AdminFeedbackPage() {
             setDetailFeedback(null);
             handleDelete(id);
           }}
+          onHide={(feedback) => {
+            setDetailFeedback(null);
+            setPendingHide(feedback);
+          }}
         />
+      )}
+
+      {pendingHide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-6 shadow-lg">
+            <h2 className="text-base font-semibold text-gray-900">
+              Hide this comment?
+            </h2>
+            <p className="mt-2 text-sm text-gray-500">
+              This comment will be hidden from the feedback and problems list.
+            </p>
+            <p className="mt-3 line-clamp-3 rounded-lg border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600">
+              {pendingHide.message}
+            </p>
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                onClick={() => setPendingHide(null)}
+                className="px-4 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleHide(pendingHide.feedback_id)}
+                className="px-4 py-2 text-sm rounded-md bg-gray-900 text-white hover:bg-gray-800 transition"
+              >
+                Hide
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {pendingDelete && (
@@ -358,7 +422,9 @@ export default function AdminFeedbackPage() {
 
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-black">Feedback</h1>
+          <h1 className="text-2xl font-semibold text-black">
+            Feedback and Problems
+          </h1>
           <p className="text-sm text-gray-500">Review general feedback and reported problems from users</p>
         </div>
       </div>
@@ -574,6 +640,13 @@ export default function AdminFeedbackPage() {
                   <td className="px-4 py-3">
                     <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
                       <button
+                        onClick={() => setPendingHide(f)}
+                        className="mr-3 text-gray-400 hover:text-gray-700 transition-colors"
+                        aria-label="Hide feedback"
+                      >
+                        <EyeOff size={16} />
+                      </button>
+                      <button
                         onClick={() => setPendingDelete(f.feedback_id)}
                         className="text-gray-400 hover:text-red-500 transition-colors"
                         aria-label="Delete feedback"
@@ -607,6 +680,13 @@ export default function AdminFeedbackPage() {
                   <p className="text-xs text-gray-400">{f.email}</p>
                 </div>
                 <div onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => setPendingHide(f)}
+                    className="text-gray-400 hover:text-gray-700 transition-colors p-1"
+                    aria-label="Hide feedback"
+                  >
+                    <EyeOff size={16} />
+                  </button>
                   <button
                     onClick={() => setPendingDelete(f.feedback_id)}
                     className="text-gray-400 hover:text-red-500 transition-colors p-1"

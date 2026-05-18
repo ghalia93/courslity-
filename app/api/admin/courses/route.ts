@@ -6,6 +6,7 @@ import pool from "@/db";
 import { getSemesterFromCourseCode, getYearFromCourseCode } from "@/lib/courseCode";
 import { COURSE_LEVEL_VALUES, formatCourseLevel } from "@/lib/courseLevels";
 import { ensureRoadmapTables } from "@/lib/roadmapsDb";
+import { notifyStudentsAboutCourse } from "@/lib/notificationsDb";
 
 type AdminCourseRow = RowDataPacket & {
   course_id: number;
@@ -472,6 +473,16 @@ export async function POST(req: NextRequest) {
       throw error;
     } finally {
       connection.release();
+    }
+
+    try {
+      await notifyStudentsAboutCourse({
+        universityId: deptRows[0].university_id,
+        courseCode: cleanCode,
+        courseTitle: cleanTitle,
+      });
+    } catch (notificationError) {
+      console.error("COURSE NOTIFICATION ERROR:", notificationError);
     }
 
     // Return the full Course shape so the frontend can prepend it to state directly

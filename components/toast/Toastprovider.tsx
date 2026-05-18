@@ -12,7 +12,7 @@ type Toast = {
 };
 
 type ToastContextValue = {
-  toast: (message: string, type: ToastType) => void;
+  toast: (message: string, type: ToastType, durationMs?: number) => void;
 };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -28,12 +28,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }
 
-  function toast(message: string, type: ToastType) {
+  function toast(message: string, type: ToastType, durationMs = 3000) {
     const id = uid();
     setToasts((prev) => [...prev, { id, message, type }]);
 
-    // auto-dismiss after 3s
-    window.setTimeout(() => removeToast(id), 3000);
+    window.setTimeout(() => removeToast(id), durationMs);
   }
 
   return (

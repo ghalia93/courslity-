@@ -7,7 +7,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-white">
       <AdminNavbar />
 
-      <div className="flex pt-16">
+      <div className="flex pt-14">
         <div className="hidden md:block w-(--admin-sidebar-width) transition-all duration-300" />
 
         <main className="min-w-0 flex-1 p-4 transition-all duration-300 sm:p-6 md:p-10">

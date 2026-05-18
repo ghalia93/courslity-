@@ -239,6 +239,7 @@ CREATE TABLE `feedback` (
   `rating` DECIMAL(3,2) NOT NULL CHECK (`rating` BETWEEN 0 AND 5),
   `message` TEXT NOT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `hidden_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`feedback_id`),
   KEY `idx_feedback_user` (`user_id`),
   CONSTRAINT `fk_feedback_user`
@@ -258,6 +259,63 @@ CREATE TABLE IF NOT EXISTS `password_reset_token` (
   CONSTRAINT `fk_prt_user`
     FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`)
     ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: notification
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `notification` (
+  `notification_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT UNSIGNED NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `message` TEXT NOT NULL,
+  `link` VARCHAR(255) NULL DEFAULT NULL,
+  `read_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`notification_id`),
+  KEY `idx_notification_user_read` (`user_id`, `read_at`, `created_at`),
+  CONSTRAINT `fk_notification_user`
+    FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Tables: support chat
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `support_thread` (
+  `thread_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT UNSIGNED NOT NULL,
+  `status` ENUM('open','closed') NOT NULL DEFAULT 'open',
+  `last_message_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`thread_id`),
+  UNIQUE KEY `uniq_support_thread_user` (`user_id`),
+  KEY `idx_support_thread_last_message` (`last_message_at`),
+  CONSTRAINT `fk_support_thread_user`
+    FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `support_message` (
+  `message_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `thread_id` INT UNSIGNED NOT NULL,
+  `sender_id` INT UNSIGNED NULL,
+  `sender_role` ENUM('student','admin') NOT NULL,
+  `body` TEXT NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`message_id`),
+  KEY `idx_support_message_thread` (`thread_id`, `created_at`),
+  KEY `idx_support_message_sender` (`sender_id`),
+  CONSTRAINT `fk_support_message_thread`
+    FOREIGN KEY (`thread_id`) REFERENCES `support_thread`(`thread_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_support_message_sender`
+    FOREIGN KEY (`sender_id`) REFERENCES `user`(`user_id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

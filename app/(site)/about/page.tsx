@@ -200,8 +200,9 @@ export default function AboutPage() {
               </svg>
               <h3 className="text-lg font-semibold mb-2">Smart Filters</h3>
               <p className="text-gray-700 text-sm leading-6">
-                Quickly find courses and reviews that match your exact
-                preferences.
+                Filter courses by university, department, major, language,
+                level, year, and semester, then sort reviews by date, votes,
+                and rating signals.
               </p>
             </div>
           </div>

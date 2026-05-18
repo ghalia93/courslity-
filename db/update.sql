@@ -40,6 +40,60 @@ ALTER TABLE feedback
 ALTER TABLE feedback
   ADD COLUMN kind ENUM('feedback','problem') NOT NULL DEFAULT 'feedback' AFTER user_id;
 
+ALTER TABLE feedback
+  ADD COLUMN hidden_at TIMESTAMP NULL DEFAULT NULL AFTER created_at;
+
+CREATE TABLE IF NOT EXISTS notification (
+  notification_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  link VARCHAR(255) NULL DEFAULT NULL,
+  read_at TIMESTAMP NULL DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (notification_id),
+  KEY idx_notification_user_read (user_id, read_at, created_at),
+  CONSTRAINT fk_notification_user
+    FOREIGN KEY (user_id) REFERENCES `user`(user_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS support_thread (
+  thread_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NOT NULL,
+  status ENUM('open','closed') NOT NULL DEFAULT 'open',
+  last_message_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (thread_id),
+  UNIQUE KEY uniq_support_thread_user (user_id),
+  KEY idx_support_thread_last_message (last_message_at),
+  CONSTRAINT fk_support_thread_user
+    FOREIGN KEY (user_id) REFERENCES `user`(user_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS support_message (
+  message_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  thread_id INT UNSIGNED NOT NULL,
+  sender_id INT UNSIGNED NULL,
+  sender_role ENUM('student','admin') NOT NULL,
+  body TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (message_id),
+  KEY idx_support_message_thread (thread_id, created_at),
+  KEY idx_support_message_sender (sender_id),
+  CONSTRAINT fk_support_message_thread
+    FOREIGN KEY (thread_id) REFERENCES support_thread(thread_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT fk_support_message_sender
+    FOREIGN KEY (sender_id) REFERENCES `user`(user_id)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS major (
   major_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   department_id INT UNSIGNED NOT NULL,
@@ -194,6 +248,56 @@ WHERE u.name = 'Lebanese International University'
 ON DUPLICATE KEY UPDATE
   course_id = course_id;
 
+UPDATE course c
+JOIN department d ON d.department_id = c.department_id
+JOIN university u ON u.university_id = d.university_id
+JOIN (
+  SELECT 'CULT200' AS code, 'This course introduces students to the history, culture, philosophy, and scientific achievements of Arab-Islamic civilization. It explores the development of Islamic societies and their contributions to science, literature, mathematics, and architecture, while also discussing the civilization impact on the modern world.' AS description
+  UNION ALL SELECT 'MATH225', 'Students learn the fundamentals of linear algebra including matrices, determinants, vectors, eigenvalues, and systems of linear equations. The course emphasizes engineering applications such as computer graphics, circuit analysis, data processing, and machine learning foundations.'
+  UNION ALL SELECT 'ENGL201', 'This course develops academic writing and research abilities. Students practice essay writing, technical reports, research documentation, referencing styles, and critical reading. It also strengthens grammar, vocabulary, and communication skills needed in university-level engineering studies.'
+  UNION ALL SELECT 'ENGG200', 'An introductory engineering course covering engineering disciplines, problem-solving methods, ethics, teamwork, and project-based thinking. Students are exposed to the engineering design process and gain a basic understanding of how engineering solutions are developed in real-world industries.'
+  UNION ALL SELECT 'PHYS220', 'Covers fundamental physics concepts important for engineering students including mechanics, energy, motion, electricity, magnetism, and waves. The course focuses on applying physical laws to engineering systems and practical problem-solving.'
+  UNION ALL SELECT 'MATH210', 'A continuation of Calculus I focusing on integration techniques, applications of integration, sequences, infinite series, and differential equations. Engineering applications are emphasized throughout the course.'
+  UNION ALL SELECT 'CSCI250L', 'A practical laboratory course accompanying introductory programming. Students implement programming concepts through coding exercises, debugging, problem-solving, and software development tasks.'
+  UNION ALL SELECT 'MATH270', 'Introduces methods for solving ordinary differential equations and modeling engineering systems. Topics include first-order and higher-order differential equations, Laplace transforms, and applications in electrical and mechanical systems.'
+  UNION ALL SELECT 'CSCI250', 'Introduces programming fundamentals using a high-level programming language. Students learn variables, loops, conditions, functions, arrays, algorithms, and problem-solving techniques used in software development.'
+  UNION ALL SELECT 'EENG250', 'Covers the fundamentals of electrical circuits including Ohm''s Law, Kirchhoff''s laws, voltage and current analysis, resistive circuits, and circuit theorems. Students analyze and solve basic electrical engineering problems.'
+  UNION ALL SELECT 'CENG250', 'Introduces digital systems and binary logic. Topics include Boolean algebra, logic gates, combinational circuits, number systems, and digital circuit design fundamentals.'
+  UNION ALL SELECT 'MATH220', 'Focuses on multivariable calculus including vectors, partial derivatives, multiple integration, vector fields, and applications in engineering and physics.'
+  UNION ALL SELECT 'ARAB200', 'Develops Arabic language proficiency while introducing students to classical and modern Arabic literature, writing styles, and cultural expression.'
+  UNION ALL SELECT 'ENGL251', 'Enhances oral and written communication skills for professional and academic environments. Students practice presentations, technical communication, teamwork discussions, and professional reporting.'
+  UNION ALL SELECT 'CSCI300', 'Introduces object-oriented programming concepts such as classes, inheritance, polymorphism, encapsulation, and abstraction. Students build structured and reusable software applications.'
+  UNION ALL SELECT 'EENG300', 'Advanced circuit analysis involving capacitors, inductors, transient response, AC circuits, frequency response, and power analysis.'
+  UNION ALL SELECT 'MATH310', 'Covers probability theory, statistical analysis, random variables, distributions, hypothesis testing, and engineering data interpretation.'
+  UNION ALL SELECT 'CENG335', 'Advanced digital system design including sequential circuits, counters, registers, finite state machines, memory devices, and programmable logic systems.'
+  UNION ALL SELECT 'CENG325', 'Focuses on software engineering principles, application development, software architecture, user interface design, testing, and software lifecycle management.'
+  UNION ALL SELECT 'EENG301L', 'Laboratory experiments related to circuit analysis, measurement instruments, AC and DC circuits, and verification of electrical engineering theories.'
+  UNION ALL SELECT 'EENG350L', 'Practical experiments involving electronic components such as diodes, transistors, amplifiers, and operational amplifiers.'
+  UNION ALL SELECT 'ENGG300', 'Introduces economic analysis techniques for engineering projects including cost estimation, depreciation, interest calculations, investment analysis, and project evaluation.'
+  UNION ALL SELECT 'CENG352L', 'Hands-on laboratory work in digital electronics including circuit implementation, simulation, FPGA basics, and troubleshooting digital systems.'
+  UNION ALL SELECT 'EENG385', 'Covers continuous and discrete-time signals, system analysis, Fourier transforms, convolution, and signal processing fundamentals.'
+  UNION ALL SELECT 'CENG375', 'Introduces database concepts including relational databases, SQL programming, normalization, entity-relationship modeling, and database management systems.'
+  UNION ALL SELECT 'CENG380', 'Studies computer hardware interfaces and embedded systems. Topics include assembly language, microcontroller architecture, memory systems, I/O interfacing, and embedded programming.'
+  UNION ALL SELECT 'EENG350', 'Covers semiconductor devices, diodes, transistors, amplifiers, operational amplifiers, and electronic circuit analysis.'
+  UNION ALL SELECT 'CENG430L', 'Practical training in Linux operating systems including shell commands, scripting, file systems, process management, networking tools, and system administration basics.'
+  UNION ALL SELECT 'EENG447', 'Introduces analog communication concepts including modulation, demodulation, signal transmission, noise analysis, and communication system performance.'
+  UNION ALL SELECT 'CENG415', 'Covers computer networking concepts such as network architectures, TCP/IP, routing, switching, wireless networks, network security, and internet protocols.'
+  UNION ALL SELECT 'CENG420', 'Focuses on front-end and back-end web development using web technologies such as HTML, CSS, JavaScript, databases, and server-side programming.'
+  UNION ALL SELECT 'CENG400L', 'Laboratory applications of embedded systems and microcontrollers including sensor interfacing, hardware control, and real-time embedded programming.'
+  UNION ALL SELECT 'CENG400', 'Explores computer architecture including CPU design, memory hierarchy, instruction sets, assembly language, pipelining, and hardware-software interaction.'
+  UNION ALL SELECT 'CENG435', 'Introduces mobile app development for Android or iOS platforms. Topics include UI design, mobile programming, APIs, databases, and app deployment.'
+  UNION ALL SELECT 'CENG450L', 'Practical use of scripting languages such as Python, Bash, or Perl for automation, system tasks, and software tools development.'
+  UNION ALL SELECT 'CENG455L', 'Hands-on networking experiments including router configuration, network protocols, packet analysis, and network troubleshooting.'
+  UNION ALL SELECT 'CENG495', 'A capstone engineering project where students design and implement a complete hardware and software solution. The course emphasizes research, teamwork, technical documentation, and presentation skills.'
+  UNION ALL SELECT 'EENG467L', 'Laboratory experiments related to analog communication systems, modulation techniques, signal analysis, and communication hardware.'
+  UNION ALL SELECT 'ENGG450', 'Discusses engineering ethics, legal responsibilities, professional conduct, sustainability, teamwork, and workplace practices for engineers.'
+  UNION ALL SELECT 'CENG460', 'Introduces operating system concepts including process management, memory management, file systems, scheduling, synchronization, and system security.'
+  UNION ALL SELECT 'CENG470', 'Covers advanced data structures such as linked lists, stacks, queues, trees, graphs, and algorithm analysis including sorting, searching, recursion, and computational complexity.'
+) AS course_descriptions ON course_descriptions.code = c.code
+SET c.description = course_descriptions.description
+WHERE u.name = 'Lebanese International University'
+  AND d.name = 'Computer and Communications Engineering';
+
 INSERT INTO roadmap (
   major_id,
   level,
@@ -297,6 +401,149 @@ ORDER BY
   roadmap_data.year_number,
   FIELD(roadmap_data.semester, 'fall', 'spring', 'summer'),
   roadmap_data.sequence_order;
+
+/* LIU Computer Engineering prerequisites from the official CENG POS PDF dated 27-08-2025. */
+INSERT INTO course (
+  code,
+  title,
+  description,
+  credits,
+  language,
+  level,
+  department_id
+)
+SELECT
+  course_data.code,
+  course_data.title,
+  course_data.description,
+  course_data.credits,
+  course_data.language,
+  course_data.level,
+  d.department_id
+FROM (
+  SELECT 'MATH160' AS code, 'Pre-Calculus' AS title, 'Foundation mathematics prerequisite for LIU Computer Engineering courses.' AS description, 3 AS credits, 'English' AS language, 'freshman' AS level
+  UNION ALL SELECT 'MATH161', 'Calculus I', 'Foundation calculus prerequisite for LIU Computer Engineering courses.', 3, 'English', 'freshman'
+  UNION ALL SELECT 'ENGL051', 'English Foundations', 'Foundation English prerequisite for LIU Computer Engineering courses.', 3, 'English', 'freshman'
+  UNION ALL SELECT 'ENGL101', 'English I', 'Foundation English prerequisite for LIU Computer Engineering courses.', 3, 'English', 'freshman'
+  UNION ALL SELECT 'ENGL151', 'English II', 'Foundation English prerequisite for LIU Computer Engineering courses.', 3, 'English', 'freshman'
+  UNION ALL SELECT 'CHEM160', 'General Chemistry', 'Foundation chemistry prerequisite for LIU Computer Engineering courses.', 3, 'English', 'freshman'
+  UNION ALL SELECT 'PHYS160', 'Physics I', 'Foundation physics prerequisite for LIU Computer Engineering courses.', 3, 'English', 'freshman'
+  UNION ALL SELECT 'PHYS161', 'Physics I Lab', 'Foundation physics lab prerequisite for LIU Computer Engineering courses.', 1, 'English', 'freshman'
+) AS course_data
+JOIN department d ON d.name = 'Computer and Communications Engineering'
+JOIN university u ON u.university_id = d.university_id
+WHERE u.name = 'Lebanese International University'
+ON DUPLICATE KEY UPDATE
+  course_id = course_id;
+
+INSERT IGNORE INTO course_prerequisite (course_id, prereq_course_id)
+SELECT
+  target.course_id,
+  prereq.course_id
+FROM (
+  SELECT 'MATH225' AS course_code, 'MATH160' AS prereq_code
+  UNION ALL SELECT 'MATH225', 'ENGL051'
+  UNION ALL SELECT 'MATH225', 'MATH161'
+  UNION ALL SELECT 'ENGL201', 'ENGL151'
+  UNION ALL SELECT 'ENGG200', 'MATH160'
+  UNION ALL SELECT 'ENGG200', 'CHEM160'
+  UNION ALL SELECT 'PHYS220', 'PHYS161'
+  UNION ALL SELECT 'PHYS220', 'ENGL101'
+  UNION ALL SELECT 'PHYS220', 'PHYS160'
+  UNION ALL SELECT 'MATH210', 'MATH161'
+  UNION ALL SELECT 'MATH210', 'MATH160'
+  UNION ALL SELECT 'CSCI250L', 'ENGL101'
+  UNION ALL SELECT 'MATH270', 'MATH210'
+  UNION ALL SELECT 'CSCI250', 'ENGL101'
+  UNION ALL SELECT 'EENG250', 'PHYS161'
+  UNION ALL SELECT 'EENG250', 'PHYS160'
+  UNION ALL SELECT 'EENG250', 'MATH161'
+  UNION ALL SELECT 'EENG250', 'MATH160'
+  UNION ALL SELECT 'EENG250', 'ENGL051'
+  UNION ALL SELECT 'CENG250', 'EENG250'
+  UNION ALL SELECT 'MATH220', 'MATH210'
+  UNION ALL SELECT 'ENGL251', 'ENGL201'
+  UNION ALL SELECT 'CSCI300', 'CSCI250L'
+  UNION ALL SELECT 'CSCI300', 'CSCI250'
+  UNION ALL SELECT 'EENG300', 'EENG250'
+  UNION ALL SELECT 'MATH310', 'MATH210'
+  UNION ALL SELECT 'MATH310', 'ENGL201'
+  UNION ALL SELECT 'CENG335', 'CSCI250'
+  UNION ALL SELECT 'CENG335', 'CENG250'
+  UNION ALL SELECT 'CENG325', 'CSCI300'
+  UNION ALL SELECT 'EENG301L', 'EENG250'
+  UNION ALL SELECT 'EENG350L', 'EENG300'
+  UNION ALL SELECT 'EENG350L', 'EENG250'
+  UNION ALL SELECT 'EENG350L', 'EENG301L'
+  UNION ALL SELECT 'ENGG300', 'ENGL201'
+  UNION ALL SELECT 'ENGG300', 'MATH225'
+  UNION ALL SELECT 'CENG352L', 'CENG250'
+  UNION ALL SELECT 'CENG352L', 'EENG301L'
+  UNION ALL SELECT 'EENG385', 'MATH225'
+  UNION ALL SELECT 'EENG385', 'EENG300'
+  UNION ALL SELECT 'CENG375', 'CENG325'
+  UNION ALL SELECT 'CENG375', 'CSCI300'
+  UNION ALL SELECT 'CENG380', 'CENG250'
+  UNION ALL SELECT 'CENG380', 'CENG335'
+  UNION ALL SELECT 'CENG380', 'EENG250'
+  UNION ALL SELECT 'CENG380', 'CSCI250'
+  UNION ALL SELECT 'EENG350', 'ENGG200'
+  UNION ALL SELECT 'EENG350', 'CENG250'
+  UNION ALL SELECT 'EENG350', 'EENG300'
+  UNION ALL SELECT 'EENG350', 'EENG250'
+  UNION ALL SELECT 'CENG430L', 'CENG380'
+  UNION ALL SELECT 'CENG430L', 'CENG325'
+  UNION ALL SELECT 'EENG447', 'MATH310'
+  UNION ALL SELECT 'EENG447', 'EENG385'
+  UNION ALL SELECT 'CENG415', 'CENG250'
+  UNION ALL SELECT 'CENG415', 'CENG325'
+  UNION ALL SELECT 'CENG415', 'CSCI250'
+  UNION ALL SELECT 'CENG415', 'CSCI300'
+  UNION ALL SELECT 'CENG420', 'CENG325'
+  UNION ALL SELECT 'CENG420', 'CSCI300'
+  UNION ALL SELECT 'CENG420', 'CENG375'
+  UNION ALL SELECT 'CENG400L', 'CENG380'
+  UNION ALL SELECT 'CENG400', 'CENG335'
+  UNION ALL SELECT 'CENG400', 'CENG250'
+  UNION ALL SELECT 'CENG400', 'CENG380'
+  UNION ALL SELECT 'CENG435', 'CENG325'
+  UNION ALL SELECT 'CENG435', 'CSCI300'
+  UNION ALL SELECT 'CENG435', 'CENG375'
+  UNION ALL SELECT 'CENG450L', 'CENG430L'
+  UNION ALL SELECT 'CENG455L', 'CENG415'
+  UNION ALL SELECT 'CENG495', 'CENG420'
+  UNION ALL SELECT 'CENG495', 'EENG350'
+  UNION ALL SELECT 'CENG495', 'EENG447'
+  UNION ALL SELECT 'CENG495', 'CENG435'
+  UNION ALL SELECT 'CENG495', 'CENG415'
+  UNION ALL SELECT 'CENG495', 'CENG380'
+  UNION ALL SELECT 'CENG495', 'CENG375'
+  UNION ALL SELECT 'EENG467L', 'EENG447'
+  UNION ALL SELECT 'ENGG450', 'ENGG300'
+  UNION ALL SELECT 'ENGG450', 'ENGL251'
+  UNION ALL SELECT 'CENG460', 'CENG380'
+  UNION ALL SELECT 'CENG460', 'CSCI300'
+  UNION ALL SELECT 'CENG470', 'CENG325'
+  UNION ALL SELECT 'CENG470', 'CSCI300'
+) AS prereq_data
+JOIN course target
+  ON target.code = prereq_data.course_code
+JOIN department target_department
+  ON target_department.department_id = target.department_id
+JOIN university target_university
+  ON target_university.university_id = target_department.university_id
+JOIN course prereq
+  ON prereq.code = prereq_data.prereq_code
+JOIN department prereq_department
+  ON prereq_department.department_id = prereq.department_id
+JOIN university prereq_university
+  ON prereq_university.university_id = prereq_department.university_id
+WHERE target_university.name = 'Lebanese International University'
+  AND target_department.name = 'Computer and Communications Engineering'
+  AND prereq_university.name = 'Lebanese International University'
+  AND prereq_department.name = 'Computer and Communications Engineering'
+  AND target.deleted_at IS NULL
+  AND prereq.deleted_at IS NULL;
 
 /* Generated majors and starter roadmaps for the seeded course catalog. */
 DROP TEMPORARY TABLE IF EXISTS tmp_catalog_major_seed;

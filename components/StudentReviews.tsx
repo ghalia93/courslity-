@@ -26,8 +26,10 @@ type Review = {
 
 const SORT_OPTIONS = [
   { label: "Newest", value: "newest" },
-  { label: "Most Upvoted", value: "rating_high" },
-  { label: "Lowest Votes", value: "rating_low" },
+  { label: "Oldest", value: "oldest" },
+  { label: "Highest rated", value: "rating_high" },
+  { label: "Lowest rated", value: "rating_low" },
+  { label: "Most voted", value: "most_votes" },
 ];
 
 function timeAgo(dateStr: string): string {

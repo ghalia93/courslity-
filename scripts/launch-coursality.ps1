@@ -3,7 +3,9 @@ $ErrorActionPreference = "Stop"
 
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $XamppRoot = "C:\xampp"
-$SiteUrl = "http://localhost:3000"
+$PreferredSitePort = 3000
+$DevSitePorts = 3000..3010
+$SiteUrl = "http://localhost:$PreferredSitePort"
 
 function Test-PortListening {
   param([int]$Port)
@@ -81,6 +83,21 @@ function Wait-ForSite {
   return $false
 }
 
+function Get-RunningDevSiteUrl {
+  foreach ($port in $DevSitePorts) {
+    if (-not (Test-PortListening -Port $port)) {
+      continue
+    }
+
+    $candidateUrl = "http://localhost:$port"
+    if (Wait-ForSite -Url $candidateUrl -TimeoutSeconds 3) {
+      return $candidateUrl
+    }
+  }
+
+  return $null
+}
+
 Write-Host ""
 Write-Host "Launching Coursality..." -ForegroundColor Cyan
 Write-Host "Project: $ProjectRoot"
@@ -111,9 +128,18 @@ if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "node_modules"))) {
   }
 }
 
-if (Test-PortListening -Port 3000) {
-  Write-Host "Next.js is already running on port 3000." -ForegroundColor Green
+$runningSiteUrl = Get-RunningDevSiteUrl
+$lockPath = Join-Path $ProjectRoot ".next\dev\lock"
+
+if ($runningSiteUrl) {
+  $SiteUrl = $runningSiteUrl
+  Write-Host "Next.js is already running at $SiteUrl." -ForegroundColor Green
 } else {
+  if (Test-Path -LiteralPath $lockPath) {
+    Write-Host "Removing stale Next.js dev lock..." -ForegroundColor Yellow
+    Remove-Item -LiteralPath $lockPath -Force
+  }
+
   Write-Host "Starting Next.js dev server..." -ForegroundColor Cyan
   $escapedProjectRoot = $ProjectRoot.Replace("'", "''")
   $serverCommand = "Set-Location -LiteralPath '$escapedProjectRoot'; npm run dev"

@@ -35,10 +35,15 @@ export function isValidEmail(email: string) {
 }
 
 export function getAppBaseUrl(requestUrl: string) {
+  const requestOrigin = new URL(requestUrl).origin;
   const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (configuredUrl) return configuredUrl.replace(/\/$/, "");
+  if (!configuredUrl) return requestOrigin;
 
-  return new URL(requestUrl).origin;
+  if (process.env.NODE_ENV !== "production") {
+    return requestOrigin;
+  }
+
+  return configuredUrl.replace(/\/$/, "");
 }
 
 export async function ensurePasswordResetTable() {

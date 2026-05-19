@@ -4,6 +4,7 @@ import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { requireAdmin, requireUniversityAdmin } from "@/lib/auth";
 import pool from "@/db";
 import { getSemesterFromCourseCode, getYearFromCourseCode } from "@/lib/courseCode";
+import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
 import { COURSE_LEVEL_VALUES, formatCourseLevel } from "@/lib/courseLevels";
 import { ensureRoadmapTables } from "@/lib/roadmapsDb";
 import { notifyStudentsAboutCourse } from "@/lib/notificationsDb";
@@ -184,7 +185,7 @@ export async function GET(req: NextRequest) {
       course_id: row.course_id,
       code: row.code,
       title: row.title,
-      description: row.description,
+      description: normalizeCourseDescription(row),
       credits: row.credits,
       level: row.level,
       language: row.language,

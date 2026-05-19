@@ -48,10 +48,11 @@ function timeAgo(dateStr: string): string {
 
 interface Props {
   slug: string;
+  courseId: number;
   refreshKey?: number;
 }
 
-export default function StudentReviews({ slug, refreshKey = 0 }: Props) {
+export default function StudentReviews({ slug, courseId, refreshKey = 0 }: Props) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [sort, setSort] = useState("newest");
   const [loading, setLoading] = useState(true);
@@ -62,7 +63,11 @@ export default function StudentReviews({ slug, refreshKey = 0 }: Props) {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`/api/courses/${slug}/reviews?sort=${sort}`);
+      const params = new URLSearchParams({
+        sort,
+        course_id: String(courseId),
+      });
+      const res = await fetch(`/api/courses/${slug}/reviews?${params}`);
       if (!res.ok) throw new Error("Failed to load reviews");
 
       const data = await res.json();
@@ -72,7 +77,7 @@ export default function StudentReviews({ slug, refreshKey = 0 }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [slug, sort]);
+  }, [courseId, slug, sort]);
 
   useEffect(() => {
     fetchReviews();

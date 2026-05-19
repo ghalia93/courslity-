@@ -6,6 +6,7 @@ import {
   getSemesterFromCourseCode,
   getYearFromCourseCode,
 } from "@/lib/courseCode";
+import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
 
 type CourseRow = RowDataPacket & {
   course_id: number;
@@ -115,25 +116,6 @@ export async function GET(req: Request) {
       "c.deleted_at IS NULL",
       "d.is_active = 1",
       "u.is_active = 1",
-      `EXISTS (
-        SELECT 1
-        FROM roadmap_course rc_public
-        INNER JOIN roadmap r_public
-          ON r_public.roadmap_id = rc_public.roadmap_id
-        INNER JOIN major m_public
-          ON m_public.major_id = r_public.major_id
-        INNER JOIN department d_public
-          ON d_public.department_id = m_public.department_id
-        INNER JOIN university u_public
-          ON u_public.university_id = d_public.university_id
-        WHERE rc_public.course_id = c.course_id
-          AND r_public.is_published = 1
-          AND m_public.is_active = 1
-          AND d_public.is_active = 1
-          AND u_public.is_active = 1
-          AND d_public.department_id = d.department_id
-          AND u_public.university_id = u.university_id
-      )`,
     ];
     const params: Array<number | string> = [];
 
@@ -289,7 +271,7 @@ export async function GET(req: Request) {
         courseId: row.course_id,
         code: row.code,
         title: row.title,
-        description: row.description,
+        description: normalizeCourseDescription(row),
         credits: row.credits,
         level: row.level,
         language: row.language,

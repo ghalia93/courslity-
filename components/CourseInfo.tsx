@@ -180,7 +180,7 @@ export default function CourseInfo({ course }: { course: Course }) {
             {course.prerequisites.map((prereq) => (
               <Link
                 key={prereq.course_id}
-                href={`/courses/${prereq.code.trim().toLowerCase().replace(/\s+/g, "-")}`}
+                href={`/courses/${prereq.code.trim().toLowerCase().replace(/\s+/g, "-")}?course_id=${prereq.course_id}`}
                 className="inline-flex max-w-full flex-wrap rounded-full bg-[#6155F5]/10 px-3 py-1 text-sm font-medium text-[#6155F5] transition hover:bg-[#6155F5]/20"
               >
                 {prereq.code} - {prereq.title}

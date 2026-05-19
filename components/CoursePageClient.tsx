@@ -10,9 +10,10 @@ import { useToast } from "@/components/toast/Toastprovider";
 
 interface Props {
   slug: string;
+  courseId: number;
 }
 
-export default function CoursePageClient({ slug }: Props) {
+export default function CoursePageClient({ slug, courseId }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showWriteReview, setShowWriteReview] = useState(false);
@@ -42,11 +43,12 @@ export default function CoursePageClient({ slug }: Props) {
       {showWriteReview && (
         <WriteReviewCard
           slug={slug}
+          courseId={courseId}
           onSubmit={handleReviewSubmitted}
           onCancel={() => setShowWriteReview(false)}
         />
       )}
-      <StudentReviews slug={slug} refreshKey={refreshKey} />
+      <StudentReviews slug={slug} courseId={courseId} refreshKey={refreshKey} />
     </div>
   );
 }

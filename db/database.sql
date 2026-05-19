@@ -285,12 +285,15 @@ CREATE TABLE IF NOT EXISTS `notification` (
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `support_thread` (
   `thread_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED NULL,
+  `visitor_key` VARCHAR(64) NULL,
+  `visitor_name` VARCHAR(120) NULL,
   `status` ENUM('open','closed') NOT NULL DEFAULT 'open',
   `last_message_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`thread_id`),
   UNIQUE KEY `uniq_support_thread_user` (`user_id`),
+  UNIQUE KEY `uniq_support_thread_visitor` (`visitor_key`),
   KEY `idx_support_thread_last_message` (`last_message_at`),
   CONSTRAINT `fk_support_thread_user`
     FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`)
@@ -302,9 +305,11 @@ CREATE TABLE IF NOT EXISTS `support_message` (
   `message_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `thread_id` INT UNSIGNED NOT NULL,
   `sender_id` INT UNSIGNED NULL,
-  `sender_role` ENUM('student','admin') NOT NULL,
+  `sender_role` ENUM('student','visitor','admin') NOT NULL,
   `body` TEXT NOT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`message_id`),
   KEY `idx_support_message_thread` (`thread_id`, `created_at`),
   KEY `idx_support_message_sender` (`sender_id`),

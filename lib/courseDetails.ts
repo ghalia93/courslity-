@@ -2,6 +2,7 @@
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
 import { getYearFromCourseCode } from "@/lib/courseCode";
+import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
 import { formatCourseLevel } from "@/lib/courseLevels";
 
 type CourseDetailRow = RowDataPacket & {
@@ -63,11 +64,11 @@ function roundedRating(value: number | string | null) {
   return value == null ? null : Number(Number(value).toFixed(2));
 }
 
-export async function getCourseDetailBySlug(
+async function getCourseDetail(
+  whereClause: string,
+  params: Array<number | string>,
   slug: string,
 ): Promise<CourseDetail | null> {
-  const normalizedSlug = normalizeCourseSlug(slug);
-
   const [rows] = await pool.query<CourseDetailRow[]>(
     `
     SELECT
@@ -95,7 +96,7 @@ export async function getCourseDetailBySlug(
     INNER JOIN university u ON u.university_id = d.university_id
     LEFT JOIN review r ON r.course_id = c.course_id AND r.deleted_at IS NULL
 
-    WHERE REPLACE(UPPER(c.code), '-', ' ') = ?
+    WHERE ${whereClause}
       AND c.deleted_at IS NULL
 
     GROUP BY
@@ -103,7 +104,7 @@ export async function getCourseDetailBySlug(
       c.credits, c.level, c.language,
       d.name, d.department_id, u.name, u.university_id
     `,
-    [normalizedSlug],
+    params,
   );
 
   if (!rows || rows.length === 0) {
@@ -128,7 +129,7 @@ export async function getCourseDetailBySlug(
     slug,
     code: row.code,
     title: row.title,
-    description: row.description,
+    description: normalizeCourseDescription(row),
     credits: `${row.credits} cr.`,
     level: formatCourseLevel(row.level),
     language: row.language,
@@ -147,4 +148,25 @@ export async function getCourseDetailBySlug(
     },
     prerequisites,
   };
+}
+
+export async function getCourseDetailBySlug(
+  slug: string,
+): Promise<CourseDetail | null> {
+  return getCourseDetail(
+    "REPLACE(UPPER(c.code), '-', ' ') = ?",
+    [normalizeCourseSlug(slug)],
+    slug,
+  );
+}
+
+export async function getCourseDetailById(
+  courseId: number,
+  slug: string,
+): Promise<CourseDetail | null> {
+  if (!Number.isInteger(courseId) || courseId <= 0) {
+    return null;
+  }
+
+  return getCourseDetail("c.course_id = ?", [courseId], slug);
 }

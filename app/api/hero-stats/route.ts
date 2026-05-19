@@ -24,7 +24,13 @@ export async function GET() {
         "SELECT COUNT(*) AS count FROM `university` WHERE is_active = 1",
       ),
       pool.query<CountRow[]>(
-        "SELECT COUNT(*) AS count FROM `course` WHERE deleted_at IS NULL",
+        `SELECT COUNT(*) AS count
+          FROM course c
+          INNER JOIN department d ON d.department_id = c.department_id
+          INNER JOIN university u ON u.university_id = d.university_id
+          WHERE c.deleted_at IS NULL
+            AND d.is_active = 1
+            AND u.is_active = 1`,
       ),
     ]);
 

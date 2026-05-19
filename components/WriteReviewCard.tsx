@@ -11,12 +11,14 @@ const SEMESTER_OPTIONS = ["Fall", "Spring", "Summer"];
 
 type WriteReviewCardProps = {
   slug: string;
+  courseId: number;
   onSubmit: () => void;
   onCancel: () => void;
 };
 
 export default function WriteReviewCard({
   slug,
+  courseId,
   onSubmit,
   onCancel,
 }: WriteReviewCardProps) {
@@ -59,7 +61,8 @@ export default function WriteReviewCard({
     setError(null);
 
     try {
-      const res = await fetch(`/api/courses/${slug}/reviews`, {
+      const params = new URLSearchParams({ course_id: String(courseId) });
+      const res = await fetch(`/api/courses/${slug}/reviews?${params}`, {
         method: "POST",
         credentials: "include",
         headers: {

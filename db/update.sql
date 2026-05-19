@@ -61,12 +61,15 @@ CREATE TABLE IF NOT EXISTS notification (
 
 CREATE TABLE IF NOT EXISTS support_thread (
   thread_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NULL,
+  visitor_key VARCHAR(64) NULL,
+  visitor_name VARCHAR(120) NULL,
   status ENUM('open','closed') NOT NULL DEFAULT 'open',
   last_message_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (thread_id),
   UNIQUE KEY uniq_support_thread_user (user_id),
+  UNIQUE KEY uniq_support_thread_visitor (visitor_key),
   KEY idx_support_thread_last_message (last_message_at),
   CONSTRAINT fk_support_thread_user
     FOREIGN KEY (user_id) REFERENCES `user`(user_id)
@@ -78,9 +81,11 @@ CREATE TABLE IF NOT EXISTS support_message (
   message_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   thread_id INT UNSIGNED NOT NULL,
   sender_id INT UNSIGNED NULL,
-  sender_role ENUM('student','admin') NOT NULL,
+  sender_role ENUM('student','visitor','admin') NOT NULL,
   body TEXT NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (message_id),
   KEY idx_support_message_thread (thread_id, created_at),
   KEY idx_support_message_sender (sender_id),
@@ -246,7 +251,11 @@ JOIN department d ON d.name = 'Computer and Communications Engineering'
 JOIN university u ON u.university_id = d.university_id
 WHERE u.name = 'Lebanese International University'
 ON DUPLICATE KEY UPDATE
-  course_id = course_id;
+  title = VALUES(title),
+  description = VALUES(description),
+  credits = VALUES(credits),
+  language = VALUES(language),
+  level = VALUES(level);
 
 UPDATE course c
 JOIN department d ON d.department_id = c.department_id
@@ -402,7 +411,7 @@ ORDER BY
   FIELD(roadmap_data.semester, 'fall', 'spring', 'summer'),
   roadmap_data.sequence_order;
 
-/* LIU Computer Engineering prerequisites from the official CENG POS PDF dated 27-08-2025. */
+/* LIU Computer Engineering prerequisite relationships. */
 INSERT INTO course (
   code,
   title,
@@ -421,20 +430,97 @@ SELECT
   course_data.level,
   d.department_id
 FROM (
-  SELECT 'MATH160' AS code, 'Pre-Calculus' AS title, 'Foundation mathematics prerequisite for LIU Computer Engineering courses.' AS description, 3 AS credits, 'English' AS language, 'freshman' AS level
-  UNION ALL SELECT 'MATH161', 'Calculus I', 'Foundation calculus prerequisite for LIU Computer Engineering courses.', 3, 'English', 'freshman'
-  UNION ALL SELECT 'ENGL051', 'English Foundations', 'Foundation English prerequisite for LIU Computer Engineering courses.', 3, 'English', 'freshman'
-  UNION ALL SELECT 'ENGL101', 'English I', 'Foundation English prerequisite for LIU Computer Engineering courses.', 3, 'English', 'freshman'
-  UNION ALL SELECT 'ENGL151', 'English II', 'Foundation English prerequisite for LIU Computer Engineering courses.', 3, 'English', 'freshman'
-  UNION ALL SELECT 'CHEM160', 'General Chemistry', 'Foundation chemistry prerequisite for LIU Computer Engineering courses.', 3, 'English', 'freshman'
-  UNION ALL SELECT 'PHYS160', 'Physics I', 'Foundation physics prerequisite for LIU Computer Engineering courses.', 3, 'English', 'freshman'
-  UNION ALL SELECT 'PHYS161', 'Physics I Lab', 'Foundation physics lab prerequisite for LIU Computer Engineering courses.', 1, 'English', 'freshman'
+  SELECT 'MATH160' AS code, 'Pre-Calculus' AS title, 'Builds algebraic, trigonometric, and analytic geometry skills needed for calculus and engineering coursework.' AS description, 3 AS credits, 'English' AS language, 'freshman' AS level
+  UNION ALL SELECT 'MATH161', 'Calculus I', 'Introduces limits, derivatives, integrals, and applications of single-variable calculus for science and engineering.', 3, 'English', 'freshman'
+  UNION ALL SELECT 'ENGL051', 'English Foundations', 'Develops foundational English reading, grammar, vocabulary, and writing skills for university-level study.', 3, 'English', 'freshman'
+  UNION ALL SELECT 'ENGL101', 'English I', 'Builds academic English skills through reading, paragraph writing, grammar practice, and structured communication.', 3, 'English', 'freshman'
+  UNION ALL SELECT 'ENGL151', 'English II', 'Continues academic English development with essay writing, critical reading, vocabulary, and clear written expression.', 3, 'English', 'freshman'
+  UNION ALL SELECT 'CHEM160', 'General Chemistry', 'Introduces general chemistry concepts including atomic structure, bonding, reactions, stoichiometry, gases, solutions, and laboratory-related problem solving.', 3, 'English', 'freshman'
+  UNION ALL SELECT 'PHYS160', 'Physics I', 'Introduces mechanics-based physics concepts including motion, forces, energy, momentum, rotation, and applications for engineering students.', 3, 'English', 'freshman'
+  UNION ALL SELECT 'PHYS161', 'Physics I Lab', 'Provides laboratory experiments that reinforce Physics I topics through measurement, data analysis, uncertainty, and scientific reporting.', 1, 'English', 'freshman'
 ) AS course_data
 JOIN department d ON d.name = 'Computer and Communications Engineering'
 JOIN university u ON u.university_id = d.university_id
 WHERE u.name = 'Lebanese International University'
 ON DUPLICATE KEY UPDATE
-  course_id = course_id;
+  title = VALUES(title),
+  description = VALUES(description),
+  credits = VALUES(credits),
+  language = VALUES(language),
+  level = VALUES(level),
+  deleted_at = NULL;
+
+INSERT INTO roadmap (
+  major_id,
+  level,
+  title,
+  total_credits,
+  is_published,
+  created_by
+)
+SELECT
+  m.major_id,
+  'freshman',
+  'Computer Engineering Freshman Prerequisite Roadmap',
+  22,
+  1,
+  NULL
+FROM major m
+JOIN department d ON d.department_id = m.department_id
+JOIN university u ON u.university_id = d.university_id
+WHERE u.name = 'Lebanese International University'
+  AND d.name = 'Computer and Communications Engineering'
+  AND m.name = 'Computer Engineering'
+ON DUPLICATE KEY UPDATE
+  title = VALUES(title),
+  total_credits = VALUES(total_credits),
+  is_published = 1;
+
+INSERT INTO roadmap_course (
+  roadmap_id,
+  course_id,
+  year_number,
+  semester,
+  sequence_order
+)
+SELECT
+  r.roadmap_id,
+  c.course_id,
+  roadmap_data.year_number,
+  roadmap_data.semester,
+  roadmap_data.sequence_order
+FROM (
+  SELECT 'MATH160' AS code, 1 AS year_number, 'fall' AS semester, 10 AS sequence_order
+  UNION ALL SELECT 'ENGL051', 1, 'fall', 20
+  UNION ALL SELECT 'CHEM160', 1, 'fall', 30
+  UNION ALL SELECT 'PHYS160', 1, 'fall', 40
+  UNION ALL SELECT 'MATH161', 1, 'spring', 10
+  UNION ALL SELECT 'ENGL101', 1, 'spring', 20
+  UNION ALL SELECT 'ENGL151', 1, 'spring', 30
+  UNION ALL SELECT 'PHYS161', 1, 'spring', 40
+) AS roadmap_data
+JOIN course c ON c.code = roadmap_data.code
+JOIN department course_department
+  ON course_department.department_id = c.department_id
+JOIN university course_university
+  ON course_university.university_id = course_department.university_id
+JOIN major m ON m.name = 'Computer Engineering'
+JOIN department major_department
+  ON major_department.department_id = m.department_id
+JOIN university major_university
+  ON major_university.university_id = major_department.university_id
+JOIN roadmap r
+  ON r.major_id = m.major_id
+  AND r.level = 'freshman'
+WHERE course_university.name = 'Lebanese International University'
+  AND course_department.name = 'Computer and Communications Engineering'
+  AND major_university.name = 'Lebanese International University'
+  AND major_department.name = 'Computer and Communications Engineering'
+  AND c.deleted_at IS NULL
+ON DUPLICATE KEY UPDATE
+  year_number = VALUES(year_number),
+  semester = VALUES(semester),
+  sequence_order = VALUES(sequence_order);
 
 INSERT IGNORE INTO course_prerequisite (course_id, prereq_course_id)
 SELECT
@@ -547,6 +633,60 @@ WHERE target_university.name = 'Lebanese International University'
 
 /* Generated majors and starter roadmaps for the seeded course catalog. */
 DROP TEMPORARY TABLE IF EXISTS tmp_catalog_major_seed;
+
+UPDATE course
+SET description = CASE
+  WHEN title LIKE 'Requirement:%'
+    OR title LIKE '%Elective%'
+    OR title LIKE '%Approved%'
+    THEN CONCAT(
+      'This curriculum requirement lets students complete the ',
+      LOWER(TRIM(REPLACE(title, 'Requirement:', ''))),
+      ' component of their program while choosing an approved course that fits their academic plan.'
+    )
+  WHEN title LIKE '%Lab%'
+    OR title LIKE '%Laboratory%'
+    THEN CONCAT(
+      'This laboratory course gives students hands-on practice with ',
+      LOWER(title),
+      ', including experiments, technical tools, measurement, implementation, and applied problem solving.'
+    )
+  WHEN title REGEXP 'Arabic|English|Communication|Langue|Expression'
+    THEN 'This course strengthens language, communication, reading, writing, and presentation skills needed for academic and professional work.'
+  WHEN title REGEXP 'Calculus|Math|Linear Algebra|Differential|Statistics|Probability|Numerical|Graph'
+    THEN 'This course develops mathematical methods for engineering problem solving, including theory, applied examples, analysis, and quantitative reasoning.'
+  WHEN title REGEXP 'Physics|Chemistry|Science|Thermodynamics'
+    THEN 'This science course covers foundational concepts, laboratory or analytical methods, and applications that support engineering study.'
+  WHEN title REGEXP 'Program|Software|Data Structure|Algorithm|Database|Compiler|Operating|Computer'
+    THEN CONCAT(
+      'This course covers ',
+      LOWER(title),
+      ' through core computing concepts, programming practice, system design, and applied technical problem solving.'
+    )
+  WHEN title REGEXP 'Circuit|Electronics|Signal|Communication|Network|Wireless|Telecommunication|Electro'
+    THEN CONCAT(
+      'This course covers ',
+      LOWER(title),
+      ' through engineering theory, analysis methods, practical design, and real-world communication or electronic systems.'
+    )
+  WHEN title REGEXP 'Project|Capstone|Design|Field Training|Stage|Seminar'
+    THEN 'This course applies program knowledge through project work, documentation, teamwork, implementation, evaluation, and professional presentation.'
+  WHEN title REGEXP 'Ethics|Values|Humanities|Social|Culture|Sustainable'
+    THEN 'This course builds broader professional and cultural awareness through ethics, society, communication, responsibility, and reflective academic work.'
+  ELSE CONCAT(
+    'This course introduces ',
+    LOWER(title),
+    ' through core concepts, applied examples, practical skills, and problem solving connected to the program.'
+  )
+END
+WHERE description REGEXP 'Source:|PDF|pdf|official roadmap item|supplied by user|catalogue|reference|Foundation .* prerequisite|^waves$|No description';
+
+UPDATE course
+SET description = REPLACE(
+  description,
+  'civilization impact on the modern world',
+  'civilization''s impact on the modern world'
+);
 
 /* Realistic departments, majors, courses, and starter roadmaps for every active university. */
 -- BEGIN CATALOG EXPANSION

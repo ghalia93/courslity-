@@ -1,14 +1,22 @@
 // Handles API courses slug requests.
 import { NextResponse } from "next/server";
-import { getCourseDetailBySlug } from "@/lib/courseDetails";
+import {
+  getCourseDetailById,
+  getCourseDetailBySlug,
+} from "@/lib/courseDetails";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
   try {
     const { slug } = await params;
-    const course = await getCourseDetailBySlug(slug);
+    const { searchParams } = new URL(request.url);
+    const courseId = Number(searchParams.get("course_id") || 0);
+    const course =
+      Number.isInteger(courseId) && courseId > 0
+        ? await getCourseDetailById(courseId, slug)
+        : await getCourseDetailBySlug(slug);
 
     if (!course) {
       return NextResponse.json(

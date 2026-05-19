@@ -4,6 +4,7 @@
 import Link from "next/link";
 import React from "react";
 import { FileText, Briefcase, MapPin, Scale, User } from "lucide-react";
+import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
 import { formatCourseLevel } from "@/lib/courseLevels";
 
 type CourseRatings = {
@@ -52,6 +53,7 @@ function formatReviewCount(count: number): string {
 }
 
 export default function CourseCard({
+  courseId,
   code,
   title,
   university,
@@ -66,9 +68,15 @@ export default function CourseCard({
   className = "",
 }: CourseCardProps) {
   const slug = code.trim().toLowerCase().replace(/\s+/g, "-");
+  const displayDescription = normalizeCourseDescription({
+    description,
+  });
 
   return (
-    <Link href={`/courses/${slug}`} className="block w-full min-w-0">
+    <Link
+      href={`/courses/${slug}?course_id=${courseId}`}
+      className="block w-full min-w-0"
+    >
       <div
         className={`w-full min-w-0 rounded-xl bg-white p-4 sm:min-h-[250px] sm:rounded-2xl sm:p-5
       shadow-[0_12px_40px_rgba(0,0,0,0.12)]
@@ -112,9 +120,14 @@ export default function CourseCard({
         </div>
 
         {/* Description */}
-        <p className="mt-3 text-[15px] leading-relaxed text-gray-800 line-clamp-4">
-          {description}
-        </p>
+        <div className="mt-3 rounded-xl border border-[#E4E2FF] bg-[#F8F7FF] p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#6155F5]">
+            Course Description
+          </p>
+          <p className="mt-1 text-[15px] leading-relaxed text-gray-800">
+            {displayDescription || "No course description has been added yet."}
+          </p>
+        </div>
 
         {/* Metrics */}
         <div className="mt-4 rounded-xl border border-gray-300 p-3">

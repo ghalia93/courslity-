@@ -2,7 +2,7 @@
 
 // Renders the admin support chat inbox.
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { MessageSquare, RefreshCw, Send } from "lucide-react";
+import { Check, MessageSquare, Pencil, RefreshCw, Send, Trash2, X } from "lucide-react";
 
 type ChatThread = {
   thread_id: number;
@@ -12,13 +12,15 @@ type ChatThread = {
   status: string;
   latest_message: string | null;
   last_message_at: string;
+  is_visitor?: 0 | 1;
 };
 
 type ChatMessage = {
   message_id: number;
-  sender_role: "student" | "admin";
+  sender_role: "student" | "visitor" | "admin";
   body: string;
   created_at: string;
+  edited?: 0 | 1;
 };
 
 export default function AdminChatPage() {
@@ -26,9 +28,15 @@ export default function AdminChatPage() {
   const [selectedThreadId, setSelectedThreadId] = useState<number | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editingDraft, setEditingDraft] = useState("");
   const [loadingThreads, setLoadingThreads] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingMessageId, setDeletingMessageId] = useState<number | null>(
+    null,
+  );
   const [error, setError] = useState("");
 
   const selectedThread = useMemo(
@@ -96,6 +104,8 @@ export default function AdminChatPage() {
   useEffect(() => {
     if (!selectedThreadId) return;
 
+    setEditingMessageId(null);
+    setEditingDraft("");
     loadMessages(selectedThreadId);
     const intervalId = window.setInterval(() => {
       loadMessages(selectedThreadId);
@@ -135,15 +145,93 @@ export default function AdminChatPage() {
     }
   }
 
+  function startEditing(message: ChatMessage) {
+    setEditingMessageId(message.message_id);
+    setEditingDraft(message.body);
+  }
+
+  function cancelEditing() {
+    setEditingMessageId(null);
+    setEditingDraft("");
+  }
+
+  async function saveEdit() {
+    const message = editingDraft.trim();
+    if (!selectedThreadId || !editingMessageId || !message || savingEdit) {
+      return;
+    }
+
+    try {
+      setSavingEdit(true);
+      setError("");
+
+      const res = await fetch("/api/admin/support-chat", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          threadId: selectedThreadId,
+          messageId: editingMessageId,
+          message,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to edit message");
+      }
+
+      setMessages(data.messages ?? []);
+      cancelEditing();
+      loadThreads();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to edit message");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  async function deleteMessage(messageId: number) {
+    if (!selectedThreadId || deletingMessageId) return;
+    if (!window.confirm("Delete this message?")) return;
+
+    try {
+      setDeletingMessageId(messageId);
+      setError("");
+
+      const params = new URLSearchParams({
+        threadId: String(selectedThreadId),
+        messageId: String(messageId),
+      });
+      const res = await fetch(`/api/admin/support-chat?${params.toString()}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to delete message");
+      }
+
+      setMessages(data.messages ?? []);
+      if (editingMessageId === messageId) cancelEditing();
+      loadThreads();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to delete message");
+    } finally {
+      setDeletingMessageId(null);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-7xl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
-            Student Chat
+            Student and Visitor Chat
           </h1>
           <p className="text-sm text-gray-500">
-            Reply to student support messages from the website chat.
+            Reply to registered students and anonymous visitors from the website chat.
           </p>
         </div>
 
@@ -234,6 +322,7 @@ export default function AdminChatPage() {
                 ) : (
                   messages.map((message) => {
                     const mine = message.sender_role === "admin";
+                    const editing = editingMessageId === message.message_id;
                     return (
                       <div
                         key={message.message_id}
@@ -246,14 +335,79 @@ export default function AdminChatPage() {
                               : "bg-gray-100 text-gray-700"
                           }`}
                         >
-                          <p className="whitespace-pre-wrap">{message.body}</p>
-                          <p
-                            className={`mt-1 text-[10px] ${
-                              mine ? "text-white/70" : "text-gray-400"
-                            }`}
-                          >
-                            {message.created_at}
-                          </p>
+                          {editing ? (
+                            <div className="space-y-2">
+                              <textarea
+                                value={editingDraft}
+                                onChange={(e) =>
+                                  setEditingDraft(e.target.value)
+                                }
+                                className="min-h-[78px] w-full resize-none rounded-lg border border-white/40 bg-white px-2 py-1 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-white/70"
+                              />
+                              <div className="flex justify-end gap-1">
+                                <button
+                                  type="button"
+                                  onClick={cancelEditing}
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-white/15 hover:bg-white/25"
+                                  title="Cancel edit"
+                                  aria-label="Cancel edit"
+                                >
+                                  <X size={14} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={saveEdit}
+                                  disabled={savingEdit || !editingDraft.trim()}
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-white/20 hover:bg-white/30 disabled:opacity-50"
+                                  title="Save edit"
+                                  aria-label="Save edit"
+                                >
+                                  <Check size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="whitespace-pre-wrap">{message.body}</p>
+                              <div
+                                className={`mt-1 flex items-center justify-between gap-2 text-[10px] ${
+                                  mine ? "text-white/70" : "text-gray-400"
+                                }`}
+                              >
+                                <span>
+                                  {message.created_at}
+                                  {message.edited ? " (Edited)" : ""}
+                                </span>
+                                <span className="flex shrink-0 items-center gap-1">
+                                  {mine && (
+                                    <button
+                                      type="button"
+                                      onClick={() => startEditing(message)}
+                                      className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-white/20"
+                                      title="Edit message"
+                                      aria-label="Edit message"
+                                    >
+                                      <Pencil size={11} />
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      deleteMessage(message.message_id)
+                                    }
+                                    disabled={
+                                      deletingMessageId === message.message_id
+                                    }
+                                    className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-white/20 disabled:opacity-50"
+                                    title="Delete message"
+                                    aria-label="Delete message"
+                                  >
+                                    <Trash2 size={11} />
+                                  </button>
+                                </span>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     );

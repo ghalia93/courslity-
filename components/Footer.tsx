@@ -25,6 +25,24 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-col items-center md:items-end text-center md:text-right">
+            <h3 className="mb-5 text-lg font-bold text-black">Contact Info</h3>
+            <div className="flex flex-col gap-2 text-sm text-gray-500">
+              <a
+                href="mailto:sayedahmadghalia2@gmail.com"
+                className="hover:text-[#6155F5]"
+              >
+                sayedahmadghalia2@gmail.com
+              </a>
+              <a
+                href="mailto:abbas123@gmail.com"
+                className="hover:text-[#6155F5]"
+              >
+                abbas123@gmail.com
+              </a>
+              <a href="tel:+96170123456" className="hover:text-[#6155F5]">
+                +961 70 123 456
+              </a>
+            </div>
 
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-gray-500">
               Did you find what you were looking for? Share your feedback!

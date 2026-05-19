@@ -40,7 +40,25 @@ function anonymousName(userId: number): string {
   return `Student${hash}`;
 }
 
-async function courseIdFromSlug(slug: string): Promise<number | null> {
+async function courseIdFromSlug(
+  slug: string,
+  requestedCourseId?: number,
+): Promise<number | null> {
+  if (requestedCourseId && Number.isInteger(requestedCourseId)) {
+    const [requestedRows] = await pool.query<CourseLookupRow[]>(
+      `
+      SELECT course_id, code
+      FROM course
+      WHERE course_id = ?
+        AND deleted_at IS NULL
+      LIMIT 1
+      `,
+      [requestedCourseId],
+    );
+
+    if (requestedRows.length > 0) return requestedRows[0].course_id;
+  }
+
   const normalizedSlug = slug.toUpperCase().replace(/-/g, " ");
 
   const [rows] = await pool.query<CourseLookupRow[]>(
@@ -48,6 +66,7 @@ async function courseIdFromSlug(slug: string): Promise<number | null> {
     SELECT course_id, code
     FROM course
     WHERE REPLACE(UPPER(code), '-', ' ') = ?
+      AND deleted_at IS NULL
     LIMIT 1
     `,
     [normalizedSlug],
@@ -90,7 +109,9 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const courseId = await courseIdFromSlug(slug);
+    const { searchParams } = new URL(req.url);
+    const requestedCourseId = Number(searchParams.get("course_id") || 0);
+    const courseId = await courseIdFromSlug(slug, requestedCourseId);
 
     if (!courseId) {
       return NextResponse.json(
@@ -99,7 +120,6 @@ export async function GET(
       );
     }
 
-    const { searchParams } = new URL(req.url);
     const sort = (searchParams.get("sort") || "newest").trim();
     const currentUser = await getOptionalUser(req);
 
@@ -203,7 +223,9 @@ export async function POST(
     const user = await requireAuth(req);
 
     const { slug } = await params;
-    const courseId = await courseIdFromSlug(slug);
+    const { searchParams } = new URL(req.url);
+    const requestedCourseId = Number(searchParams.get("course_id") || 0);
+    const courseId = await courseIdFromSlug(slug, requestedCourseId);
 
     if (!courseId) {
       return NextResponse.json(

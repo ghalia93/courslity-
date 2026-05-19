@@ -318,7 +318,7 @@ function RoadmapsPageContent() {
                 {roadmap.terms.map((term) => (
                   <div
                     key={`${roadmap.roadmap_id}-${term.year_number}-${term.semester}`}
-                    className="grid gap-3 border-b border-gray-100 py-4 last:border-b-0 lg:grid-cols-[150px_1fr]"
+                    className="grid gap-4 border-b-4 border-gray-100 py-6 last:border-b-0 lg:grid-cols-[180px_1fr]"
                   >
                     <div>
                       <p className="text-sm font-semibold text-gray-900">
@@ -340,7 +340,7 @@ function RoadmapsPageContent() {
                       {term.courses.map((course) => (
                         <Link
                           key={course.course_id}
-                          href={`/courses/${getCourseSlug(course.code)}`}
+                          href={`/courses/${getCourseSlug(course.code)}?course_id=${course.course_id}`}
                           className="inline-flex max-w-full items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-700 transition hover:border-[#6155F5]/50 hover:bg-[#EEF2FF] hover:text-[#4f45d4] focus:outline-none focus:ring-2 focus:ring-[#6155F5]/30"
                         >
                           <BookOpen size={14} className="text-[#6155F5]" />

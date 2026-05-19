@@ -4,6 +4,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  buildEmailWithDomain,
+  getEmailLocalPart,
+  getExpectedUniversityDomain,
+} from "@/lib/universityEmail";
 
 type University = {
   university_id: number;
@@ -11,34 +16,11 @@ type University = {
   email_domain?: string; // may or may not come from the API
 };
 
-// --- Hardcoded fallback: used when the API doesn't return email_domain ---
-// Once you add the email_domain column to your DB and return it from the API,
-// this map acts as a safety net - it will never be undefined either way.
-const UNIVERSITY_DOMAINS: Record<string, string> = {
-  "Beirut Arab University": "student.bau.edu.lb",
-  "American University of Beirut": "mail.aub.edu",
-  "Lebanese American University": "students.lau.edu.lb",
-  "Lebanese International University": "students.liu.edu.lb",
-  "Universit\u00e9 Saint-Joseph de Beyrouth": "net.usj.edu.lb",
-  "University of Balamand": "balamand.edu.lb",
-};
-
-/** Safely resolve a university's expected email domain from API or fallback map. */
-function getExpectedDomain(uni: University): string | null {
-  return uni.email_domain?.trim() || UNIVERSITY_DOMAINS[uni.name] || null;
-}
-
-function domainMatches(typedDomain: string, expectedDomain: string): boolean {
-  const typed = typedDomain.trim().toLowerCase();
-  const expected = expectedDomain.trim().toLowerCase();
-  return typed === expected || typed.endsWith(`.${expected}`);
-}
-
 export default function SignupForm() {
   const router = useRouter();
 
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [emailLocalPart, setEmailLocalPart] = useState("");
   const [password, setPassword] = useState("");
   const [universityId, setUniversityId] = useState<number | "">("");
 
@@ -49,7 +31,6 @@ export default function SignupForm() {
   const [universitiesError, setUniversitiesError] = useState<string | null>(
     null,
   );
-  const [domainError, setDomainError] = useState<string | null>(null);
 
   // Fetch universities on mount
   useEffect(() => {
@@ -71,65 +52,23 @@ export default function SignupForm() {
     fetchUniversities();
   }, []);
 
-  // -- Domain validation ---
-  function validateDomainMatch(
-    currentEmail: string,
-    currentUniversityId: number | "",
-  ): boolean {
-    // Not enough info to validate yet
-    if (!currentEmail || currentUniversityId === "") {
-      setDomainError(null);
-      return true;
-    }
-
-    // Only validate once the user has typed a complete-looking domain (has @foo.bar)
-    const atIndex = currentEmail.indexOf("@");
-    if (atIndex === -1 || currentEmail.indexOf(".", atIndex) === -1) {
-      setDomainError(null);
-      return true;
-    }
-
-    const selected = universities.find(
-      (u) => u.university_id === currentUniversityId,
-    );
-
-    // University not found in list yet - skip silently
-    if (!selected) {
-      setDomainError(null);
-      return true;
-    }
-
-    const expectedDomain = getExpectedDomain(selected);
-
-    // No domain configured for this university - skip validation
-    if (!expectedDomain) {
-      setDomainError(null);
-      return true;
-    }
-
-    const typedDomain = currentEmail.split("@")[1]?.trim().toLowerCase() ?? "";
-
-    if (typedDomain && !domainMatches(typedDomain, expectedDomain)) {
-      setDomainError(
-        `Email domain @${typedDomain} doesn't match ${selected.name}. Expected: @${expectedDomain}`,
-      );
-      return false;
-    }
-
-    setDomainError(null);
-    return true;
-  }
-
   // -- Submit ---
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!validateDomainMatch(email, universityId)) return;
+    if (!expectedDomainHint) {
+      setErrorMsg("Please select a university with an email domain.");
+      return;
+    }
+
+    if (!normalizedEmail) {
+      setErrorMsg("Please enter your university email name or ID.");
+      return;
+    }
 
     setLoading(true);
     try {
-      const normalizedEmail = email.trim().toLowerCase();
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -164,10 +103,13 @@ export default function SignupForm() {
 
   // Show the hint even before the API responds, using the fallback map
   const expectedDomainHint: string | null = selectedUni
-    ? getExpectedDomain(selectedUni)
+    ? getExpectedUniversityDomain(selectedUni)
     : universityId !== ""
       ? null // university selected but list hasn't loaded yet
       : null;
+  const normalizedEmail = expectedDomainHint
+    ? buildEmailWithDomain(emailLocalPart, expectedDomainHint)
+    : emailLocalPart.trim().toLowerCase();
 
   // -- Render ---
   return (
@@ -213,7 +155,6 @@ export default function SignupForm() {
             onChange={(e) => {
               const id = e.target.value === "" ? "" : Number(e.target.value);
               setUniversityId(id);
-              validateDomainMatch(email, id);
             }}
             disabled={loadingUniversities}
             className="w-full h-11 rounded-full border border-gray-200 bg-[#EEF4FF] px-4 text-sm text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#6155F5]/40"
@@ -235,7 +176,7 @@ export default function SignupForm() {
           {/* Domain hint - shows as soon as a university is selected */}
           {universityId !== "" && expectedDomainHint && (
             <p className="text-xs text-gray-400 pl-1">
-              Expected email domain:{" "}
+              Email will end with{" "}
               <span className="font-medium text-[#6155F5]">
                 @{expectedDomainHint}
               </span>
@@ -248,22 +189,29 @@ export default function SignupForm() {
           <label className="block text-sm font-medium text-[#111827]">
             Email
           </label>
-          <input
-            required
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              validateDomainMatch(e.target.value, universityId);
-            }}
-            placeholder="your.email@university.edu.lb"
-            autoComplete="email"
-            className={`w-full h-11 rounded-full border bg-[#EEF4FF] px-4 text-sm text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#6155F5]/40 transition-colors ${
-              domainError ? "border-yellow-400" : "border-gray-200"
-            }`}
-          />
-          {domainError && (
-            <p className="text-xs text-yellow-600 pl-1">{domainError}</p>
+          <div className="flex h-11 w-full items-center overflow-hidden rounded-full border border-gray-200 bg-[#EEF4FF] px-4 text-sm text-gray-900 transition-colors focus-within:bg-white focus-within:ring-2 focus-within:ring-[#6155F5]/40">
+            <input
+              required
+              type="text"
+              value={emailLocalPart}
+              onChange={(e) => setEmailLocalPart(getEmailLocalPart(e.target.value))}
+              placeholder="student ID or email name"
+              autoComplete="username"
+              className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-gray-400"
+            />
+            {expectedDomainHint && (
+              <span className="shrink-0 pl-2 text-xs font-medium text-[#6155F5] sm:text-sm">
+                @{expectedDomainHint}
+              </span>
+            )}
+          </div>
+          {normalizedEmail && (
+            <p className="text-xs text-gray-400 pl-1">
+              Signup email:{" "}
+              <span className="font-medium text-gray-600">
+                {normalizedEmail}
+              </span>
+            </p>
           )}
         </div>
 
@@ -289,7 +237,7 @@ export default function SignupForm() {
 
         <button
           type="submit"
-          disabled={loading || !!domainError}
+          disabled={loading}
           className="w-full h-11 rounded-lg bg-[#6155F5] text-white text-sm font-medium shadow-md hover:bg-[#503fdc] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? "Creating account..." : "Sign up"}

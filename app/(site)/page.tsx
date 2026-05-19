@@ -1,18 +1,31 @@
 // Renders the public home page with hero content, featured courses, and feedback.
 import Hero from "../../components/Hero";
 import Link from "next/link";
+import { headers } from "next/headers";
 import CourseCard from "../../components/CourseCard";
 import HowItWorks from "../../components/HowItWorks";
 import FeedbackCarousel from "../../components/FeedbackCarousel";
 import { ArrowRight, BookOpen, Map } from "lucide-react";
 import type { Course } from "@/types/course";
 
+async function getSiteOrigin() {
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL;
+  }
+
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("host");
+  const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
+
+  return host ? `${protocol}://${host}` : "http://localhost:3000";
+}
+
 async function getRandomCourses() {
   try {
-    // Fetch a page of courses then pick 2 at random
+    const siteOrigin = await getSiteOrigin();
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/courses?limit=50&page=1`,
-      { next: { revalidate: 3600 } }, // revalidate every hour
+      `${siteOrigin}/api/courses?limit=50&page=1`,
+      { cache: "no-store" },
     );
     if (!res.ok) return [];
     const data = await res.json();

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import { requireAdmin, requireUniversityAdmin } from "@/lib/auth";
 import pool from "@/db";
+import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
 import { COURSE_LEVEL_VALUES } from "@/lib/courseLevels";
 
 // Full course payload returned by the joined admin detail query.
@@ -125,7 +126,7 @@ export async function GET(
       course_id: row.course_id,
       code: row.code,
       title: row.title,
-      description: row.description,
+      description: normalizeCourseDescription(row),
       credits: row.credits,
       level: row.level,
       language: row.language,

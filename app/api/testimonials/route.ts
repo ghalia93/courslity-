@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
+import { ensureFeedbackHiddenColumn } from "@/lib/feedbackDb";
 
 type FeedbackTestimonialRow = RowDataPacket & {
   feedback_id: number;
@@ -16,11 +17,16 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const limit = Math.min(Number(url.searchParams.get("limit") || 8), 20);
 
+    await ensureFeedbackHiddenColumn();
+
     const [rows] = await pool.query<FeedbackTestimonialRow[]>(
       `
       SELECT feedback_id, message, user_id, rating, created_at
       FROM feedback
-      WHERE message IS NOT NULL AND message <> ''
+      WHERE kind = 'feedback'
+        AND hidden_at IS NULL
+        AND message IS NOT NULL
+        AND message <> ''
       ORDER BY created_at DESC
       LIMIT ?
       `,

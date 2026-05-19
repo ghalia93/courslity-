@@ -6,6 +6,7 @@ import {
   Search,
   Star,
   Trash2,
+  EyeOff,
   ChevronDown,
   ArrowBigUp,
   ArrowBigDown,
@@ -104,10 +105,12 @@ function MetricBadge({
 function ReviewDetailModal({
   review,
   onClose,
+  onRequestHide,
   onRequestDelete,
 }: {
   review: ReviewRow;
   onClose: () => void;
+  onRequestHide: (review: ReviewRow) => void;
   onRequestDelete: (review: ReviewRow) => void;
 }) {
   useEffect(() => {
@@ -247,6 +250,12 @@ function ReviewDetailModal({
 
         <div className="flex justify-end gap-3 px-5 py-4 border-t border-gray-100">
           <button
+            onClick={() => onRequestHide(review)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-md text-[#6155F5] border border-[#6155F5]/25 hover:bg-[#6155F5]/5 transition"
+          >
+            <EyeOff size={14} /> Hide review
+          </button>
+          <button
             onClick={() => onRequestDelete(review)}
             className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-md text-red-600 border border-red-200 hover:bg-red-50 transition"
           >
@@ -268,6 +277,7 @@ export default function AdminReviewsPage() {
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [semesterFilter, setSemesterFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
+  const [pendingHide, setPendingHide] = useState<ReviewRow | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ReviewRow | null>(null);
   const [detailReview, setDetailReview] = useState<ReviewRow | null>(null);
 
@@ -355,6 +365,39 @@ export default function AdminReviewsPage() {
     setPendingDelete(review);
   }
 
+  function requestHide(review: ReviewRow) {
+    setPendingHide(review);
+  }
+
+  function refreshAfterRemoval() {
+    const isLastItemOnPage = reviews.length === 1 && page > 1;
+    if (isLastItemOnPage) setPage((p) => p - 1);
+    else fetchReviews();
+  }
+
+  async function confirmHide() {
+    if (!pendingHide) return;
+
+    try {
+      const res = await fetch(`/api/admin/reviews/${pendingHide.review_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      const data = (await res.json()) as { success: boolean; message?: string };
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to hide review");
+      }
+
+      setPendingHide(null);
+      setDetailReview(null);
+      refreshAfterRemoval();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Hide failed");
+    }
+  }
+
   async function confirmDelete() {
     if (!pendingDelete) return;
 
@@ -372,10 +415,7 @@ export default function AdminReviewsPage() {
 
       setPendingDelete(null);
       setDetailReview(null);
-
-      const isLastItemOnPage = reviews.length === 1 && page > 1;
-      if (isLastItemOnPage) setPage((p) => p - 1);
-      else fetchReviews();
+      refreshAfterRemoval();
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Delete failed");
     }
@@ -419,6 +459,31 @@ export default function AdminReviewsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
+      {pendingHide && (
+        <ConfirmModal
+          title="Hide review?"
+          description={
+            <>
+              Do you want to hide this review for{" "}
+              <span className="font-medium text-gray-700">
+                {pendingHide.course_code} - {pendingHide.course_title}
+              </span>{" "}
+              by{" "}
+              <span className="font-medium text-gray-700">
+                {pendingHide.reviewer_name}
+              </span>
+              ? Choose Hide to remove it from public pages, or Cancel to keep it
+              visible.
+            </>
+          }
+          confirmText="Hide"
+          cancelText="Cancel"
+          variant="primary"
+          onCancel={() => setPendingHide(null)}
+          onConfirm={confirmHide}
+        />
+      )}
+
       {pendingDelete && (
         <ConfirmModal
           title="Delete review?"
@@ -447,6 +512,10 @@ export default function AdminReviewsPage() {
         <ReviewDetailModal
           review={detailReview}
           onClose={closeDetail}
+          onRequestHide={(r) => {
+            setDetailReview(null);
+            requestHide(r);
+          }}
           onRequestDelete={(r) => {
             setDetailReview(null);
             requestDelete(r);
@@ -742,7 +811,14 @@ export default function AdminReviewsPage() {
                   </td>
 
                   <td className="px-4 py-3">
-                    <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => requestHide(r)}
+                        className="text-gray-400 hover:text-[#6155F5] transition-colors"
+                        aria-label="Hide review"
+                      >
+                        <EyeOff size={16} />
+                      </button>
                       <button
                         onClick={() => requestDelete(r)}
                         className="text-gray-400 hover:text-red-500 transition-colors"
@@ -779,7 +855,14 @@ export default function AdminReviewsPage() {
                     {r.department} - {r.university}
                   </p>
                 </div>
-                <div onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => requestHide(r)}
+                    className="text-gray-400 hover:text-[#6155F5] transition-colors p-1"
+                    aria-label="Hide review"
+                  >
+                    <EyeOff size={16} />
+                  </button>
                   <button
                     onClick={() => requestDelete(r)}
                     className="text-gray-400 hover:text-red-500 transition-colors p-1"

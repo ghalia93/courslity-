@@ -5,6 +5,7 @@ import { requireAdmin, requireUniversityAdmin } from "@/lib/auth";
 import pool from "@/db";
 import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
 import { COURSE_LEVEL_VALUES } from "@/lib/courseLevels";
+import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
 
 // Full course payload returned by the joined admin detail query.
 type CourseDetailRow = RowDataPacket & {
@@ -58,6 +59,7 @@ export async function GET(
   try {
     // Any admin can view course details in the admin dashboard.
     await requireAdmin(req);
+    await ensureReviewHiddenColumn();
 
     // Dynamic route params arrive as strings, so convert and validate early.
     const { id } = await params;
@@ -94,7 +96,10 @@ export async function GET(
       FROM course c
       JOIN department  d   ON d.department_id   = c.department_id
       JOIN university  uni ON uni.university_id  = d.university_id
-      LEFT JOIN review r   ON r.course_id = c.course_id AND r.deleted_at IS NULL
+      LEFT JOIN review r
+        ON r.course_id = c.course_id
+        AND r.deleted_at IS NULL
+        AND r.hidden_at IS NULL
       WHERE c.course_id = ?
       GROUP BY
         c.course_id, c.code, c.title, c.description, c.credits,

@@ -7,6 +7,7 @@ import {
   getYearFromCourseCode,
 } from "@/lib/courseCode";
 import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
+import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
 
 type CourseRow = RowDataPacket & {
   course_id: number;
@@ -77,6 +78,7 @@ function getRequestedPage(value: string | null) {
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
+    await ensureReviewHiddenColumn();
 
     const limit = Math.min(
       getRequestedLimit(url.searchParams.get("limit")),
@@ -215,7 +217,10 @@ export async function GET(req: Request) {
       FROM course c
       INNER JOIN department d ON d.department_id = c.department_id
       INNER JOIN university u ON u.university_id = d.university_id
-      LEFT JOIN review rev ON rev.course_id = c.course_id AND rev.deleted_at IS NULL
+      LEFT JOIN review rev
+        ON rev.course_id = c.course_id
+        AND rev.deleted_at IS NULL
+        AND rev.hidden_at IS NULL
       LEFT JOIN roadmap_course rc_major ON rc_major.course_id = c.course_id
       LEFT JOIN roadmap roadmap_major
         ON roadmap_major.roadmap_id = rc_major.roadmap_id

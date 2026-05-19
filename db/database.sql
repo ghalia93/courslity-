@@ -196,6 +196,7 @@ CREATE TABLE `review` (
   `exam_difficulty_rating` DECIMAL(3,2) NOT NULL CHECK (`exam_difficulty_rating` BETWEEN 0 AND 5),
   -- Soft delete: allows moderation without destroying vote history
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  `hidden_at` TIMESTAMP NULL DEFAULT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`review_id`),

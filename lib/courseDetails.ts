@@ -4,6 +4,7 @@ import pool from "@/db";
 import { getYearFromCourseCode } from "@/lib/courseCode";
 import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
 import { formatCourseLevel } from "@/lib/courseLevels";
+import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
 
 type CourseDetailRow = RowDataPacket & {
   course_id: number;
@@ -69,6 +70,8 @@ async function getCourseDetail(
   params: Array<number | string>,
   slug: string,
 ): Promise<CourseDetail | null> {
+  await ensureReviewHiddenColumn();
+
   const [rows] = await pool.query<CourseDetailRow[]>(
     `
     SELECT
@@ -94,7 +97,10 @@ async function getCourseDetail(
     FROM course c
     INNER JOIN department d ON d.department_id = c.department_id
     INNER JOIN university u ON u.university_id = d.university_id
-    LEFT JOIN review r ON r.course_id = c.course_id AND r.deleted_at IS NULL
+    LEFT JOIN review r
+      ON r.course_id = c.course_id
+      AND r.deleted_at IS NULL
+      AND r.hidden_at IS NULL
 
     WHERE ${whereClause}
       AND c.deleted_at IS NULL

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import pool from "@/db";
 import { requireAuth } from "@/lib/auth";
+import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
 
 type ReviewRow = RowDataPacket & {
   review_id: number;
@@ -58,6 +59,7 @@ export async function POST(
 ) {
   try {
     const user = await requireAuth(req);
+    await ensureReviewHiddenColumn();
     const { id } = await params;
     const reviewId = Number.parseInt(id, 10);
 
@@ -79,7 +81,12 @@ export async function POST(
     }
 
     const [reviews] = await pool.query<ReviewRow[]>(
-      "SELECT review_id FROM review WHERE review_id = ? AND deleted_at IS NULL LIMIT 1",
+      `SELECT review_id
+        FROM review
+        WHERE review_id = ?
+          AND deleted_at IS NULL
+          AND hidden_at IS NULL
+        LIMIT 1`,
       [reviewId],
     );
 

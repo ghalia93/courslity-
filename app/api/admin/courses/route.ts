@@ -8,6 +8,7 @@ import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
 import { COURSE_LEVEL_VALUES, formatCourseLevel } from "@/lib/courseLevels";
 import { ensureRoadmapTables } from "@/lib/roadmapsDb";
 import { notifyStudentsAboutCourse } from "@/lib/notificationsDb";
+import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
 
 type AdminCourseRow = RowDataPacket & {
   course_id: number;
@@ -82,6 +83,7 @@ export async function GET(req: NextRequest) {
   try {
     await requireAdmin(req);
     await ensureRoadmapTables();
+    await ensureReviewHiddenColumn();
 
     const { searchParams } = new URL(req.url);
     const q = (searchParams.get("q") || "").trim();
@@ -161,7 +163,10 @@ export async function GET(req: NextRequest) {
       FROM course c
       JOIN department  d   ON d.department_id   = c.department_id
       JOIN university  uni ON uni.university_id  = d.university_id
-      LEFT JOIN review r   ON r.course_id = c.course_id AND r.deleted_at IS NULL
+      LEFT JOIN review r
+        ON r.course_id = c.course_id
+        AND r.deleted_at IS NULL
+        AND r.hidden_at IS NULL
       LEFT JOIN roadmap_course rc_major
         ON rc_major.course_id = c.course_id
       LEFT JOIN roadmap roadmap_major

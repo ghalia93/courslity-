@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
 import pool from "@/db";
+import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
 
 type ChartPoint = {
   date: string;
@@ -67,6 +68,7 @@ type PendingVerificationRow = RowDataPacket & PendingVerificationUser;
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin(req);
+    await ensureReviewHiddenColumn();
 
     const { searchParams } = new URL(req.url);
     const daysParam = searchParams.get("days");
@@ -114,6 +116,7 @@ export async function GET(req: NextRequest) {
               INNER JOIN course c
                 ON c.course_id = r.course_id
               WHERE r.deleted_at IS NULL
+                AND r.hidden_at IS NULL
                 AND c.deleted_at IS NULL
                 AND EXISTS (
                   SELECT 1
@@ -134,6 +137,7 @@ export async function GET(req: NextRequest) {
               INNER JOIN course c
                 ON c.course_id = r.course_id
               WHERE r.deleted_at IS NULL
+                AND r.hidden_at IS NULL
                 AND c.deleted_at IS NULL
                 AND EXISTS (
                   SELECT 1
@@ -166,6 +170,8 @@ export async function GET(req: NextRequest) {
             COUNT(*) as count
           FROM review
           WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)
+            AND deleted_at IS NULL
+            AND hidden_at IS NULL
           GROUP BY DATE(created_at)
           ORDER BY DATE(created_at);
         `),
@@ -181,6 +187,7 @@ export async function GET(req: NextRequest) {
           JOIN review r
             ON r.course_id = c.course_id
            AND r.deleted_at IS NULL
+           AND r.hidden_at IS NULL
           WHERE c.deleted_at IS NULL
             AND EXISTS (
               SELECT 1

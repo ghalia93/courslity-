@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
+import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
 
 type AboutStatsResponse = {
   totalReviews: number;
@@ -20,9 +21,13 @@ type AboutStatsRow = RowDataPacket & {
 
 export async function GET() {
   try {
+    await ensureReviewHiddenColumn();
+
     const [rows] = await pool.query<AboutStatsRow[]>(`
       SELECT
-        (SELECT COUNT(*) FROM review) AS totalReviews,
+        (SELECT COUNT(*)
+         FROM review
+         WHERE deleted_at IS NULL AND hidden_at IS NULL) AS totalReviews,
 
         (SELECT COUNT(*) 
          FROM user 
@@ -41,7 +46,8 @@ export async function GET() {
           , 0)
         , 0) AS wouldRecommendPercentage
 
-      FROM review;
+      FROM review
+      WHERE deleted_at IS NULL AND hidden_at IS NULL;
     `);
     const stats = rows[0];
 

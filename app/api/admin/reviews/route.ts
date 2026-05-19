@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
 import pool from "@/db";
+import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
 
 type ReviewQueryParam = string | number;
 
@@ -52,6 +53,7 @@ type AdminReviewRow = RowDataPacket & {
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin(req);
+    await ensureReviewHiddenColumn();
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") || 1));
@@ -69,7 +71,10 @@ export async function GET(req: NextRequest) {
     const sort = (searchParams.get("sort") || "newest").trim();
 
     // Build dynamic WHERE conditions
-    const conditions: string[] = ["r.deleted_at IS NULL"];
+    const conditions: string[] = [
+      "r.deleted_at IS NULL",
+      "r.hidden_at IS NULL",
+    ];
     const params: ReviewQueryParam[] = [];
 
     if (q) {

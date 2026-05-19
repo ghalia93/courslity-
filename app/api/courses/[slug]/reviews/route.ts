@@ -4,6 +4,7 @@ import { createHash } from "crypto";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
 import { type AuthUser, requireAuth } from "@/lib/auth";
+import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
 import { calculateOverallRating } from "@/lib/reviewRatings";
 
 type CourseLookupRow = RowDataPacket & {
@@ -108,6 +109,8 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   try {
+    await ensureReviewHiddenColumn();
+
     const { slug } = await params;
     const { searchParams } = new URL(req.url);
     const requestedCourseId = Number(searchParams.get("course_id") || 0);
@@ -165,7 +168,9 @@ export async function GET(
         ) AS user_vote
       FROM review r
       LEFT JOIN review_vote rv ON rv.review_id = r.review_id
-      WHERE r.course_id = ? AND r.deleted_at IS NULL
+      WHERE r.course_id = ?
+        AND r.deleted_at IS NULL
+        AND r.hidden_at IS NULL
       GROUP BY
         r.review_id,
         r.user_id,

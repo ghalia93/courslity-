@@ -1,10 +1,16 @@
 @import "tailwindcss";
 
 /* Defines global Tailwind imports, theme tokens, and base element styles. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+:root.dark {
+  --background: #111113;
+  --foreground: #f5f5f4;
 }
 
 @theme inline {
@@ -12,13 +18,6 @@
   --color-foreground: var(--foreground);
   --font-sans: Arial, Helvetica, sans-serif;
   --font-mono: "Courier New", Courier, monospace;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #ffffff;
-    --foreground: black;
-  }
 }
 
 body {
@@ -44,4 +43,141 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+:root.dark body {
+  background: #111113;
+  color: #f5f5f4;
+}
+
+:root.dark ::selection {
+  background: rgba(124, 111, 255, 0.35);
+}
+
+:root.dark .bg-white,
+:root.dark .bg-white\/80,
+:root.dark .bg-white\/70,
+:root.dark .bg-white\/60,
+:root.dark .bg-gray-50,
+:root.dark .bg-gray-100,
+:root.dark [class*="bg-[#FFFFFF]"],
+:root.dark [class*="bg-[#ffffff]"],
+:root.dark [class*="bg-[#EEF4FF]"],
+:root.dark [class*="bg-[#F8F7FF]"],
+:root.dark [class*="bg-[#E8"],
+:root.dark [class*="bg-[#FFE"],
+:root.dark [class*="bg-[#FFF"] {
+  background-color: #18181b !important;
+}
+
+:root.dark .bg-gray-200,
+:root.dark .bg-gray-300 {
+  background-color: #27272a !important;
+}
+
+:root.dark .bg-transparent {
+  background-color: transparent !important;
+}
+
+:root.dark .text-black,
+:root.dark .text-gray-950,
+:root.dark .text-gray-900,
+:root.dark .text-gray-800,
+:root.dark [class*="text-[#111827]"] {
+  color: #f5f5f4 !important;
+}
+
+:root.dark .text-gray-700,
+:root.dark .text-gray-600 {
+  color: #d4d4d8 !important;
+}
+
+:root.dark .text-gray-500,
+:root.dark .text-gray-400 {
+  color: #a1a1aa !important;
+}
+
+:root.dark .text-gray-300 {
+  color: #71717a !important;
+}
+
+:root.dark .border-gray-50,
+:root.dark .border-gray-100,
+:root.dark .border-gray-200,
+:root.dark .border-gray-300,
+:root.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+:root.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #27272a !important;
+}
+
+:root.dark .shadow-sm,
+:root.dark .shadow,
+:root.dark .shadow-md,
+:root.dark .shadow-lg,
+:root.dark .shadow-xl,
+:root.dark .shadow-2xl {
+  --tw-shadow-color: rgba(0, 0, 0, 0.45) !important;
+}
+
+:root.dark input:not([type="checkbox"]):not([type="radio"]),
+:root.dark select,
+:root.dark textarea {
+  background-color: #09090b !important;
+  border-color: #3f3f46 !important;
+  color: #f5f5f4 !important;
+}
+
+:root.dark input::placeholder,
+:root.dark textarea::placeholder {
+  color: #71717a !important;
+}
+
+:root.dark option {
+  background-color: #18181b;
+  color: #f5f5f4;
+}
+
+:root.dark input:disabled,
+:root.dark select:disabled,
+:root.dark textarea:disabled,
+:root.dark .disabled\:bg-gray-50:disabled,
+:root.dark .disabled\:bg-gray-100:disabled {
+  background-color: #27272a !important;
+  color: #a1a1aa !important;
+}
+
+:root.dark table {
+  color: #e4e4e7;
+}
+
+:root.dark thead,
+:root.dark .bg-slate-50 {
+  background-color: #202024 !important;
+}
+
+:root.dark tr {
+  border-color: #27272a !important;
+}
+
+:root.dark .hover\:bg-gray-50:hover,
+:root.dark .hover\:bg-gray-100:hover,
+:root.dark .hover\:bg-gray-200:hover {
+  background-color: #27272a !important;
+}
+
+:root.dark .hover\:text-gray-600:hover,
+:root.dark .hover\:text-gray-700:hover,
+:root.dark .hover\:text-gray-800:hover,
+:root.dark .hover\:text-gray-900:hover {
+  color: #ffffff !important;
+}
+
+:root.dark .focus\:bg-white:focus,
+:root.dark .focus-within\:bg-white:focus-within {
+  background-color: #09090b !important;
+}
+
+:root.dark .ring-gray-200,
+:root.dark .ring-gray-300 {
+  --tw-ring-color: #3f3f46 !important;
 }

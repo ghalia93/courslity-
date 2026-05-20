@@ -48,7 +48,7 @@ export default function StarRating({
               className={[
                 "leading-none",
                 "text-lg sm:text-xl md:text-2xl",
-                filled ? "text-[#F5B301]" : "text-gray-300",
+                filled ? "text-[#F5B301]" : "text-gray-300 dark:text-neutral-700",
               ].join(" ")}
             >
               {"\u2605"}
@@ -57,7 +57,7 @@ export default function StarRating({
         );
       })}
 
-      <span className="ml-2 text-sm sm:text-base font-semibold text-gray-900">
+      <span className="ml-2 text-sm font-semibold text-gray-900 dark:text-neutral-100 sm:text-base">
         {safeValue}
       </span>
     </div>

@@ -35,12 +35,12 @@ export default function NavBar() {
   const displayName = user?.email.split("@")[0] ?? "";
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 px-4 py-3 sm:px-6">
+    <nav className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white px-4 py-3 transition-colors dark:border-neutral-800 dark:bg-neutral-950 sm:px-6">
       <div className="flex w-full min-w-0 items-center gap-3 sm:gap-4">
         {/* Mobile hamburger */}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="lg:hidden text-lg text-gray-600"
+          className="text-lg text-gray-600 transition-colors dark:text-neutral-300 lg:hidden"
           aria-label="Menu"
           type="button"
         >
@@ -49,7 +49,7 @@ export default function NavBar() {
 
         <Link href="/" className="flex shrink-0 items-center gap-2">
           <Image src="/favicon.ico" alt="Logo" width={32} height={32} />
-          <span className="hidden text-2xl font-bold text-[#6155F5] sm:inline">
+          <span className="hidden text-2xl font-bold text-[#6155F5] dark:text-violet-300 sm:inline">
             Coursality
           </span>
         </Link>
@@ -80,34 +80,34 @@ export default function NavBar() {
               <div className="relative">
                 <button
                   onClick={() => setAccountOpen(!accountOpen)}
-                  className="flex max-w-[46vw] items-center gap-2 rounded-full bg-gray-100 py-1 pl-1 pr-2 transition hover:bg-gray-200 sm:max-w-none sm:pr-3"
+                  className="flex max-w-[46vw] items-center gap-2 rounded-full bg-gray-100 py-1 pl-1 pr-2 transition hover:bg-gray-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 sm:max-w-none sm:pr-3"
                   aria-label="Account menu"
                 >
                   <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#6155F5] text-white text-xs font-semibold uppercase">
                     {displayName.charAt(0)}
                   </span>
-                  <span className="hidden max-w-[120px] truncate text-sm font-medium text-gray-700 sm:inline">
+                  <span className="hidden max-w-[120px] truncate text-sm font-medium text-gray-700 dark:text-neutral-200 sm:inline">
                     {displayName}
                   </span>
                   <ChevronDown
                     size={14}
-                    className={`text-gray-500 transition-transform ${
+                    className={`text-gray-500 transition-transform dark:text-neutral-400 ${
                       accountOpen ? "rotate-180" : ""
                     }`}
                   />
                 </button>
 
                 {accountOpen && (
-                  <div className="absolute right-0 z-50 mt-2 flex w-48 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-xs text-gray-400 truncate">
+                  <div className="absolute right-0 z-50 mt-2 flex w-48 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg transition-colors dark:border-neutral-800 dark:bg-neutral-900">
+                    <div className="border-b border-gray-100 px-4 py-2 dark:border-neutral-800">
+                      <p className="truncate text-xs text-gray-400 dark:text-neutral-500">
                         {user.email}
                       </p>
                     </div>
 
                     <Link
                       href="/account"
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#6155F5] transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-[#6155F5] dark:text-neutral-200 dark:hover:bg-neutral-800 dark:hover:text-violet-300"
                       onClick={() => setAccountOpen(false)}
                     >
                       <User size={14} />
@@ -117,7 +117,7 @@ export default function NavBar() {
                     {isAdminRole(user.role) && (
                       <Link
                         href="/admin"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#6155F5] transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-[#6155F5] dark:text-neutral-200 dark:hover:bg-neutral-800 dark:hover:text-violet-300"
                         onClick={() => setAccountOpen(false)}
                       >
                         <LayoutDashboard size={14} />
@@ -127,16 +127,16 @@ export default function NavBar() {
 
                     <Link
                       href="/account#report"
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-[#6155F5] dark:text-neutral-200 dark:hover:bg-neutral-800 dark:hover:text-violet-300"
                       onClick={() => setAccountOpen(false)}
                     >
                       Report a Problem
                     </Link>
 
-                    <div className="border-t border-gray-100 mt-1" />
+                    <div className="mt-1 border-t border-gray-100 dark:border-neutral-800" />
 
                     <button
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors w-full text-left"
+                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-500 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40"
                       onClick={handleLogout}
                     >
                       <LogOut size={14} />

@@ -44,16 +44,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div
             key={t.id}
             className={[
-              "rounded-2xl border bg-white p-4 shadow-lg",
-              t.type === "success" ? "border-green-200" : "border-red-200",
+              "rounded-2xl border bg-white p-4 shadow-lg dark:bg-neutral-900",
+              t.type === "success"
+                ? "border-green-200 dark:border-green-800"
+                : "border-red-200 dark:border-red-800",
             ].join(" ")}
           >
             <div className="flex items-start justify-between gap-3">
-              <p className="text-sm text-gray-800">{t.message}</p>
+              <p className="text-sm text-gray-800 dark:text-neutral-100">{t.message}</p>
 
               <button
                 onClick={() => removeToast(t.id)}
-                className="text-gray-400 hover:text-gray-900"
+                className="text-gray-400 hover:text-gray-900 dark:text-neutral-500 dark:hover:text-neutral-100"
                 type="button"
                 aria-label="Dismiss"
               >

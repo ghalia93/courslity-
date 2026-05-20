@@ -31,8 +31,8 @@ export default function Button({
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-[#6155F5] text-white hover:bg-[#503fdc] focus:outline-none focus:ring-2 focus:ring-[#6155F5] focus:ring-offset-2",
+    "bg-[#6155F5] text-white hover:bg-[#503fdc] focus:outline-none focus:ring-2 focus:ring-[#6155F5] focus:ring-offset-2 focus:ring-offset-white dark:hover:bg-[#756cff] dark:focus:ring-offset-neutral-950",
   elevated:
-    "bg-white text-[#6155F5] hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#6155F5] focus:ring-offset-2",
+    "border border-transparent bg-white text-[#6155F5] hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#6155F5] focus:ring-offset-2 focus:ring-offset-white dark:border-neutral-700 dark:bg-neutral-900 dark:text-violet-300 dark:hover:bg-neutral-800 dark:focus:ring-offset-neutral-950",
   plain: "bg-transparent hover:shadow-none focus:ring-0",
 };

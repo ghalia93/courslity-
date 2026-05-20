@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
 import StarRating from "@/components/StarRating";
+import ThemeModeControl from "@/components/ThemeModeControl";
 import { useToast } from "@/components/toast/Toastprovider";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -244,27 +245,27 @@ export default function AccountPage() {
   if (!profile) return null;
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-white px-4 py-10 sm:py-12">
-      <h1 className="mb-8 text-center text-2xl font-semibold text-gray-800 sm:text-3xl">
+    <div className="flex min-h-screen flex-col items-center bg-gray-50 px-4 py-10 transition-colors dark:bg-[#111113] sm:py-12">
+      <h1 className="mb-8 text-center text-2xl font-semibold text-gray-800 dark:text-neutral-100 sm:text-3xl">
         Account Info
       </h1>
 
-      <section className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:p-6">
-        <h2 className="text-xl font-medium mb-6 text-gray-700">Profile</h2>
+      <section className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-4 shadow-lg shadow-gray-200/60 transition-colors dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-black/30 sm:p-6">
+        <h2 className="mb-6 text-xl font-medium text-gray-700 dark:text-neutral-100">Profile</h2>
 
         <div className="flex flex-col gap-5">
-          <label className="flex flex-col text-gray-600">
+          <label className="flex flex-col text-gray-600 dark:text-neutral-300">
             Full Name
             <input
               type="text"
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
               disabled={savingProfile}
-              className="mt-2 rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30 disabled:bg-gray-100"
+              className="mt-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition-colors focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30 disabled:bg-gray-100 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:disabled:bg-neutral-800"
             />
           </label>
 
-          <label className="flex flex-col text-gray-600">
+          <label className="flex flex-col text-gray-600 dark:text-neutral-300">
             University
             <select
               value={universityId}
@@ -274,7 +275,7 @@ export default function AccountPage() {
                 )
               }
               disabled={savingProfile || universities.length === 0}
-              className="mt-2 rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30 disabled:bg-gray-100"
+              className="mt-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition-colors focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30 disabled:bg-gray-100 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:disabled:bg-neutral-800"
             >
               <option value="" disabled>
                 Select your university
@@ -287,9 +288,9 @@ export default function AccountPage() {
             </select>
           </label>
 
-          <label className="flex flex-col text-gray-600">
+          <label className="flex flex-col text-gray-600 dark:text-neutral-300">
             Email
-            <div className="mt-2 flex min-h-10 w-full items-center overflow-hidden rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus-within:border-[#6155F5] focus-within:ring-2 focus-within:ring-[#6155F5]/30">
+            <div className="mt-2 flex min-h-10 w-full items-center overflow-hidden rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 transition-colors focus-within:border-[#6155F5] focus-within:ring-2 focus-within:ring-[#6155F5]/30 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100">
               <input
                 type="text"
                 value={emailLocalPart}
@@ -298,18 +299,18 @@ export default function AccountPage() {
                 }
                 disabled={savingProfile}
                 placeholder="student ID or email name"
-                className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-gray-400 disabled:bg-transparent"
+                className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-gray-400 disabled:bg-transparent dark:placeholder:text-neutral-500"
               />
               {expectedDomain && (
-                <span className="shrink-0 pl-2 text-xs font-medium text-[#6155F5] sm:text-sm">
+                <span className="shrink-0 pl-2 text-xs font-medium text-[#6155F5] dark:text-violet-300 sm:text-sm">
                   @{expectedDomain}
                 </span>
               )}
             </div>
             {profileEmail && (
-              <span className="mt-1 text-xs text-gray-400">
+              <span className="mt-1 text-xs text-gray-400 dark:text-neutral-500">
                 Current email after save:{" "}
-                <span className="font-medium text-gray-600">
+                <span className="font-medium text-gray-600 dark:text-neutral-300">
                   {profileEmail}
                 </span>
               </span>
@@ -336,7 +337,7 @@ export default function AccountPage() {
 
             <Button
               variant="plain"
-              className="flex-1 text-red-600 border border-red-600 hover:bg-red-50 hover:ring-0 focus:ring-0"
+              className="flex-1 border border-red-600 text-red-600 hover:bg-red-50 hover:ring-0 focus:ring-0 dark:border-red-400 dark:text-red-300 dark:hover:bg-red-950/40"
               onClick={handleDeleteAccount}
             >
               Deactivate Account
@@ -345,18 +346,25 @@ export default function AccountPage() {
         </div>
       </section>
 
+      <section className="mt-6 w-full max-w-md rounded-xl border border-gray-200 bg-white p-4 shadow-lg shadow-gray-200/60 transition-colors dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-black/30 sm:p-6">
+        <h2 className="mb-4 text-xl font-medium text-gray-700 dark:text-neutral-100">
+          Appearance
+        </h2>
+        <ThemeModeControl />
+      </section>
+
       <section
-        className="mt-10 w-full max-w-md rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:p-6"
+        className="mt-10 w-full max-w-md rounded-xl border border-gray-200 bg-white p-4 shadow-lg shadow-gray-200/60 transition-colors dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-black/30 sm:p-6"
       >
         <div id="report" ref={reportRef} className="scroll-mt-24" />
-        <h2 className="text-xl font-medium text-gray-700">Report a Problem</h2>
-        <p className="mt-2 text-sm text-gray-500">
+        <h2 className="text-xl font-medium text-gray-700 dark:text-neutral-100">Report a Problem</h2>
+        <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400">
           Tell us what looks wrong and how it affected you.
         </p>
 
         <div className="mt-5">
-          <p className="text-sm font-medium text-gray-700">Rating</p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-sm font-medium text-gray-700 dark:text-neutral-200">Rating</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400">
             1 = bad experience, 5 = great experience
           </p>
           <div className="mt-2">
@@ -368,7 +376,7 @@ export default function AccountPage() {
           value={reportMessage}
           onChange={(e) => setReportMessage(e.target.value)}
           placeholder="Describe the problem..."
-          className="mt-5 h-32 w-full resize-none rounded-lg border border-gray-300 p-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6155F5]"
+          className="mt-5 h-32 w-full resize-none rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-[#6155F5] dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder:text-neutral-500"
           disabled={reportLoading}
         />
 

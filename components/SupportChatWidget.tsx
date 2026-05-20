@@ -163,18 +163,20 @@ export default function SupportChatWidget() {
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {open && (
-        <div className="mb-3 flex h-[460px] w-[min(360px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
-          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+        <div className="mb-3 flex h-[460px] w-[min(360px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl transition-colors dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-neutral-800">
             <div>
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-sm font-semibold text-gray-900 dark:text-neutral-100">
                 Chat with admin
               </p>
-              <p className="text-xs text-gray-400">We will reply here.</p>
+              <p className="text-xs text-gray-400 dark:text-neutral-500">
+                We will reply here.
+              </p>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+              className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
               aria-label="Close chat"
             >
               <X size={17} />
@@ -182,7 +184,7 @@ export default function SupportChatWidget() {
           </div>
 
           <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
-            <div className="max-w-[85%] rounded-xl bg-gray-100 px-3 py-2 text-sm text-gray-700">
+            <div className="max-w-[85%] rounded-xl bg-gray-100 px-3 py-2 text-sm text-gray-700 dark:bg-neutral-800 dark:text-neutral-200">
               Hi! Send your question and an admin will help you from the
               dashboard.
             </div>
@@ -199,7 +201,7 @@ export default function SupportChatWidget() {
                     className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
                       mine
                         ? "bg-[#6155F5] text-white"
-                        : "bg-gray-100 text-gray-700"
+                        : "bg-gray-100 text-gray-700 dark:bg-neutral-800 dark:text-neutral-200"
                     }`}
                   >
                     {editing ? (
@@ -236,7 +238,7 @@ export default function SupportChatWidget() {
                         <p className="whitespace-pre-wrap">{message.body}</p>
                         <div
                           className={`mt-1 flex items-center justify-between gap-2 text-[10px] ${
-                            mine ? "text-white/70" : "text-gray-400"
+                            mine ? "text-white/70" : "text-gray-400 dark:text-neutral-500"
                           }`}
                         >
                           <span>
@@ -277,12 +279,12 @@ export default function SupportChatWidget() {
           </div>
 
           {error && (
-            <p className="border-t border-red-100 bg-red-50 px-4 py-2 text-xs text-red-600">
+            <p className="border-t border-red-100 bg-red-50 px-4 py-2 text-xs text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
               {error}
             </p>
           )}
 
-          <div className="flex gap-2 border-t border-gray-100 p-3">
+          <div className="flex gap-2 border-t border-gray-100 p-3 dark:border-neutral-800">
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
@@ -290,7 +292,7 @@ export default function SupportChatWidget() {
                 if (e.key === "Enter") sendMessage();
               }}
               placeholder="Type your message..."
-              className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-[#6155F5]"
+              className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:ring-2 focus:ring-[#6155F5] dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder:text-neutral-500"
             />
             <button
               type="button"
@@ -308,10 +310,11 @@ export default function SupportChatWidget() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex h-12 items-center gap-2 rounded-full bg-[#6155F5] px-4 text-sm font-semibold text-white shadow-lg hover:bg-[#503fdc]"
+        className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#6155F5] text-sm font-semibold text-white shadow-lg hover:bg-[#503fdc] sm:w-auto sm:gap-2 sm:px-4"
+        aria-label="Chat"
       >
         <MessageCircle size={18} />
-        Chat
+        <span className="hidden sm:inline">Chat</span>
       </button>
     </div>
   );

@@ -10,6 +10,9 @@ WHERE role = '';
 
 ALTER TABLE university ADD COLUMN email_domain VARCHAR(100) NOT NULL DEFAULT '';
 
+ALTER TABLE university
+  ADD COLUMN IF NOT EXISTS description TEXT NULL DEFAULT NULL AFTER email_domain;
+
 ALTER TABLE course
   MODIFY level ENUM('freshman','undergraduate','graduate','master_degree','doctoral','professional') NOT NULL;
 
@@ -46,6 +49,52 @@ ALTER TABLE feedback
 ALTER TABLE review
   ADD COLUMN hidden_at TIMESTAMP NULL DEFAULT NULL AFTER deleted_at;
 
+CREATE TABLE IF NOT EXISTS university_review (
+  university_review_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NOT NULL,
+  university_id INT UNSIGNED NOT NULL,
+  overall_rating DECIMAL(3,2) NOT NULL CHECK (overall_rating BETWEEN 0 AND 5),
+  academic_quality_rating DECIMAL(3,2) NOT NULL CHECK (academic_quality_rating BETWEEN 1 AND 5),
+  professors_rating DECIMAL(3,2) NOT NULL CHECK (professors_rating BETWEEN 1 AND 5),
+  facilities_rating DECIMAL(3,2) NOT NULL CHECK (facilities_rating BETWEEN 1 AND 5),
+  tuition_value_rating DECIMAL(3,2) NOT NULL CHECK (tuition_value_rating BETWEEN 1 AND 5),
+  student_life_rating DECIMAL(3,2) NOT NULL CHECK (student_life_rating BETWEEN 1 AND 5),
+  review_text TEXT NOT NULL,
+  deleted_at TIMESTAMP NULL DEFAULT NULL,
+  hidden_at TIMESTAMP NULL DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (university_review_id),
+  UNIQUE KEY uniq_university_review_user_university (user_id, university_id),
+  KEY idx_university_review_university (university_id, created_at),
+  CONSTRAINT fk_university_review_user
+    FOREIGN KEY (user_id) REFERENCES `user`(user_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT fk_university_review_university
+    FOREIGN KEY (university_id) REFERENCES university(university_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS university_review_vote (
+  university_review_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  vote_value TINYINT NOT NULL CHECK (vote_value IN (-1, 1)),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (university_review_id, user_id),
+  KEY idx_university_review_vote_user (user_id),
+  CONSTRAINT fk_university_review_vote_review
+    FOREIGN KEY (university_review_id)
+    REFERENCES university_review(university_review_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT fk_university_review_vote_user
+    FOREIGN KEY (user_id) REFERENCES `user`(user_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS notification (
   notification_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   user_id INT UNSIGNED NOT NULL,
@@ -69,6 +118,8 @@ CREATE TABLE IF NOT EXISTS support_thread (
   visitor_name VARCHAR(120) NULL,
   status ENUM('open','closed') NOT NULL DEFAULT 'open',
   last_message_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  admin_last_opened_at TIMESTAMP NULL DEFAULT NULL,
+  participant_last_opened_at TIMESTAMP NULL DEFAULT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (thread_id),
   UNIQUE KEY uniq_support_thread_user (user_id),
@@ -79,6 +130,12 @@ CREATE TABLE IF NOT EXISTS support_thread (
     ON DELETE CASCADE
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE support_thread
+  ADD COLUMN IF NOT EXISTS admin_last_opened_at TIMESTAMP NULL DEFAULT NULL AFTER last_message_at;
+
+ALTER TABLE support_thread
+  ADD COLUMN IF NOT EXISTS participant_last_opened_at TIMESTAMP NULL DEFAULT NULL AFTER admin_last_opened_at;
 
 CREATE TABLE IF NOT EXISTS support_message (
   message_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -163,6 +220,10 @@ CREATE TABLE IF NOT EXISTS roadmap_course (
     ON DELETE CASCADE
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE course
+  ADD COLUMN IF NOT EXISTS video_url VARCHAR(2048) NULL DEFAULT NULL AFTER description,
+  ADD COLUMN IF NOT EXISTS video_title VARCHAR(255) NULL DEFAULT NULL AFTER video_url;
 
 INSERT INTO department (name, university_id)
 SELECT 'Computer and Communications Engineering', u.university_id
@@ -636,6 +697,242 @@ WHERE target_university.name = 'Lebanese International University'
 
 /* Generated majors and starter roadmaps for the seeded course catalog. */
 DROP TEMPORARY TABLE IF EXISTS tmp_catalog_major_seed;
+
+/* Official LIU Bachelor of Science in Communications Engineering (BTENG) plan. */
+UPDATE course c
+JOIN department d ON d.department_id = c.department_id
+JOIN university u ON u.university_id = d.university_id
+LEFT JOIN course existing
+  ON existing.department_id = c.department_id
+  AND existing.code = 'EENG388'
+  AND existing.course_id <> c.course_id
+SET
+  c.code = 'EENG388',
+  c.title = 'Electromagnetic Fields and Waves',
+  c.description = 'Introduces electromagnetic theory, including vector analysis, coordinate systems, divergence, gradient, curl, electrostatics, Coulomb''s law, Gauss''s law, electric forces and potential, magnetostatics, Biot-Savart''s law, Ampere''s law, magnetic forces, Maxwell''s equations, Faraday''s law, and plane wave propagation.',
+  c.credits = 3,
+  c.language = 'English',
+  c.level = 'undergraduate',
+  c.deleted_at = NULL
+WHERE u.name = 'Lebanese International University'
+  AND d.name = 'Computer and Communications Engineering'
+  AND REPLACE(c.code, ' ', '') = 'EENG388'
+  AND c.code <> 'EENG388'
+  AND existing.course_id IS NULL;
+
+INSERT INTO major (department_id, name)
+SELECT d.department_id, 'Communication Engineering'
+FROM department d
+JOIN university u ON u.university_id = d.university_id
+WHERE u.name = 'Lebanese International University'
+  AND d.name = 'Computer and Communications Engineering'
+ON DUPLICATE KEY UPDATE
+  is_active = 1;
+
+INSERT INTO course (
+  code,
+  title,
+  description,
+  credits,
+  language,
+  level,
+  department_id
+)
+SELECT
+  course_data.code,
+  course_data.title,
+  course_data.description,
+  course_data.credits,
+  course_data.language,
+  course_data.level,
+  d.department_id
+FROM (
+  SELECT 'PHYS220' AS code, 'Physics for Engineers' AS title, 'Introduces engineering students to calculus-based physics, including mechanical oscillations, mechanical waves, interference, reflection and refraction of light, and image formation.' AS description, 3 AS credits, 'English' AS language, 'undergraduate' AS level
+  UNION ALL SELECT 'CULT200', 'Introduction to Arab-Islamic Civilization', 'Introduces Arab-Islamic civilization, its historical importance, cultural achievements, and scientific contributions while developing awareness of Arab cultural identity and its role in shaping the future.', 3, 'Arabic', 'undergraduate'
+  UNION ALL SELECT 'MATH210', 'Calculus II', 'Continues the calculus sequence with logarithmic, exponential, and trigonometric functions, inverse functions, integration techniques, improper integrals, sequences, series, power series, and polar coordinates.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'ENGG200', 'Introduction to Engineering', 'Introduces the engineering field, the role of engineers, and basic engineering principles. Students apply design concepts by developing a prototype system as part of a team.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'ENGL201', 'Composition and Research Skills', 'Develops academic writing, critical thinking, and research skills through interdisciplinary reading and a research paper using analytical and critical methods.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'MATH225', 'Linear Algebra with Applications', 'Introduces vectors, systems of equations, matrices, determinants, vector spaces, linear transformations, eigenvalues, eigenvectors, diagonalization, and orthogonality with science and engineering applications.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'EENG250', 'Electric Circuits I', 'Introduces electrical and electronic engineering fundamentals, including voltage, current, power, resistance, capacitance, inductance, Kirchhoff''s laws, node and mesh analysis, Thevenin and Norton equivalents, operational amplifier circuits, and first-order RL and RC circuits.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CSCI250', 'Introduction to Programming', 'Introduces structured programming using Java, covering syntax, program structure, data types, control structures, methods, arrays, and strings.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG250', 'Digital Logic I', 'Introduces digital logic operations and design, including Boolean algebra, logic functions, minimization techniques, logic gates, number systems, binary arithmetic, decoders, encoders, comparators, multiplexers, and demultiplexers.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CSCI250L', 'Introduction to Programming Lab', 'Supports Introduction to Programming with hands-on practice in programming problems using data types, selection and repetition structures, methods, and arrays.', 1, 'English', 'undergraduate'
+  UNION ALL SELECT 'MATH220', 'Calculus III', 'Covers multivariable calculus and vector calculus, including quadric surfaces, partial differentiation, multiple integration, and vector fields.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'MATH270', 'Ordinary Differential Equations', 'Introduces ordinary differential equations and applications, including first-order equations, higher-order equations, systems of differential equations, series solutions, and Laplace transforms.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'ENGL251', 'Communication Skills', 'Focuses on workplace and technical communication through professional writing, editing, and communication practices used in different careers.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'ARAB200', 'Arabic Language and Literature', 'Introduces Arabic language and literature for non-specialists, including grammar, morphology, rhetoric, literary analysis, and communication and expression techniques.', 3, 'Arabic', 'undergraduate'
+  UNION ALL SELECT 'CENG325', 'Software Applications and Design', 'Introduces application design and development using object-oriented programming, including design, implementation, testing, graphical user interfaces, debugging, executable creation, UML, and socket programming basics.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CSCI300', 'Intermediate Programming with Objects', 'Focuses on object-oriented programming using Java, including classes, objects, constructors, methods, dependency, aggregation, inheritance, polymorphism, exception handling, and file input/output.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'MATH310', 'Probability and Statistics for Scientists and Engineers', 'Provides probability and statistics concepts for engineering and scientific applications, developing computational, analytical, and interpretation skills for non-deterministic situations.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'EENG300', 'Electric Circuits II', 'Focuses on AC circuit analysis, including ideal and dependent sources, sinusoidal steady-state power calculations, balanced three-phase circuits, and frequency-selective circuits.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'EENG301L', 'Electric Circuits Lab', 'Gives practical experience designing, building, and testing DC and AC circuits using resistors, capacitors, inductors, transformers, operational amplifiers, lab instruments, and circuit simulation software.', 1, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG335', 'Digital Logic II', 'Extends Digital Logic I by introducing sequential circuits, including latches, flip-flops, state tables, state equations, Moore and Mealy machines, digital logic design methods, and hardware programming languages.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG375', 'Introduction to Database Systems', 'Introduces database design and programming, including entity-relationship modeling, relational databases, relational algebra, SQL, database creation and querying, programming connections, normalization, transactions, triggers, and assertions.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'EENG350L', 'Electronic Circuits I Lab', 'Covers the design, implementation, and testing of electronic circuits using diodes, BJTs, and MOSFETs, reinforcing theory through circuit characteristics and amplifier configurations.', 1, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG380', 'Microprocessors and Microcontrollers', 'Introduces microcontroller design and applications, focusing on AVR architecture, assembly language, C programming, hardware architecture, branching, arithmetic and logic operations, timers, interrupts, parallel I/O, and interfacing.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG352L', 'Digital Logic Circuits Lab', 'Focuses on designing, simulating, and testing digital logic circuits, including combinational logic, decoders, encoders, multiplexers, binary arithmetic circuits, programmable logic, flip-flops, sequential circuits, timing diagrams, and small digital design projects.', 1, 'English', 'undergraduate'
+  UNION ALL SELECT 'EENG385', 'Signals and Systems', 'Introduces signals and systems, their properties, and behavior in time and frequency domains, including linear time-invariant systems, Fourier series, Fourier transform, and Laplace transform applications.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'ENGG300', 'Engineering Economics', 'Introduces economic principles used in engineering decision-making, including the engineer as decision maker, money, cost analysis, environmental and social factors, and real-world economic problem solving.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'EENG350', 'Electronic Circuits I', 'Covers semiconductor devices and electronic circuits, including PN junctions, diode models, diode applications, BJTs, MOSFETs, DC biasing, small-signal models, and amplifier circuits.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG430L', 'Linux Lab', 'Teaches Linux and Python scripting for the Raspberry Pi platform with emphasis on automation, interfacing, and networking.', 1, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG400L', 'Microcontroller Applications Lab', 'Focuses on Arduino microcontroller programming and hardware applications, including Arduino Atmega328P programming, serial and parallel bus interfacing, C programming, Proteus simulation, and ATMEL software tools.', 1, 'English', 'undergraduate'
+  UNION ALL SELECT 'EENG447', 'Analog Communication Systems', 'Introduces analog communication systems, including linear systems, noiseless modulation, spectral density, correlation of deterministic and random signals, thermal and white noise, linear and angle modulation, interference, feedback demodulators, and noise effects.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG420', 'Web Programming and Technologies', 'Focuses on designing and developing web-based applications, including HTML, CSS, JavaScript, DOM, jQuery, PHP, AJAX, database connectivity, session tracking, HTTP headers, security, and privacy risks.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG435', 'Mobile Application Development', 'Focuses on advanced Android mobile application development, including installation, application structure, user interfaces, data persistence, geolocation, media handling, networking, services, deployment, business models, and current mobile trends.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG415', 'Communication Networks', 'Introduces the design and implementation of computer communication networks, including architectures, protocols, FTP, SMTP, HTTP, reliable data transfer, transport protocols, congestion and flow control, routing, data link protocols, addressing, and local area networks.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG400', 'Computer Organization and Design', 'Introduces computer organization and digital logic design, including computer arithmetic, MIPS processor design, ALU, datapath and control, pipelining, pipeline hazards, interrupts, exceptions, memory hierarchy, caches, and virtual memory.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG450L', 'Scripting Languages Lab', 'Introduces popular scientific scripting languages used in engineering, especially in computer and communications engineering.', 1, 'English', 'undergraduate'
+  UNION ALL SELECT 'EENG467L', 'Analog Communication Systems Lab', 'Supports Analog Communication Systems through LabVIEW design and simulation of AM, DSB, SSB, and FM modulation and demodulation, plus real-time testing using NI USRP2901.', 1, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG460', 'Operating Systems', 'Introduces operating systems at user, application, design, and implementation levels, including structure, process management, scheduling, threads, interprocess communication, deadlocks, synchronization, protection, memory management, and hands-on programming.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG480', 'Introduction to GIS', 'Introduces geographic information systems for engineering applications, including spatial data, digital maps, layers, coordinate systems, geospatial databases, visualization, analysis, and decision support.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'EENG388', 'Electromagnetic Fields and Waves', 'Introduces electromagnetic theory, including vector analysis, coordinate systems, divergence, gradient, curl, electrostatics, Coulomb''s law, Gauss''s law, electric forces and potential, magnetostatics, Biot-Savart''s law, Ampere''s law, magnetic forces, Maxwell''s equations, Faraday''s law, and plane wave propagation.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG495', 'Senior Project', 'Applies undergraduate program knowledge to an open-ended engineering design project. Students work in teams, improve communication skills, use technical literature and software tools, and experience the full design project life cycle.', 3, 'English', 'undergraduate'
+  UNION ALL SELECT 'CENG455L', 'Communication Networks Lab', 'Provides practical Internet networking experience using Packet Tracer to build, configure, and manage LAN and WAN networks, switches, routers, IPv4 and IPv6, client/server applications, access lists, and VLAN concepts.', 1, 'English', 'undergraduate'
+  UNION ALL SELECT 'ENGG450', 'Engineering Ethics and Professional Practice', 'Studies engineering ethics from historical, philosophical, and professional perspectives, including employee rights, whistleblowing, safety, risk, liability, professional responsibility, conflicts of interest, codes of ethics, legal obligations, environmental responsibility, and ethical case analysis.', 3, 'English', 'undergraduate'
+) AS course_data
+JOIN department d ON d.name = 'Computer and Communications Engineering'
+JOIN university u ON u.university_id = d.university_id
+WHERE u.name = 'Lebanese International University'
+ON DUPLICATE KEY UPDATE
+  title = VALUES(title),
+  description = VALUES(description),
+  credits = VALUES(credits),
+  language = VALUES(language),
+  level = VALUES(level),
+  deleted_at = NULL;
+
+INSERT INTO roadmap (
+  major_id,
+  level,
+  title,
+  total_credits,
+  is_published,
+  created_by
+)
+SELECT
+  m.major_id,
+  'undergraduate',
+  'Official BS in Communications Engineering (BTENG) Roadmap',
+  108,
+  1,
+  NULL
+FROM major m
+JOIN department d ON d.department_id = m.department_id
+JOIN university u ON u.university_id = d.university_id
+WHERE u.name = 'Lebanese International University'
+  AND d.name = 'Computer and Communications Engineering'
+  AND m.name = 'Communication Engineering'
+ON DUPLICATE KEY UPDATE
+  title = VALUES(title),
+  total_credits = VALUES(total_credits),
+  is_published = 1;
+
+DELETE rc
+FROM roadmap_course rc
+JOIN roadmap r ON r.roadmap_id = rc.roadmap_id
+JOIN major m ON m.major_id = r.major_id
+JOIN department d ON d.department_id = m.department_id
+JOIN university u ON u.university_id = d.university_id
+WHERE u.name = 'Lebanese International University'
+  AND d.name = 'Computer and Communications Engineering'
+  AND m.name = 'Communication Engineering'
+  AND r.level = 'undergraduate';
+
+INSERT INTO roadmap_course (
+  roadmap_id,
+  course_id,
+  year_number,
+  semester,
+  sequence_order
+)
+SELECT
+  r.roadmap_id,
+  c.course_id,
+  roadmap_data.year_number,
+  roadmap_data.semester,
+  roadmap_data.sequence_order
+FROM (
+  SELECT 'PHYS220' AS code, 1 AS year_number, 'fall' AS semester, 10 AS sequence_order
+  UNION ALL SELECT 'CULT200', 1, 'fall', 20
+  UNION ALL SELECT 'MATH210', 1, 'fall', 30
+  UNION ALL SELECT 'ENGG200', 1, 'fall', 40
+  UNION ALL SELECT 'ENGL201', 1, 'fall', 50
+  UNION ALL SELECT 'MATH225', 1, 'fall', 60
+  UNION ALL SELECT 'EENG250', 1, 'spring', 10
+  UNION ALL SELECT 'CSCI250', 1, 'spring', 20
+  UNION ALL SELECT 'CENG250', 1, 'spring', 30
+  UNION ALL SELECT 'CSCI250L', 1, 'spring', 40
+  UNION ALL SELECT 'MATH220', 1, 'spring', 50
+  UNION ALL SELECT 'MATH270', 1, 'spring', 60
+  UNION ALL SELECT 'ENGL251', 1, 'summer', 10
+  UNION ALL SELECT 'ARAB200', 1, 'summer', 20
+  UNION ALL SELECT 'CENG325', 2, 'fall', 10
+  UNION ALL SELECT 'CSCI300', 2, 'fall', 20
+  UNION ALL SELECT 'MATH310', 2, 'fall', 30
+  UNION ALL SELECT 'EENG300', 2, 'fall', 40
+  UNION ALL SELECT 'EENG301L', 2, 'fall', 50
+  UNION ALL SELECT 'CENG335', 2, 'fall', 60
+  UNION ALL SELECT 'CENG375', 2, 'spring', 10
+  UNION ALL SELECT 'EENG350L', 2, 'spring', 20
+  UNION ALL SELECT 'CENG380', 2, 'spring', 30
+  UNION ALL SELECT 'CENG352L', 2, 'spring', 40
+  UNION ALL SELECT 'EENG385', 2, 'spring', 50
+  UNION ALL SELECT 'ENGG300', 2, 'spring', 60
+  UNION ALL SELECT 'EENG350', 2, 'spring', 70
+  UNION ALL SELECT 'CENG430L', 3, 'fall', 10
+  UNION ALL SELECT 'CENG400L', 3, 'fall', 20
+  UNION ALL SELECT 'EENG447', 3, 'fall', 30
+  UNION ALL SELECT 'CENG420', 3, 'fall', 40
+  UNION ALL SELECT 'CENG435', 3, 'fall', 50
+  UNION ALL SELECT 'CENG415', 3, 'fall', 60
+  UNION ALL SELECT 'CENG400', 3, 'fall', 70
+  UNION ALL SELECT 'CENG450L', 3, 'spring', 10
+  UNION ALL SELECT 'EENG467L', 3, 'spring', 20
+  UNION ALL SELECT 'CENG460', 3, 'spring', 30
+  UNION ALL SELECT 'CENG480', 3, 'spring', 40
+  UNION ALL SELECT 'EENG388', 3, 'spring', 50
+  UNION ALL SELECT 'CENG495', 3, 'spring', 60
+  UNION ALL SELECT 'CENG455L', 3, 'spring', 70
+  UNION ALL SELECT 'ENGG450', 3, 'spring', 80
+) AS roadmap_data
+JOIN course c ON c.code = roadmap_data.code
+JOIN department course_department
+  ON course_department.department_id = c.department_id
+JOIN university course_university
+  ON course_university.university_id = course_department.university_id
+JOIN major m ON m.name = 'Communication Engineering'
+JOIN department major_department
+  ON major_department.department_id = m.department_id
+JOIN university major_university
+  ON major_university.university_id = major_department.university_id
+JOIN roadmap r
+  ON r.major_id = m.major_id
+  AND r.level = 'undergraduate'
+WHERE course_university.name = 'Lebanese International University'
+  AND course_department.name = 'Computer and Communications Engineering'
+  AND major_university.name = 'Lebanese International University'
+  AND major_department.name = 'Computer and Communications Engineering'
+  AND c.deleted_at IS NULL
+ORDER BY
+  roadmap_data.year_number,
+  FIELD(roadmap_data.semester, 'fall', 'spring', 'summer'),
+  roadmap_data.sequence_order;
+
+/* Keep major-specific courses from being shown under the wrong LIU CCE major. */
+DELETE rc
+FROM roadmap_course rc
+JOIN roadmap r ON r.roadmap_id = rc.roadmap_id
+JOIN major m ON m.major_id = r.major_id
+JOIN department d ON d.department_id = m.department_id
+JOIN university u ON u.university_id = d.university_id
+JOIN course c ON c.course_id = rc.course_id
+WHERE u.name = 'Lebanese International University'
+  AND d.name = 'Computer and Communications Engineering'
+  AND r.level = 'undergraduate'
+  AND (
+    (m.name = 'Communication Engineering' AND c.code = 'CENG470')
+    OR (m.name = 'Computer Engineering' AND c.code IN ('EENG388', 'CENG480'))
+  );
 
 UPDATE course
 SET description = CASE

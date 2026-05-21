@@ -9,6 +9,8 @@ export interface Course {
   majors?: string[];
   majorIds?: number[];
   description: string;
+  videoUrl?: string | null;
+  videoTitle?: string | null;
   credits: string | number;
   level: string;
   language: string;

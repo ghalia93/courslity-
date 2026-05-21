@@ -17,6 +17,7 @@ import ConfirmModal from "@/components/admin/ConfirmModal";
 
 type ReviewRow = {
   review_id: string; // keep as string to match existing UI usage
+  review_type: "course" | "university";
   reviewer_name: string;
   reviewer_email: string;
   course_code: string;
@@ -31,6 +32,11 @@ type ReviewRow = {
   workload_rating: number;
   attendance_rating: number;
   exam_difficulty_rating: number;
+  academic_quality_rating?: number;
+  professors_rating?: number;
+  facilities_rating?: number;
+  tuition_value_rating?: number;
+  student_life_rating?: number;
   upvotes: number;
   downvotes: number;
   created_at: string;
@@ -51,6 +57,8 @@ type SortKey =
   | "rating_high"
   | "rating_low"
   | "most_votes";
+
+type ReviewKind = "all" | "course" | "university";
 
 function unique<T>(arr: T[]): T[] {
   return Array.from(new Set(arr));
@@ -102,6 +110,79 @@ function MetricBadge({
   );
 }
 
+function isUniversityReview(review: ReviewRow) {
+  return review.review_type === "university";
+}
+
+function getReviewTarget(review: ReviewRow) {
+  return isUniversityReview(review)
+    ? {
+        label: "University Review",
+        title: review.university,
+        meta: "University experience",
+      }
+    : {
+        label: review.course_code,
+        title: review.course_title,
+        meta: `${review.department} - ${review.university}`,
+      };
+}
+
+function getReviewMetrics(review: ReviewRow) {
+  if (isUniversityReview(review)) {
+    return [
+      {
+        label: "Academic",
+        value: review.academic_quality_rating ?? review.exam_difficulty_rating,
+        color: "bg-blue-100 text-blue-800",
+      },
+      {
+        label: "Professors",
+        value: review.professors_rating ?? review.workload_rating,
+        color: "bg-green-100 text-green-800",
+      },
+      {
+        label: "Facilities",
+        value: review.facilities_rating ?? review.attendance_rating,
+        color: "bg-yellow-100 text-yellow-800",
+      },
+      {
+        label: "Tuition",
+        value: review.tuition_value_rating ?? review.grading_rating,
+        color: "bg-purple-100 text-purple-800",
+      },
+      {
+        label: "Life",
+        value: review.student_life_rating ?? review.overall_rating,
+        color: "bg-pink-100 text-pink-800",
+      },
+    ];
+  }
+
+  return [
+    {
+      label: "Exam",
+      value: review.exam_difficulty_rating,
+      color: "bg-blue-100 text-blue-800",
+    },
+    {
+      label: "Workload",
+      value: review.workload_rating,
+      color: "bg-green-100 text-green-800",
+    },
+    {
+      label: "Attendance",
+      value: review.attendance_rating,
+      color: "bg-yellow-100 text-yellow-800",
+    },
+    {
+      label: "Grading",
+      value: review.grading_rating,
+      color: "bg-purple-100 text-purple-800",
+    },
+  ];
+}
+
 function ReviewDetailModal({
   review,
   onClose,
@@ -122,6 +203,8 @@ function ReviewDetailModal({
   }, [onClose]);
 
   const netVotes = review.upvotes - review.downvotes;
+  const target = getReviewTarget(review);
+  const metrics = getReviewMetrics(review);
 
   return (
     <div
@@ -135,10 +218,10 @@ function ReviewDetailModal({
         <div className="flex items-start justify-between gap-4 p-5 border-b border-gray-100">
           <div>
             <p className="font-semibold text-gray-900">
-              {review.course_code} - {review.course_title}
+              {target.label} - {target.title}
             </p>
             <p className="text-sm text-gray-400 mt-0.5">
-              {review.department} - {review.university}
+              {target.meta}
             </p>
           </div>
           <button
@@ -157,18 +240,22 @@ function ReviewDetailModal({
               <p className="text-gray-800 font-medium">{review.reviewer_name}</p>
               <p className="text-xs text-gray-400">{review.reviewer_email}</p>
             </div>
-            <div>
-              <p className="text-xs text-gray-400 mb-0.5">Instructor</p>
-              <p className="text-gray-800 font-medium">
-                {review.instructor_name}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-400 mb-0.5">Semester</p>
-              <p className="text-gray-800 font-medium">
-                {review.semester_taken}
-              </p>
-            </div>
+            {!isUniversityReview(review) && (
+              <>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Instructor</p>
+                  <p className="text-gray-800 font-medium">
+                    {review.instructor_name}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Semester</p>
+                  <p className="text-gray-800 font-medium">
+                    {review.semester_taken}
+                  </p>
+                </div>
+              </>
+            )}
             <div>
               <p className="text-xs text-gray-400 mb-0.5">Submitted</p>
               <p className="text-gray-800 font-medium">{review.created_at}</p>
@@ -209,28 +296,7 @@ function ReviewDetailModal({
           <div>
             <p className="text-xs text-gray-400 mb-2">Rating breakdown</p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {[
-                {
-                  label: "Exam difficulty",
-                  value: review.exam_difficulty_rating,
-                  color: "bg-blue-100 text-blue-800",
-                },
-                {
-                  label: "Workload",
-                  value: review.workload_rating,
-                  color: "bg-green-100 text-green-800",
-                },
-                {
-                  label: "Attendance",
-                  value: review.attendance_rating,
-                  color: "bg-yellow-100 text-yellow-800",
-                },
-                {
-                  label: "Grading",
-                  value: review.grading_rating,
-                  color: "bg-purple-100 text-purple-800",
-                },
-              ].map((m) => (
+              {metrics.map((m) => (
                 <div key={m.label} className={`rounded-lg px-3 py-2 ${m.color}`}>
                   <p className="text-[11px] opacity-70">{m.label}</p>
                   <p className="text-base font-semibold">
@@ -277,6 +343,7 @@ export default function AdminReviewsPage() {
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [semesterFilter, setSemesterFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
+  const [reviewKind, setReviewKind] = useState<ReviewKind>("all");
   const [pendingHide, setPendingHide] = useState<ReviewRow | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ReviewRow | null>(null);
   const [detailReview, setDetailReview] = useState<ReviewRow | null>(null);
@@ -307,6 +374,7 @@ export default function AdminReviewsPage() {
       if (semesterFilter !== "all") params.set("semester", semesterFilter);
 
       params.set("sort", sortKey);
+      params.set("kind", reviewKind);
 
       const res = await fetch(`/api/admin/reviews?${params.toString()}`, {
         method: "GET",
@@ -344,6 +412,7 @@ export default function AdminReviewsPage() {
     departmentFilter,
     semesterFilter,
     sortKey,
+    reviewKind,
   ]);
 
   useEffect(() => {
@@ -359,6 +428,7 @@ export default function AdminReviewsPage() {
     departmentFilter,
     semesterFilter,
     sortKey,
+    reviewKind,
   ]);
 
   function requestDelete(review: ReviewRow) {
@@ -379,7 +449,8 @@ export default function AdminReviewsPage() {
     if (!pendingHide) return;
 
     try {
-      const res = await fetch(`/api/admin/reviews/${pendingHide.review_id}`, {
+      const params = new URLSearchParams({ type: pendingHide.review_type });
+      const res = await fetch(`/api/admin/reviews/${pendingHide.review_id}?${params.toString()}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -402,7 +473,8 @@ export default function AdminReviewsPage() {
     if (!pendingDelete) return;
 
     try {
-      const res = await fetch(`/api/admin/reviews/${pendingDelete.review_id}`, {
+      const params = new URLSearchParams({ type: pendingDelete.review_type });
+      const res = await fetch(`/api/admin/reviews/${pendingDelete.review_id}?${params.toString()}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -431,15 +503,25 @@ export default function AdminReviewsPage() {
     () =>
       unique(
         reviews
+          .filter((r) => !isUniversityReview(r))
           .filter((r) => universityFilter === "all" || r.university === universityFilter)
           .map((r) => r.department)
       ),
     [reviews, universityFilter]
   );
 
-  const semesters = useMemo(() => unique(reviews.map((r) => r.semester_taken)), [reviews]);
+  const semesters = useMemo(
+    () =>
+      unique(
+        reviews
+          .filter((r) => !isUniversityReview(r))
+          .map((r) => r.semester_taken),
+      ),
+    [reviews],
+  );
 
   const activeFilterCount = [
+    reviewKind !== "all",
     ratingFilter !== "all",
     universityFilter !== "all",
     departmentFilter !== "all",
@@ -448,6 +530,7 @@ export default function AdminReviewsPage() {
   ].filter(Boolean).length;
 
   function resetFilters() {
+    setReviewKind("all");
     setRatingFilter("all");
     setUniversityFilter("all");
     setDepartmentFilter("all");
@@ -466,7 +549,8 @@ export default function AdminReviewsPage() {
             <>
               Do you want to hide this review for{" "}
               <span className="font-medium text-gray-700">
-                {pendingHide.course_code} - {pendingHide.course_title}
+                {getReviewTarget(pendingHide).label} -{" "}
+                {getReviewTarget(pendingHide).title}
               </span>{" "}
               by{" "}
               <span className="font-medium text-gray-700">
@@ -491,7 +575,8 @@ export default function AdminReviewsPage() {
             <>
               Are you sure you want to delete the review for{" "}
               <span className="font-medium text-gray-700">
-                {pendingDelete.course_code} - {pendingDelete.course_title}
+                {getReviewTarget(pendingDelete).label} -{" "}
+                {getReviewTarget(pendingDelete).title}
               </span>{" "}
               by{" "}
               <span className="font-medium text-gray-700">
@@ -526,8 +611,38 @@ export default function AdminReviewsPage() {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-black">Review Management</h1>
-          <p className="text-sm text-gray-500">Moderate and manage student reviews</p>
+          <p className="text-sm text-gray-500">
+            Moderate course and university reviews
+          </p>
         </div>
+      </div>
+
+      <div className="mt-4 inline-flex flex-wrap gap-2 rounded-xl border border-gray-200 bg-white p-1">
+        {[
+          { value: "all", label: "All" },
+          { value: "course", label: "Courses" },
+          { value: "university", label: "University Reviews" },
+        ].map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => {
+              const nextKind = option.value as ReviewKind;
+              setReviewKind(nextKind);
+              if (nextKind === "university") {
+                setDepartmentFilter("all");
+                setSemesterFilter("all");
+              }
+            }}
+            className={`rounded-lg px-3 py-2 text-sm transition ${
+              reviewKind === option.value
+                ? "bg-[#6155F5] text-white"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
       <div className="mt-4 flex flex-row gap-2 items-center">
@@ -537,7 +652,7 @@ export default function AdminReviewsPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by course, reviewer, instructor, university..."
+            placeholder="Search by course, university, reviewer, instructor..."
             className="w-full h-11 pl-10 pr-4 text-gray-900 placeholder-gray-400 rounded-md border border-gray-300 transition-colors focus:outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]"
           />
         </div>
@@ -711,7 +826,7 @@ export default function AdminReviewsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500">
             <tr>
-              <th className="text-left px-4 py-3 whitespace-nowrap">Course</th>
+              <th className="text-left px-4 py-3 whitespace-nowrap">Target</th>
               <th className="text-left px-4 py-3 whitespace-nowrap">Reviewer</th>
               <th className="text-left px-4 py-3 whitespace-nowrap">Instructor</th>
               <th className="text-left px-4 py-3 whitespace-nowrap">Semester</th>
@@ -732,21 +847,25 @@ export default function AdminReviewsPage() {
                 </td>
               </tr>
             ) : (
-              filtered.map((r) => (
-                <tr
-                  key={r.review_id}
-                  onClick={() => setDetailReview(r)}
-                  className="border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
-                >
+              filtered.map((r) => {
+                const target = getReviewTarget(r);
+                const metrics = getReviewMetrics(r);
+
+                return (
+                  <tr
+                    key={`${r.review_type}-${r.review_id}`}
+                    onClick={() => setDetailReview(r)}
+                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
                   <td className="px-6 py-3 min-w-[150px]">
                     <p className="font-medium text-gray-900 whitespace-nowrap">
-                      {r.course_code}
+                      {target.label}
                     </p>
                     <p className="text-xs text-gray-500 max-w-40 truncate">
-                      {r.course_title}
+                      {target.title}
                     </p>
                     <p className="text-xs text-gray-400 max-w-40 truncate">
-                      {r.department}
+                      {target.meta}
                     </p>
                   </td>
 
@@ -779,26 +898,14 @@ export default function AdminReviewsPage() {
 
                   <td className="px-4 py-3">
                     <div className="grid grid-cols-1 gap-1">
-                      <MetricBadge
-                        label="Exam"
-                        value={r.exam_difficulty_rating}
-                        color="bg-blue-100 text-blue-800"
-                      />
-                      <MetricBadge
-                        label="Workload"
-                        value={r.workload_rating}
-                        color="bg-green-100 text-green-800"
-                      />
-                      <MetricBadge
-                        label="Attendance"
-                        value={r.attendance_rating}
-                        color="bg-yellow-100 text-yellow-800"
-                      />
-                      <MetricBadge
-                        label="Grading"
-                        value={r.grading_rating}
-                        color="bg-purple-100 text-purple-800"
-                      />
+                      {metrics.map((metric) => (
+                        <MetricBadge
+                          key={metric.label}
+                          label={metric.label}
+                          value={metric.value}
+                          color={metric.color}
+                        />
+                      ))}
                     </div>
                   </td>
 
@@ -828,8 +935,9 @@ export default function AdminReviewsPage() {
                       </button>
                     </div>
                   </td>
-                </tr>
-              ))
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -841,19 +949,23 @@ export default function AdminReviewsPage() {
             No reviews match your search or filters.
           </p>
         ) : (
-          filtered.map((r) => (
-            <div
-              key={r.review_id}
-              onClick={() => setDetailReview(r)}
-              className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
-            >
+          filtered.map((r) => {
+            const target = getReviewTarget(r);
+            const metrics = getReviewMetrics(r);
+
+            return (
+              <div
+                key={`${r.review_type}-${r.review_id}`}
+                onClick={() => setDetailReview(r)}
+                className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm cursor-pointer hover:border-gray-300 transition-colors"
+              >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-semibold text-gray-900">{r.course_code}</h3>
-                  <p className="text-sm text-gray-500">{r.course_title}</p>
-                  <p className="text-xs text-gray-400">
-                    {r.department} - {r.university}
-                  </p>
+                  <h3 className="font-semibold text-gray-900">
+                    {target.label}
+                  </h3>
+                  <p className="text-sm text-gray-500">{target.title}</p>
+                  <p className="text-xs text-gray-400">{target.meta}</p>
                 </div>
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <button
@@ -881,12 +993,18 @@ export default function AdminReviewsPage() {
                     ({r.reviewer_email})
                   </span>
                 </p>
-                <p>
-                  <span className="text-gray-400">Instructor:</span> {r.instructor_name}
-                </p>
-                <p>
-                  <span className="text-gray-400">Semester:</span> {r.semester_taken}
-                </p>
+                {!isUniversityReview(r) && (
+                  <>
+                    <p>
+                      <span className="text-gray-400">Instructor:</span>{" "}
+                      {r.instructor_name}
+                    </p>
+                    <p>
+                      <span className="text-gray-400">Semester:</span>{" "}
+                      {r.semester_taken}
+                    </p>
+                  </>
+                )}
                 <p>
                   <span className="text-gray-400">Date:</span> {r.created_at}
                 </p>
@@ -900,29 +1018,18 @@ export default function AdminReviewsPage() {
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
-                <MetricBadge
-                  label="Exam"
-                  value={r.exam_difficulty_rating}
-                  color="bg-blue-100 text-blue-800"
-                />
-                <MetricBadge
-                  label="Workload"
-                  value={r.workload_rating}
-                  color="bg-green-100 text-green-800"
-                />
-                <MetricBadge
-                  label="Attendance"
-                  value={r.attendance_rating}
-                  color="bg-yellow-100 text-yellow-800"
-                />
-                <MetricBadge
-                  label="Grading"
-                  value={r.grading_rating}
-                  color="bg-purple-100 text-purple-800"
-                />
+                {metrics.map((metric) => (
+                  <MetricBadge
+                    key={metric.label}
+                    label={metric.label}
+                    value={metric.value}
+                    color={metric.color}
+                  />
+                ))}
               </div>
-            </div>
-          ))
+              </div>
+            );
+          })
         )}
       </div>
     </div>

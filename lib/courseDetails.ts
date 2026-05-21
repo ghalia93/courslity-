@@ -4,6 +4,7 @@ import pool from "@/db";
 import { getYearFromCourseCode } from "@/lib/courseCode";
 import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
 import { formatCourseLevel } from "@/lib/courseLevels";
+import { ensureCourseVideoColumns } from "@/lib/courseVideosDb";
 import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
 
 type CourseDetailRow = RowDataPacket & {
@@ -11,6 +12,8 @@ type CourseDetailRow = RowDataPacket & {
   code: string;
   title: string;
   description: string;
+  video_url: string | null;
+  video_title: string | null;
   credits: number;
   level: string;
   language: string;
@@ -38,6 +41,8 @@ export type CourseDetail = {
   code: string;
   title: string;
   description: string;
+  videoUrl: string | null;
+  videoTitle: string | null;
   credits: string;
   level: string;
   language: string;
@@ -71,6 +76,7 @@ async function getCourseDetail(
   slug: string,
 ): Promise<CourseDetail | null> {
   await ensureReviewHiddenColumn();
+  await ensureCourseVideoColumns();
 
   const [rows] = await pool.query<CourseDetailRow[]>(
     `
@@ -79,6 +85,8 @@ async function getCourseDetail(
       c.code,
       c.title,
       c.description,
+      c.video_url,
+      c.video_title,
       c.credits,
       c.level,
       c.language,
@@ -107,7 +115,7 @@ async function getCourseDetail(
 
     GROUP BY
       c.course_id, c.code, c.title, c.description,
-      c.credits, c.level, c.language,
+      c.video_url, c.video_title, c.credits, c.level, c.language,
       d.name, d.department_id, u.name, u.university_id
     `,
     params,
@@ -136,6 +144,8 @@ async function getCourseDetail(
     code: row.code,
     title: row.title,
     description: normalizeCourseDescription(row),
+    videoUrl: row.video_url ?? null,
+    videoTitle: row.video_title ?? null,
     credits: `${row.credits} cr.`,
     level: formatCourseLevel(row.level),
     language: row.language,

@@ -4,6 +4,11 @@ import type { RowDataPacket } from "mysql2";
 import { requireAdmin, requireUniversityAdmin } from "@/lib/auth";
 import pool from "@/db";
 import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
+import {
+  ensureCourseVideoColumns,
+  normalizeOptionalVideoTitle,
+  normalizeOptionalVideoUrl,
+} from "@/lib/courseVideosDb";
 import { COURSE_LEVEL_VALUES } from "@/lib/courseLevels";
 import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
 
@@ -13,6 +18,8 @@ type CourseDetailRow = RowDataPacket & {
   code: string;
   title: string;
   description: string;
+  video_url: string | null;
+  video_title: string | null;
   credits: number;
   level: string;
   language: string;
@@ -60,6 +67,7 @@ export async function GET(
     // Any admin can view course details in the admin dashboard.
     await requireAdmin(req);
     await ensureReviewHiddenColumn();
+    await ensureCourseVideoColumns();
 
     // Dynamic route params arrive as strings, so convert and validate early.
     const { id } = await params;
@@ -79,6 +87,8 @@ export async function GET(
         c.code,
         c.title,
         c.description,
+        c.video_url,
+        c.video_title,
         c.credits,
         c.level,
         c.language,
@@ -103,7 +113,7 @@ export async function GET(
       WHERE c.course_id = ?
       GROUP BY
         c.course_id, c.code, c.title, c.description, c.credits,
-        c.level, c.language, c.department_id, d.name,
+        c.video_url, c.video_title, c.level, c.language, c.department_id, d.name,
         uni.university_id, uni.name, c.deleted_at`,
       [courseId],
     );
@@ -132,6 +142,8 @@ export async function GET(
       code: row.code,
       title: row.title,
       description: normalizeCourseDescription(row),
+      videoUrl: row.video_url ?? null,
+      videoTitle: row.video_title ?? null,
       credits: row.credits,
       level: row.level,
       language: row.language,
@@ -179,6 +191,7 @@ export async function PATCH(
   try {
     // Only University Admins can mutate course records.
     await requireUniversityAdmin(req);
+    await ensureCourseVideoColumns();
 
     // Validate the route id before touching the database.
     const { id } = await params;
@@ -205,12 +218,13 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { title, description, credits, language, level, department_id } =
-      body;
+    const { title, description, credits, language, level, department_id } = body;
+    const videoUrlInput = body.video_url ?? body.videoUrl;
+    const videoTitleInput = body.video_title ?? body.videoTitle;
 
     // Build the UPDATE statement only from fields that were actually provided.
     const setClauses: string[] = [];
-    const values: Array<string | number> = [];
+    const values: Array<string | number | null> = [];
 
     // Validate and queue a title update when the request includes one.
     if (title !== undefined) {
@@ -234,6 +248,44 @@ export async function PATCH(
       }
       setClauses.push("description = ?");
       values.push(description.trim());
+    }
+
+    if (videoUrlInput !== undefined) {
+      let cleanVideoUrl: string | null;
+      try {
+        cleanVideoUrl = normalizeOptionalVideoUrl(videoUrlInput);
+      } catch (error) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              error instanceof Error ? error.message : "Invalid course video URL",
+          },
+          { status: 400 },
+        );
+      }
+      setClauses.push("video_url = ?");
+      values.push(cleanVideoUrl);
+    }
+
+    if (videoTitleInput !== undefined) {
+      let cleanVideoTitle: string | null;
+      try {
+        cleanVideoTitle = normalizeOptionalVideoTitle(videoTitleInput);
+      } catch (error) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              error instanceof Error
+                ? error.message
+                : "Invalid course video title",
+          },
+          { status: 400 },
+        );
+      }
+      setClauses.push("video_title = ?");
+      values.push(cleanVideoTitle);
     }
 
     // Credits are limited to the schema's realistic 1-9 range.

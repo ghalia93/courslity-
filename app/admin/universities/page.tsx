@@ -19,6 +19,7 @@ type University = {
   university_id: number;
   name: string;
   email_domain: string;
+  description?: string | null;
 };
 
 type Department = {
@@ -53,6 +54,7 @@ export default function UniversityAdminPage() {
 
   const [universityName, setUniversityName] = useState("");
   const [emailDomain, setEmailDomain] = useState("");
+  const [universityDescription, setUniversityDescription] = useState("");
   const [departmentName, setDepartmentName] = useState("");
   const [majorName, setMajorName] = useState("");
   const [editingDepartmentId, setEditingDepartmentId] = useState<number | null>(
@@ -66,6 +68,7 @@ export default function UniversityAdminPage() {
   const [loadingDepartments, setLoadingDepartments] = useState(false);
   const [loadingMajors, setLoadingMajors] = useState(false);
   const [savingUniversity, setSavingUniversity] = useState(false);
+  const [savingDescription, setSavingDescription] = useState(false);
   const [savingDepartment, setSavingDepartment] = useState(false);
   const [savingMajor, setSavingMajor] = useState(false);
   const [message, setMessage] = useState("");
@@ -196,6 +199,10 @@ export default function UniversityAdminPage() {
 
     loadDepartments(selectedUniversityId);
   }, [selectedUniversityId]);
+
+  useEffect(() => {
+    setUniversityDescription(selectedUniversity?.description ?? "");
+  }, [selectedUniversity]);
 
   useEffect(() => {
     setMajors([]);
@@ -331,6 +338,64 @@ export default function UniversityAdminPage() {
       );
     } finally {
       setSavingDepartment(false);
+    }
+  }
+
+  async function handleUpdateUniversityDescription() {
+    const description = universityDescription.trim();
+
+    setError("");
+    setMessage("");
+
+    if (!isUniversityAdmin) {
+      setError(universityAdminWarning);
+      return;
+    }
+
+    if (!selectedUniversityId) {
+      setError("Select a university first.");
+      return;
+    }
+
+    if (description.length > 5000) {
+      setError("Description is too long.");
+      return;
+    }
+
+    setSavingDescription(true);
+    try {
+      const res = await fetch("/api/admin/universities", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          university_id: selectedUniversityId,
+          description,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message ?? "Failed to save description.");
+      }
+
+      const university = data.university as University;
+      setUniversities((prev) =>
+        sortedByName(
+          prev.map((item) =>
+            item.university_id === university.university_id
+              ? university
+              : item,
+          ),
+        ),
+      );
+      setMessage(`${university.name} description was updated.`);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Failed to save description.",
+      );
+    } finally {
+      setSavingDescription(false);
     }
   }
 
@@ -691,6 +756,32 @@ export default function UniversityAdminPage() {
               </p>
             )}
           </div>
+
+          {selectedUniversity && (
+            <div className="mt-5 border-t border-gray-100 pt-4">
+              <label className="mb-1 block text-xs font-medium text-gray-500">
+                University description
+              </label>
+              <textarea
+                value={universityDescription}
+                onChange={(e) => setUniversityDescription(e.target.value)}
+                rows={7}
+                placeholder="Write the university description that should appear on the public University page..."
+                className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#6155F5] focus:ring-2 focus:ring-[#6155F5]/30"
+              />
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="text-xs text-gray-400">
+                  {universityDescription.trim().length}/5000 characters
+                </p>
+                <Button
+                  onClick={handleUpdateUniversityDescription}
+                  disabled={savingDescription || authLoading}
+                >
+                  {savingDescription ? "Saving..." : "Save Description"}
+                </Button>
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="rounded-lg border border-gray-200 bg-white p-5">

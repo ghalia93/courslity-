@@ -30,6 +30,11 @@ function getCourseSlug(code: string) {
   return code.trim().toLowerCase().replace(/\s+/g, "-");
 }
 
+function getRoadmapTermLabel(roadmap: RoadmapSummary, yearNumber: number) {
+  if (roadmap.level === "freshman") return "Remedial Courses";
+  return `Year ${yearNumber}`;
+}
+
 function RoadmapsPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -322,7 +327,7 @@ function RoadmapsPageContent() {
                   >
                     <div>
                       <p className="text-sm font-semibold text-gray-900">
-                        Year {term.year_number}
+                        {getRoadmapTermLabel(roadmap, term.year_number)}
                       </p>
                       <p className="text-xs text-gray-500">
                         {formatRoadmapSemester(term.semester)}

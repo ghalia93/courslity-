@@ -12,6 +12,7 @@ import {
   formatCourseLevel,
   sortCourseLevels,
 } from "@/lib/courseLevels";
+import { isLiuComputerCommunicationCourse } from "@/lib/courseExplainer";
 import { getUniversityAliasSearchTerms } from "@/lib/universityAliases";
 import {
   Pencil,
@@ -21,6 +22,7 @@ import {
   Star,
   SlidersHorizontal,
   ChevronDown,
+  Video,
   X,
 } from "lucide-react";
 
@@ -29,6 +31,8 @@ type Course = {
   code: string;
   title: string;
   description: string;
+  videoUrl?: string | null;
+  videoTitle?: string | null;
   credits: number;
   level: string;
   language: string;
@@ -83,6 +87,36 @@ function uniqueSorted(values: string[]) {
   return unique(values.filter(Boolean)).sort((a, b) => a.localeCompare(b));
 }
 
+function getCourseVideoStatus(course: Pick<Course, "videoUrl" | "university" | "department">) {
+  if (course.videoUrl) return "custom";
+  if (isLiuComputerCommunicationCourse(course)) return "generated";
+  return "none";
+}
+
+function CourseVideoBadge({ course }: { course: Course }) {
+  const status = getCourseVideoStatus(course);
+
+  if (status === "custom") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md bg-[#EAF8FD] px-2 py-1 text-xs font-medium text-[#1F6F8B]">
+        <Video size={13} />
+        Custom
+      </span>
+    );
+  }
+
+  if (status === "generated") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md bg-[#EEF2FF] px-2 py-1 text-xs font-medium text-[#4f45d4]">
+        <Video size={13} />
+        Generated
+      </span>
+    );
+  }
+
+  return <span className="text-xs text-gray-400">None</span>;
+}
+
 // Edit Modal
 
 const VALID_LANGUAGES = [
@@ -106,6 +140,8 @@ function EditCourseModal({
   const [form, setForm] = useState({
     title: course.title,
     description: course.description,
+    videoUrl: course.videoUrl ?? "",
+    videoTitle: course.videoTitle ?? "",
     credits: String(course.credits),
     language: course.language,
     level: course.level as string,
@@ -146,12 +182,16 @@ function EditCourseModal({
     const payload: {
       title: string;
       description: string;
+      videoUrl: string | null;
+      videoTitle: string | null;
       credits: number;
       language: string;
       level: Course["level"];
     } = {
       title: form.title.trim(),
       description: form.description.trim(),
+      videoUrl: form.videoUrl.trim() || null,
+      videoTitle: form.videoTitle.trim() || null,
       credits: creditsNum,
       language: form.language,
       level: form.level as Course["level"],
@@ -282,6 +322,34 @@ function EditCourseModal({
                 rows={4}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
                   focus:outline-none focus:ring-2 focus:ring-[#6155F5] focus:border-transparent resize-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">
+                Course Video URL
+              </label>
+              <input
+                name="videoUrl"
+                value={form.videoUrl}
+                onChange={handleChange}
+                placeholder="YouTube, Vimeo, or MP4 link"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                  focus:outline-none focus:ring-2 focus:ring-[#6155F5] focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">
+                Video Title
+              </label>
+              <input
+                name="videoTitle"
+                value={form.videoTitle}
+                onChange={handleChange}
+                placeholder="Optional title"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                  focus:outline-none focus:ring-2 focus:ring-[#6155F5] focus:border-transparent"
               />
             </div>
           </div>
@@ -460,6 +528,30 @@ function CourseDetailModal({
             <p className="text-sm text-gray-700 leading-relaxed">
               {course.description}
             </p>
+          </div>
+
+          <div>
+            <p className="text-xs text-gray-400 mb-1.5">Course video</p>
+            {course.videoUrl ? (
+              <a
+                href={course.videoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-[#6155F5]/20 bg-[#EEF2FF] px-2.5 py-1.5 text-sm font-medium text-[#4f45d4] transition hover:bg-[#E4E7FF]"
+              >
+                <Video size={14} />
+                <span className="truncate">
+                  {course.videoTitle?.trim() || "Open video"}
+                </span>
+              </a>
+            ) : getCourseVideoStatus(course) === "generated" ? (
+              <div className="inline-flex items-center gap-1.5 rounded-md border border-[#6155F5]/20 bg-[#EEF2FF] px-2.5 py-1.5 text-sm font-medium text-[#4f45d4]">
+                <Video size={14} />
+                Generated explainer appears on course details
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">No custom video added.</p>
+            )}
           </div>
 
           <div className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5 text-xs text-gray-400 space-y-0.5">
@@ -1198,7 +1290,7 @@ export default function AdminCoursesPage() {
 
       {/*  Desktop table */}
       <div className="hidden md:block mt-2 rounded-xl border border-gray-200 bg-white overflow-x-auto">
-        <table className="w-full min-w-[1520px] text-sm table-fixed">
+        <table className="w-full min-w-[1640px] text-sm table-fixed">
           <colgroup>
             <col className="w-[210px]" />
             <col className="w-[180px]" />
@@ -1208,6 +1300,7 @@ export default function AdminCoursesPage() {
             <col className="w-[90px]" />
             <col className="w-[180px]" />
             <col className="w-[240px]" />
+            <col className="w-[120px]" />
             <col className="w-[90px]" />
             <col className="w-[100px]" />
             <col className="w-[100px]" />
@@ -1230,6 +1323,7 @@ export default function AdminCoursesPage() {
               <th className="text-left px-4 py-3 whitespace-nowrap">
                 Description
               </th>
+              <th className="text-left px-4 py-3 whitespace-nowrap">Video</th>
               <th className="text-left px-4 py-3 whitespace-nowrap">Reviews</th>
               <th className="text-left px-4 py-3 whitespace-nowrap">Status</th>
               <th className="text-right px-4 py-3 whitespace-nowrap">
@@ -1241,7 +1335,7 @@ export default function AdminCoursesPage() {
             {loading ? (
               <tr>
                 <td
-                  colSpan={11}
+                  colSpan={12}
                   className="px-4 py-12 text-center text-gray-400 text-sm"
                 >
                   Loading courses...
@@ -1250,7 +1344,7 @@ export default function AdminCoursesPage() {
             ) : filteredCourses.length === 0 ? (
               <tr>
                 <td
-                  colSpan={11}
+                  colSpan={12}
                   className="px-4 py-12 text-center text-gray-400 text-sm"
                 >
                   No courses match your search or filters.
@@ -1324,6 +1418,9 @@ export default function AdminCoursesPage() {
                     <p className="text-gray-500 text-xs line-clamp-2">
                       {course.description}
                     </p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <CourseVideoBadge course={course} />
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700">
                     {course.number_of_reviews}
@@ -1471,6 +1568,10 @@ export default function AdminCoursesPage() {
                 <p>
                   <span className="text-gray-400">Reviews:</span>{" "}
                   {course.number_of_reviews}
+                </p>
+                <p>
+                  <span className="text-gray-400">Video:</span>{" "}
+                  <CourseVideoBadge course={course} />
                 </p>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">

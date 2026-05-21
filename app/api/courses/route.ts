@@ -7,6 +7,7 @@ import {
   getYearFromCourseCode,
 } from "@/lib/courseCode";
 import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
+import { ensureCourseVideoColumns } from "@/lib/courseVideosDb";
 import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
 
 type CourseRow = RowDataPacket & {
@@ -14,6 +15,8 @@ type CourseRow = RowDataPacket & {
   code: string;
   title: string;
   description: string;
+  video_url: string | null;
+  video_title: string | null;
   credits: number;
   level: string;
   language: string;
@@ -38,6 +41,8 @@ type PublicCourse = {
   code: string;
   title: string;
   description: string;
+  videoUrl: string | null;
+  videoTitle: string | null;
   credits: number;
   level: string;
   language: string;
@@ -79,6 +84,7 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     await ensureReviewHiddenColumn();
+    await ensureCourseVideoColumns();
 
     const limit = Math.min(
       getRequestedLimit(url.searchParams.get("limit")),
@@ -188,6 +194,8 @@ export async function GET(req: Request) {
         c.code,
         c.title,
         c.description,
+        c.video_url,
+        c.video_title,
         c.credits,
         c.level,
         c.language,
@@ -237,6 +245,8 @@ export async function GET(req: Request) {
         c.code,
         c.title,
         c.description,
+        c.video_url,
+        c.video_title,
         c.credits,
         c.level,
         c.language,
@@ -277,6 +287,8 @@ export async function GET(req: Request) {
         code: row.code,
         title: row.title,
         description: normalizeCourseDescription(row),
+        videoUrl: row.video_url ?? null,
+        videoTitle: row.video_title ?? null,
         credits: row.credits,
         level: row.level,
         language: row.language,

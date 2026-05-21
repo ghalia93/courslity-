@@ -27,10 +27,12 @@ export default function SupportChatWidget() {
     null,
   );
   const [error, setError] = useState("");
+  const [unreadReplyCount, setUnreadReplyCount] = useState(0);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const adminUser = Boolean(user && isAdminRole(user.role));
 
   const loadMessages = useCallback(async () => {
-    if (user && isAdminRole(user.role)) return;
+    if (adminUser) return;
 
     try {
       setError("");
@@ -45,10 +47,52 @@ export default function SupportChatWidget() {
       }
 
       setMessages(data.messages ?? []);
+      setUnreadReplyCount(0);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load chat");
     }
-  }, [user]);
+  }, [adminUser]);
+
+  const loadChatSummary = useCallback(async () => {
+    if (loading || adminUser) {
+      setUnreadReplyCount(0);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/support/chat?summary=1", {
+        cache: "no-store",
+        credentials: "include",
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) {
+        setUnreadReplyCount(0);
+        return;
+      }
+
+      setUnreadReplyCount(Number(data.unreadCount || 0));
+    } catch {
+      setUnreadReplyCount(0);
+    }
+  }, [adminUser, loading]);
+
+  useEffect(() => {
+    const initialTimeoutId = window.setTimeout(loadChatSummary, 0);
+
+    if (loading || adminUser) {
+      return () => window.clearTimeout(initialTimeoutId);
+    }
+
+    const intervalId = window.setInterval(loadChatSummary, 10000);
+    window.addEventListener("focus", loadChatSummary);
+
+    return () => {
+      window.clearTimeout(initialTimeoutId);
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", loadChatSummary);
+    };
+  }, [adminUser, loadChatSummary, loading]);
 
   useEffect(() => {
     if (!open) return;
@@ -84,6 +128,7 @@ export default function SupportChatWidget() {
 
       setDraft("");
       setMessages(data.messages ?? []);
+      setUnreadReplyCount(0);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to send message");
     } finally {
@@ -122,6 +167,7 @@ export default function SupportChatWidget() {
       }
 
       setMessages(data.messages ?? []);
+      setUnreadReplyCount(0);
       cancelEditing();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to edit message");
@@ -150,6 +196,7 @@ export default function SupportChatWidget() {
       }
 
       setMessages(data.messages ?? []);
+      setUnreadReplyCount(0);
       if (editingMessageId === messageId) cancelEditing();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to delete message");
@@ -158,7 +205,10 @@ export default function SupportChatWidget() {
     }
   }
 
-  if (loading || (user && isAdminRole(user.role))) return null;
+  if (loading || adminUser) return null;
+
+  const unreadReplyLabel =
+    unreadReplyCount > 99 ? "99+" : String(unreadReplyCount);
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
@@ -310,11 +360,16 @@ export default function SupportChatWidget() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#6155F5] text-sm font-semibold text-white shadow-lg hover:bg-[#503fdc] sm:w-auto sm:gap-2 sm:px-4"
+        className="relative inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#6155F5] text-sm font-semibold text-white shadow-lg hover:bg-[#503fdc] sm:w-auto sm:gap-2 sm:px-4"
         aria-label="Chat"
       >
         <MessageCircle size={18} />
         <span className="hidden sm:inline">Chat</span>
+        {!open && unreadReplyCount > 0 && (
+          <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold leading-5 text-white ring-2 ring-white dark:ring-neutral-950">
+            {unreadReplyLabel}
+          </span>
+        )}
       </button>
     </div>
   );

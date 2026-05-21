@@ -12,6 +12,7 @@ import {
   Scale,
 } from "lucide-react";
 import Link from "next/link";
+import CourseExplainerVideo from "@/components/CourseExplainerVideo";
 import { formatCourseLevel } from "@/lib/courseLevels";
 
 type CourseRatings = {
@@ -27,6 +28,8 @@ type Course = {
   code: string;
   title: string;
   description: string;
+  videoUrl?: string | null;
+  videoTitle?: string | null;
   credits: string;
   level: string;
   language: string;
@@ -155,6 +158,8 @@ export default function CourseInfo({ course }: { course: Course }) {
           {course.description}
         </p>
       </div>
+
+      <CourseExplainerVideo course={course} />
 
       {/* Level + language */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">

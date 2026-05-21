@@ -19,6 +19,14 @@ type SupportMessageRow = RowDataPacket & {
   edited: 0 | 1;
 };
 
+type ThreadRow = RowDataPacket & {
+  thread_id: number;
+};
+
+type UnreadReplyCountRow = RowDataPacket & {
+  unread_count: number | string;
+};
+
 type ChatIdentity = {
   threadId: number;
   senderId: number | null;
@@ -109,11 +117,96 @@ async function getChatIdentity(
   };
 }
 
+async function getExistingChatIdentity(
+  req: NextRequest,
+): Promise<ChatIdentity | null> {
+  const user = await getOptionalUser(req);
+
+  if (user) {
+    if (isAdminRole(user.role)) {
+      throw new Error("FORBIDDEN");
+    }
+
+    const [rows] = await pool.query<ThreadRow[]>(
+      "SELECT thread_id FROM support_thread WHERE user_id = ? LIMIT 1",
+      [user.userId],
+    );
+
+    if (!rows.length) return null;
+
+    return {
+      threadId: rows[0].thread_id,
+      senderId: user.userId,
+      senderRole: "student",
+    };
+  }
+
+  const visitorKey = req.cookies.get("support_visitor_key")?.value;
+  if (!visitorKey || !/^[a-zA-Z0-9-]{20,80}$/.test(visitorKey)) {
+    return null;
+  }
+
+  const [rows] = await pool.query<ThreadRow[]>(
+    "SELECT thread_id FROM support_thread WHERE visitor_key = ? LIMIT 1",
+    [visitorKey],
+  );
+
+  if (!rows.length) return null;
+
+  return {
+    threadId: rows[0].thread_id,
+    senderId: null,
+    senderRole: "visitor",
+    visitorKey,
+  };
+}
+
+async function getUnreadAdminReplyCount(threadId: number) {
+  const [rows] = await pool.query<UnreadReplyCountRow[]>(
+    `SELECT COUNT(*) AS unread_count
+     FROM support_message sm
+     JOIN support_thread st ON st.thread_id = sm.thread_id
+     WHERE sm.thread_id = ?
+       AND sm.sender_role = 'admin'
+       AND sm.deleted_at IS NULL
+       AND (
+         st.participant_last_opened_at IS NULL
+         OR sm.created_at > st.participant_last_opened_at
+       )`,
+    [threadId],
+  );
+
+  return Number(rows[0]?.unread_count ?? 0);
+}
+
+async function markParticipantOpened(threadId: number) {
+  await pool.query(
+    "UPDATE support_thread SET participant_last_opened_at = NOW() WHERE thread_id = ?",
+    [threadId],
+  );
+}
+
 export async function GET(req: NextRequest) {
   try {
     await ensureSupportChatTables();
 
+    const { searchParams } = new URL(req.url);
+    const summaryOnly = searchParams.get("summary") === "1";
+
+    if (summaryOnly) {
+      const identity = await getExistingChatIdentity(req);
+      const unreadCount = identity
+        ? await getUnreadAdminReplyCount(identity.threadId)
+        : 0;
+
+      return attachVisitorCookie(
+        NextResponse.json({ success: true, unreadCount }),
+        identity?.visitorKey,
+      );
+    }
+
     const identity = await getChatIdentity(req, { createVisitor: true });
+    await markParticipantOpened(identity.threadId);
     const messages = await getMessages(identity.threadId);
 
     return attachVisitorCookie(NextResponse.json({
@@ -164,6 +257,7 @@ export async function POST(req: NextRequest) {
       [identity.threadId],
     );
 
+    await markParticipantOpened(identity.threadId);
     const messages = await getMessages(identity.threadId);
 
     return attachVisitorCookie(NextResponse.json({
@@ -232,6 +326,7 @@ export async function PATCH(req: NextRequest) {
       [identity.threadId],
     );
 
+    await markParticipantOpened(identity.threadId);
     const messages = await getMessages(identity.threadId);
 
     return attachVisitorCookie(NextResponse.json({
@@ -285,6 +380,7 @@ export async function DELETE(req: NextRequest) {
       [identity.threadId],
     );
 
+    await markParticipantOpened(identity.threadId);
     const messages = await getMessages(identity.threadId);
 
     return attachVisitorCookie(NextResponse.json({

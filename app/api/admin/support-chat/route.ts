@@ -11,9 +11,12 @@ type SupportThreadRow = RowDataPacket & {
   full_name: string;
   email: string;
   status: string;
+  latest_message_id: number | null;
   latest_message: string | null;
+  latest_sender_role: "student" | "visitor" | "admin" | null;
   last_message_at: string;
   is_visitor: 0 | 1;
+  unread: 0 | 1;
 };
 
 type SupportMessageRow = RowDataPacket & {
@@ -26,6 +29,15 @@ type SupportMessageRow = RowDataPacket & {
 
 type ThreadExistsRow = RowDataPacket & {
   thread_id: number;
+};
+
+type UnreadCountRow = RowDataPacket & {
+  unread_count: number | string;
+};
+
+type LatestUnreadThreadRow = RowDataPacket & {
+  latest_message_id: number;
+  full_name: string;
 };
 
 async function getMessages(threadId: number) {
@@ -46,15 +58,100 @@ async function getMessages(threadId: number) {
   return messages;
 }
 
+async function getUnreadChatCount() {
+  const [rows] = await pool.query<UnreadCountRow[]>(
+    `SELECT COUNT(*) AS unread_count
+     FROM support_thread st
+     JOIN (
+       SELECT
+         sm.thread_id,
+         sm.sender_role,
+         sm.created_at
+       FROM support_message sm
+       JOIN (
+         SELECT thread_id, MAX(message_id) AS latest_message_id
+         FROM support_message
+         WHERE deleted_at IS NULL
+         GROUP BY thread_id
+       ) latest
+         ON latest.latest_message_id = sm.message_id
+       WHERE sm.deleted_at IS NULL
+     ) latest_message
+       ON latest_message.thread_id = st.thread_id
+     WHERE latest_message.sender_role IN ('student', 'visitor')
+       AND (
+         st.admin_last_opened_at IS NULL
+         OR latest_message.created_at > st.admin_last_opened_at
+       )`,
+  );
+
+  return Number(rows[0]?.unread_count ?? 0);
+}
+
+async function getLatestUnreadThread() {
+  const [rows] = await pool.query<LatestUnreadThreadRow[]>(
+    `SELECT
+       latest_message.message_id AS latest_message_id,
+       CASE
+         WHEN st.user_id IS NULL THEN COALESCE(st.visitor_name, 'Anonymous visitor')
+         ELSE COALESCE(u.full_name, 'Student')
+       END AS full_name
+     FROM support_thread st
+     JOIN (
+       SELECT
+         sm.thread_id,
+         sm.message_id,
+         sm.sender_role,
+         sm.created_at
+       FROM support_message sm
+       JOIN (
+         SELECT thread_id, MAX(message_id) AS latest_message_id
+         FROM support_message
+         WHERE deleted_at IS NULL
+         GROUP BY thread_id
+       ) latest
+         ON latest.latest_message_id = sm.message_id
+       WHERE sm.deleted_at IS NULL
+     ) latest_message
+       ON latest_message.thread_id = st.thread_id
+     LEFT JOIN \`user\` u ON u.user_id = st.user_id
+     WHERE latest_message.sender_role IN ('student', 'visitor')
+       AND (
+         st.admin_last_opened_at IS NULL
+         OR latest_message.created_at > st.admin_last_opened_at
+       )
+     ORDER BY latest_message.created_at DESC, latest_message.message_id DESC
+     LIMIT 1`,
+  );
+
+  return rows[0] ?? null;
+}
+
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin(req);
     await ensureSupportChatTables();
 
     const { searchParams } = new URL(req.url);
+    const summaryOnly = searchParams.get("summary") === "1";
     const threadId = Number(searchParams.get("thread_id") || 0);
 
+    if (summaryOnly) {
+      const unreadCount = await getUnreadChatCount();
+      const latestUnreadThread = await getLatestUnreadThread();
+      return NextResponse.json({
+        success: true,
+        unreadCount,
+        latestUnreadMessageId: latestUnreadThread?.latest_message_id ?? null,
+        latestUnreadName: latestUnreadThread?.full_name ?? null,
+      });
+    }
+
     if (Number.isInteger(threadId) && threadId > 0) {
+      await pool.query(
+        "UPDATE support_thread SET admin_last_opened_at = NOW() WHERE thread_id = ?",
+        [threadId],
+      );
       const messages = await getMessages(threadId);
       return NextResponse.json({ success: true, messages });
     }
@@ -74,22 +171,38 @@ export async function GET(req: NextRequest) {
         CASE WHEN st.user_id IS NULL THEN 1 ELSE 0 END AS is_visitor,
         st.status,
         DATE_FORMAT(st.last_message_at, '%Y-%m-%d %H:%i') AS last_message_at,
-        (
-          SELECT sm.body
-          FROM support_message sm
-          WHERE sm.thread_id = st.thread_id
-            AND sm.deleted_at IS NULL
-          ORDER BY sm.created_at DESC, sm.message_id DESC
-          LIMIT 1
-        ) AS latest_message
+        latest_message.message_id AS latest_message_id,
+        latest_message.body AS latest_message,
+        latest_message.sender_role AS latest_sender_role,
+        CASE
+          WHEN latest_message.sender_role IN ('student', 'visitor')
+            AND (
+              st.admin_last_opened_at IS NULL
+              OR latest_message.created_at > st.admin_last_opened_at
+            )
+          THEN 1
+          ELSE 0
+        END AS unread
       FROM support_thread st
+      JOIN (
+        SELECT
+          sm.thread_id,
+          sm.message_id,
+          sm.body,
+          sm.sender_role,
+          sm.created_at
+        FROM support_message sm
+        JOIN (
+          SELECT thread_id, MAX(message_id) AS latest_message_id
+          FROM support_message
+          WHERE deleted_at IS NULL
+          GROUP BY thread_id
+        ) latest
+          ON latest.latest_message_id = sm.message_id
+        WHERE sm.deleted_at IS NULL
+      ) latest_message
+        ON latest_message.thread_id = st.thread_id
       LEFT JOIN \`user\` u ON u.user_id = st.user_id
-      WHERE EXISTS (
-        SELECT 1
-        FROM support_message sm_exists
-        WHERE sm_exists.thread_id = st.thread_id
-          AND sm_exists.deleted_at IS NULL
-      )
       ORDER BY st.last_message_at DESC, st.thread_id DESC`,
     );
 

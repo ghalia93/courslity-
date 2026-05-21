@@ -4,6 +4,7 @@ import type { RowDataPacket } from "mysql2";
 import { requireAdmin } from "@/lib/auth";
 import pool from "@/db";
 import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
+import { ensureUniversityReviewTables } from "@/lib/universityReviewDb";
 
 type ReviewIdRow = RowDataPacket & {
   review_id: number;
@@ -12,6 +13,11 @@ type ReviewIdRow = RowDataPacket & {
 function parseReviewId(id: string) {
   const reviewId = parseInt(id, 10);
   return Number.isInteger(reviewId) && reviewId > 0 ? reviewId : null;
+}
+
+function getReviewType(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  return searchParams.get("type") === "university" ? "university" : "course";
 }
 
 /**
@@ -26,9 +32,11 @@ export async function PATCH(
   try {
     await requireAdmin(req);
     await ensureReviewHiddenColumn();
+    await ensureUniversityReviewTables();
 
     const { id } = await params;
     const reviewId = parseReviewId(id);
+    const reviewType = getReviewType(req);
 
     if (!reviewId) {
       return NextResponse.json(
@@ -37,13 +45,18 @@ export async function PATCH(
       );
     }
 
+    const tableName =
+      reviewType === "university" ? "university_review" : "review";
+    const idColumn =
+      reviewType === "university" ? "university_review_id" : "review_id";
+
     const [rows] = await pool.query<ReviewIdRow[]>(
-      `SELECT review_id
-        FROM review
-        WHERE review_id = ?
-          AND deleted_at IS NULL
-          AND hidden_at IS NULL
-        LIMIT 1`,
+      `SELECT ${idColumn} AS review_id
+       FROM ${tableName}
+       WHERE ${idColumn} = ?
+         AND deleted_at IS NULL
+         AND hidden_at IS NULL
+       LIMIT 1`,
       [reviewId],
     );
 
@@ -55,7 +68,7 @@ export async function PATCH(
     }
 
     await pool.query(
-      "UPDATE review SET hidden_at = NOW() WHERE review_id = ?",
+      `UPDATE ${tableName} SET hidden_at = NOW() WHERE ${idColumn} = ?`,
       [reviewId],
     );
 
@@ -87,9 +100,11 @@ export async function DELETE(
   try {
     await requireAdmin(req);
     await ensureReviewHiddenColumn();
+    await ensureUniversityReviewTables();
 
     const { id } = await params;
     const reviewId = parseReviewId(id);
+    const reviewType = getReviewType(req);
 
     if (!reviewId) {
       return NextResponse.json(
@@ -98,9 +113,17 @@ export async function DELETE(
       );
     }
 
+    const tableName =
+      reviewType === "university" ? "university_review" : "review";
+    const idColumn =
+      reviewType === "university" ? "university_review_id" : "review_id";
+
     // Check the review exists and isn't already deleted
     const [rows] = await pool.query<ReviewIdRow[]>(
-      "SELECT review_id FROM review WHERE review_id = ? AND deleted_at IS NULL",
+      `SELECT ${idColumn} AS review_id
+       FROM ${tableName}
+       WHERE ${idColumn} = ?
+         AND deleted_at IS NULL`,
       [reviewId],
     );
 
@@ -113,7 +136,7 @@ export async function DELETE(
 
     // Soft delete
     await pool.query(
-      "UPDATE review SET deleted_at = NOW() WHERE review_id = ?",
+      `UPDATE ${tableName} SET deleted_at = NOW() WHERE ${idColumn} = ?`,
       [reviewId],
     );
 

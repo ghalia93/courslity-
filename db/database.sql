@@ -15,6 +15,7 @@ CREATE TABLE `university` (
   `university_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NOT NULL,
   `email_domain` VARCHAR(100) NOT NULL DEFAULT '',
+  `description` TEXT NULL DEFAULT NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`university_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -92,6 +93,8 @@ CREATE TABLE `course` (
   `code` VARCHAR(50) NOT NULL,
   `title` VARCHAR(255) NOT NULL,
   `description` TEXT NOT NULL,
+  `video_url` VARCHAR(2048) NULL DEFAULT NULL,
+  `video_title` VARCHAR(255) NULL DEFAULT NULL,
   `credits` TINYINT UNSIGNED NOT NULL,   -- credits realistically 1-9; TINYINT saves space and rejects negatives
   `language` ENUM('English','Arabic','French','German','Spanish','Other') NOT NULL DEFAULT 'English',
   `level` ENUM('freshman','undergraduate','graduate','master_degree','doctoral') NOT NULL,
@@ -231,6 +234,54 @@ CREATE TABLE `review_vote` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
+-- Tables: university reviews
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `university_review` (
+  `university_review_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT UNSIGNED NOT NULL,
+  `university_id` INT UNSIGNED NOT NULL,
+  `overall_rating` DECIMAL(3,2) NOT NULL CHECK (`overall_rating` BETWEEN 0 AND 5),
+  `academic_quality_rating` DECIMAL(3,2) NOT NULL CHECK (`academic_quality_rating` BETWEEN 1 AND 5),
+  `professors_rating` DECIMAL(3,2) NOT NULL CHECK (`professors_rating` BETWEEN 1 AND 5),
+  `facilities_rating` DECIMAL(3,2) NOT NULL CHECK (`facilities_rating` BETWEEN 1 AND 5),
+  `tuition_value_rating` DECIMAL(3,2) NOT NULL CHECK (`tuition_value_rating` BETWEEN 1 AND 5),
+  `student_life_rating` DECIMAL(3,2) NOT NULL CHECK (`student_life_rating` BETWEEN 1 AND 5),
+  `review_text` TEXT NOT NULL,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  `hidden_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`university_review_id`),
+  UNIQUE KEY `uniq_university_review_user_university` (`user_id`, `university_id`),
+  KEY `idx_university_review_university` (`university_id`, `created_at`),
+  CONSTRAINT `fk_university_review_user`
+    FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_university_review_university`
+    FOREIGN KEY (`university_id`) REFERENCES `university`(`university_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `university_review_vote` (
+  `university_review_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
+  `vote_value` TINYINT NOT NULL CHECK (`vote_value` IN (-1, 1)),
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`university_review_id`, `user_id`),
+  KEY `idx_university_review_vote_user` (`user_id`),
+  CONSTRAINT `fk_university_review_vote_review`
+    FOREIGN KEY (`university_review_id`) REFERENCES `university_review`(`university_review_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_university_review_vote_user`
+    FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
 -- Table: feedback
 -- --------------------------------------------------------
 CREATE TABLE `feedback` (
@@ -291,6 +342,8 @@ CREATE TABLE IF NOT EXISTS `support_thread` (
   `visitor_name` VARCHAR(120) NULL,
   `status` ENUM('open','closed') NOT NULL DEFAULT 'open',
   `last_message_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `admin_last_opened_at` TIMESTAMP NULL DEFAULT NULL,
+  `participant_last_opened_at` TIMESTAMP NULL DEFAULT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`thread_id`),
   UNIQUE KEY `uniq_support_thread_user` (`user_id`),

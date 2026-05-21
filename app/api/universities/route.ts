@@ -2,17 +2,21 @@
 import { NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
+import { ensureUniversityDescriptionColumn } from "@/lib/universityDb";
 
 type UniversityRow = RowDataPacket & {
   university_id: number;
   name: string;
   email_domain: string;
+  description: string | null;
 };
 
 export async function GET() {
   try {
+    await ensureUniversityDescriptionColumn();
+
     const [rows] = await pool.query<UniversityRow[]>(
-      `SELECT university_id, name, email_domain
+      `SELECT university_id, name, email_domain, description
         FROM university
         WHERE is_active = 1
         ORDER BY name ASC`,

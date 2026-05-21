@@ -1,7 +1,13 @@
 "use client";
 
 // Renders the admin AdminNavbar interface component.
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,6 +37,7 @@ function isActive(pathname: string, href: string) {
 
 const SIDEBAR_STORAGE_KEY = "admin-sidebar";
 const SIDEBAR_STORAGE_EVENT = "admin-sidebar-change";
+const ADMIN_CHAT_EVENT = "admin-chat-updated";
 
 function getSidebarSnapshot() {
   if (typeof window === "undefined") return false;
@@ -66,8 +73,13 @@ export default function AdminNavbar() {
   );
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [chatNotice, setChatNotice] = useState("");
 
   const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const latestUnreadMessageRef = useRef<number | null>(null);
+  const chatSummaryLoadedRef = useRef(false);
+  const chatNoticeTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     document.documentElement.style.setProperty(
@@ -106,13 +118,95 @@ export default function AdminNavbar() {
   const displayName = user?.email?.split("@")[0] ?? "Admin";
   const avatarLetter = displayName.charAt(0).toUpperCase();
   const canManageAcademicData = isAdminRole(user?.role);
+  const canLoadChatSummary = isAdminRole(user?.role);
 
-  const itemBase = `flex items-center gap-2.5 px-2.5 py-1.5 text-sm transition rounded-lg ${
+  const loadChatSummary = useCallback(async () => {
+    if (!canLoadChatSummary) {
+      setUnreadChatCount(0);
+      latestUnreadMessageRef.current = null;
+      chatSummaryLoadedRef.current = false;
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/support-chat?summary=1", {
+        cache: "no-store",
+        credentials: "include",
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) return;
+
+      const unreadCount = Number(data.unreadCount || 0);
+      const latestUnreadMessageId =
+        data.latestUnreadMessageId === null ||
+        data.latestUnreadMessageId === undefined
+          ? null
+          : Number(data.latestUnreadMessageId);
+      const previousLatestUnreadMessageId = latestUnreadMessageRef.current;
+
+      setUnreadChatCount(unreadCount);
+
+      if (
+        chatSummaryLoadedRef.current &&
+        unreadCount > 0 &&
+        latestUnreadMessageId !== null &&
+        latestUnreadMessageId !== previousLatestUnreadMessageId
+      ) {
+        const name = String(data.latestUnreadName || "A conversation");
+        setChatNotice(`${name} is waiting for your answer.`);
+
+        if (chatNoticeTimeoutRef.current) {
+          window.clearTimeout(chatNoticeTimeoutRef.current);
+        }
+        chatNoticeTimeoutRef.current = window.setTimeout(() => {
+          setChatNotice("");
+          chatNoticeTimeoutRef.current = null;
+        }, 2000);
+      }
+
+      latestUnreadMessageRef.current = latestUnreadMessageId;
+      chatSummaryLoadedRef.current = true;
+    } catch {
+      setUnreadChatCount(0);
+    }
+  }, [canLoadChatSummary]);
+
+  useEffect(() => {
+    const initialTimeoutId = window.setTimeout(loadChatSummary, 0);
+
+    if (!canLoadChatSummary) {
+      return () => window.clearTimeout(initialTimeoutId);
+    }
+
+    const intervalId = window.setInterval(loadChatSummary, 10000);
+    window.addEventListener("focus", loadChatSummary);
+    window.addEventListener(ADMIN_CHAT_EVENT, loadChatSummary);
+
+    return () => {
+      window.clearTimeout(initialTimeoutId);
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", loadChatSummary);
+      window.removeEventListener(ADMIN_CHAT_EVENT, loadChatSummary);
+    };
+  }, [canLoadChatSummary, loadChatSummary]);
+
+  useEffect(() => {
+    return () => {
+      if (chatNoticeTimeoutRef.current) {
+        window.clearTimeout(chatNoticeTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const itemBase = `relative flex items-center gap-2.5 px-2.5 py-1.5 text-sm transition rounded-lg ${
     collapsed ? "justify-center" : ""
   }`;
-  const mobileItem = `flex items-center gap-2.5 px-2.5 py-1.5 text-sm rounded-lg transition w-full`;
+  const mobileItem = `relative flex items-center gap-2.5 px-2.5 py-1.5 text-sm rounded-lg transition w-full`;
   const activePill = "bg-[#C9C6FF] text-[#5B5BFF] font-medium";
   const inactivePill = "text-gray-600 hover:bg-gray-50";
+  const unreadChatLabel =
+    unreadChatCount > 99 ? "99+" : String(unreadChatCount);
 
   return (
     <>
@@ -182,6 +276,21 @@ export default function AdminNavbar() {
           </div>
         </div>
       </header>
+      {chatNotice && (
+        <div className="fixed right-4 top-16 z-[70] max-w-sm rounded-xl border border-[#C9C4FF] bg-white px-4 py-3 text-sm text-gray-800 shadow-xl">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EEF2FF] text-[#6155F5]">
+              <MessageSquare size={16} />
+            </span>
+            <div>
+              <p className="font-semibold text-gray-900">
+                Conversation waiting
+              </p>
+              <p className="mt-0.5 text-gray-600">{chatNotice}</p>
+            </div>
+          </div>
+        </div>
+      )}
       <aside
         className={`hidden md:block fixed left-0 top-14 h-[calc(100vh-56px)] overflow-y-auto bg-white border-r border-gray-200
         ${collapsed ? "w-[64px]" : "w-[200px]"} transition-all duration-300`}
@@ -287,8 +396,20 @@ export default function AdminNavbar() {
               isActive(pathname, "/admin/chat") ? activePill : inactivePill
             }`}
           >
-            <MessageSquare size={18} />
-            {!collapsed && "Chat"}
+            <span className="relative inline-flex shrink-0">
+              <MessageSquare size={18} />
+              {collapsed && unreadChatCount > 0 && (
+                <span className="absolute -right-2 -top-2 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-[18px] text-white">
+                  {unreadChatLabel}
+                </span>
+              )}
+            </span>
+            {!collapsed && <span className="min-w-0 flex-1">Chat</span>}
+            {!collapsed && unreadChatCount > 0 && (
+              <span className="ml-auto inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold leading-5 text-white">
+                {unreadChatLabel}
+              </span>
+            )}
           </Link>
 
           <Link
@@ -431,7 +552,12 @@ export default function AdminNavbar() {
                 }`}
               >
                 <MessageSquare size={18} className="shrink-0" />
-                Chat
+                <span className="min-w-0 flex-1">Chat</span>
+                {unreadChatCount > 0 && (
+                  <span className="ml-auto inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold leading-5 text-white">
+                    {unreadChatLabel}
+                  </span>
+                )}
               </Link>
 
               <Link

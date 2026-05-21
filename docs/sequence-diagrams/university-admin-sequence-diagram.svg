@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1250" viewBox="0 0 900 1250">
+  <defs>
+    <pattern id="smallGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e8eef4" stroke-width="1"/>
+    </pattern>
+    <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+      <rect width="100" height="100" fill="url(#smallGrid)"/>
+      <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#d5dde7" stroke-width="1.2"/>
+    </pattern>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M 2 2 L 10 6 L 2 10" fill="none" stroke="#202020" stroke-width="1.8"/>
+    </marker>
+    <style>
+      .title{font:700 28px Arial,sans-serif;fill:#111827}
+      .head{font:600 17px Arial,sans-serif;fill:#111827}
+      .label{font:15px Arial,sans-serif;fill:#111827}
+      .life{stroke:#202020;stroke-width:2;stroke-dasharray:4 7}
+      .msg{stroke:#202020;stroke-width:2.2;fill:none;marker-end:url(#arrow)}
+      .ret{stroke:#202020;stroke-width:2;fill:none;stroke-dasharray:7 6;marker-end:url(#arrow)}
+      .act{fill:#fff;stroke:#202020;stroke-width:2}
+    </style>
+  </defs>
+
+  <rect width="900" height="1250" fill="url(#grid)"/>
+  <text x="450" y="36" text-anchor="middle" class="title">University Admin Sequence Diagram</text>
+
+  <text x="105" y="78" text-anchor="middle" class="head">Uni Admin</text>
+  <text x="315" y="78" text-anchor="middle" class="head">Frontend</text>
+  <text x="525" y="78" text-anchor="middle" class="head">Backend API</text>
+  <text x="735" y="78" text-anchor="middle" class="head">Database</text>
+
+  <line x1="105" y1="95" x2="105" y2="1215" class="life"/>
+  <line x1="315" y1="95" x2="315" y2="1215" class="life"/>
+  <line x1="525" y1="95" x2="525" y2="1215" class="life"/>
+  <line x1="735" y1="95" x2="735" y2="1215" class="life"/>
+
+  <line x1="105" y1="135" x2="315" y2="135" class="msg"/>
+  <text x="122" y="123" class="label">Enter university admin login</text>
+  <line x1="315" y1="190" x2="525" y2="190" class="msg"/>
+  <text x="365" y="178" class="label">POST /api/auth/login</text>
+  <rect x="513" y="198" width="24" height="46" class="act"/>
+  <line x1="525" y1="230" x2="735" y2="230" class="msg"/>
+  <text x="555" y="218" class="label">Validate super_admin role</text>
+  <line x1="735" y1="295" x2="525" y2="295" class="ret"/>
+  <text x="585" y="282" class="label">University admin found</text>
+  <line x1="525" y1="350" x2="315" y2="350" class="ret"/>
+  <text x="372" y="337" class="label">Auth success</text>
+  <line x1="315" y1="405" x2="105" y2="405" class="ret"/>
+  <text x="122" y="392" class="label">Open admin universities</text>
+
+  <line x1="105" y1="475" x2="315" y2="475" class="msg"/>
+  <text x="130" y="463" class="label">Select university</text>
+  <line x1="315" y1="530" x2="525" y2="530" class="msg"/>
+  <text x="340" y="518" class="label">GET /api/admin/universities</text>
+  <rect x="513" y="538" width="24" height="46" class="act"/>
+  <line x1="525" y1="570" x2="735" y2="570" class="msg"/>
+  <text x="565" y="558" class="label">Fetch universities</text>
+  <line x1="735" y1="635" x2="525" y2="635" class="ret"/>
+  <text x="590" y="622" class="label">Return university data</text>
+  <line x1="525" y1="690" x2="315" y2="690" class="ret"/>
+  <text x="360" y="677" class="label">Show university setup</text>
+
+  <line x1="105" y1="765" x2="315" y2="765" class="msg"/>
+  <text x="120" y="753" class="label">Add / edit description</text>
+  <line x1="315" y1="820" x2="525" y2="820" class="msg"/>
+  <text x="340" y="808" class="label">PATCH /api/admin/universities</text>
+  <rect x="513" y="828" width="24" height="46" class="act"/>
+  <line x1="525" y1="860" x2="735" y2="860" class="msg"/>
+  <text x="560" y="848" class="label">Update description field</text>
+  <line x1="735" y1="920" x2="525" y2="920" class="ret"/>
+  <text x="588" y="907" class="label">Description saved</text>
+  <line x1="525" y1="975" x2="315" y2="975" class="ret"/>
+  <text x="370" y="962" class="label">Save success</text>
+
+  <line x1="105" y1="1035" x2="315" y2="1035" class="msg"/>
+  <text x="125" y="1023" class="label">Add department / major</text>
+  <line x1="315" y1="1090" x2="525" y2="1090" class="msg"/>
+  <text x="322" y="1078" class="label">POST department or major route</text>
+  <rect x="513" y="1098" width="24" height="46" class="act"/>
+  <line x1="525" y1="1130" x2="735" y2="1130" class="msg"/>
+  <text x="560" y="1118" class="label">Insert / update academic data</text>
+  <line x1="735" y1="1185" x2="525" y2="1185" class="ret"/>
+  <text x="600" y="1172" class="label">Data saved</text>
+  <line x1="525" y1="1210" x2="315" y2="1210" class="ret"/>
+  <text x="362" y="1197" class="label">Refresh setup lists</text>
+</svg>

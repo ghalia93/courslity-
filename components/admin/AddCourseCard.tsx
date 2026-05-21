@@ -15,6 +15,8 @@ export type AddCoursePayload = {
   code: string;
   title: string;
   description: string;
+  videoUrl?: string | null;
+  videoTitle?: string | null;
   credits: number;
   language: string;
   level: CourseLevel;
@@ -86,6 +88,8 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
     code: "",
     title: "",
     description: "",
+    videoUrl: "",
+    videoTitle: "",
     credits: "",
     language: "English",
     level: "freshman" as CourseLevel,
@@ -194,6 +198,8 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
       code: formData.code.trim(),
       title: formData.title.trim(),
       description: formData.description.trim() || "No description yet.",
+      videoUrl: formData.videoUrl.trim() || null,
+      videoTitle: formData.videoTitle.trim() || null,
       credits: creditsNum,
       language: formData.language,
       level: formData.level,
@@ -384,6 +390,22 @@ export default function AddCourseCard({ onClose, onSave }: Props) {
           placeholder="Course Description"
           rows={4}
           className="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6155F5] md:col-span-2"
+        />
+
+        <input
+          name="videoUrl"
+          value={formData.videoUrl}
+          onChange={handleTextChange}
+          placeholder="Course Video URL (YouTube, Vimeo, or MP4)"
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6155F5]"
+        />
+
+        <input
+          name="videoTitle"
+          value={formData.videoTitle}
+          onChange={handleTextChange}
+          placeholder="Video Title (optional)"
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6155F5]"
         />
       </div>
 

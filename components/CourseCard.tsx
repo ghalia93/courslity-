@@ -3,8 +3,9 @@
 // Renders the reusable CourseCard UI component.
 import Link from "next/link";
 import React from "react";
-import { FileText, Briefcase, MapPin, Scale, User } from "lucide-react";
+import { FileText, Briefcase, MapPin, Scale, User, Video } from "lucide-react";
 import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
+import { isLiuComputerCommunicationCourse } from "@/lib/courseExplainer";
 import { formatCourseLevel } from "@/lib/courseLevels";
 
 type CourseRatings = {
@@ -25,6 +26,7 @@ type CourseCardProps = {
   language: string;
   averageRating: number | null;
   description: string;
+  videoUrl?: string | null;
   ratings: CourseRatings;
   reviewCount: number;
   className?: string;
@@ -63,6 +65,7 @@ export default function CourseCard({
   language,
   averageRating,
   description,
+  videoUrl,
   ratings = { exam: null, workload: null, attendance: null, grading: null },
   reviewCount,
   className = "",
@@ -71,6 +74,11 @@ export default function CourseCard({
   const displayDescription = normalizeCourseDescription({
     description,
   });
+  const hasExplainerVideo = isLiuComputerCommunicationCourse({
+    university,
+    department,
+  });
+  const hasCourseVideo = !!videoUrl || hasExplainerVideo;
 
   return (
     <Link
@@ -117,6 +125,12 @@ export default function CourseCard({
           <span className="text-[13px] font-medium text-[#10B981] bg-[#D1FAE5] px-2 py-1 rounded-full">
             {language}
           </span>
+          {hasCourseVideo && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#EAF8FD] px-2 py-1 text-[13px] font-medium text-[#1F6F8B]">
+              <Video className="h-3.5 w-3.5" />
+              {videoUrl ? "course video" : "2 min video"}
+            </span>
+          )}
         </div>
 
         {/* Description */}

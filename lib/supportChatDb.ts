@@ -51,6 +51,8 @@ export async function ensureSupportChatTables() {
       visitor_name VARCHAR(120) NULL,
       status ENUM('open','closed') NOT NULL DEFAULT 'open',
       last_message_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      admin_last_opened_at TIMESTAMP NULL DEFAULT NULL,
+      participant_last_opened_at TIMESTAMP NULL DEFAULT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (thread_id),
       UNIQUE KEY uniq_support_thread_user (user_id),
@@ -100,6 +102,18 @@ export async function ensureSupportChatTables() {
   if (!(await columnExists("support_thread", "visitor_name"))) {
     await pool.query(
       "ALTER TABLE support_thread ADD COLUMN visitor_name VARCHAR(120) NULL AFTER visitor_key",
+    );
+  }
+
+  if (!(await columnExists("support_thread", "admin_last_opened_at"))) {
+    await pool.query(
+      "ALTER TABLE support_thread ADD COLUMN admin_last_opened_at TIMESTAMP NULL DEFAULT NULL AFTER last_message_at",
+    );
+  }
+
+  if (!(await columnExists("support_thread", "participant_last_opened_at"))) {
+    await pool.query(
+      "ALTER TABLE support_thread ADD COLUMN participant_last_opened_at TIMESTAMP NULL DEFAULT NULL AFTER admin_last_opened_at",
     );
   }
 

@@ -10,9 +10,12 @@ type ChatThread = {
   full_name: string;
   email: string;
   status: string;
+  latest_message_id: number | null;
   latest_message: string | null;
+  latest_sender_role: "student" | "visitor" | "admin" | null;
   last_message_at: string;
   is_visitor?: 0 | 1;
+  unread?: 0 | 1;
 };
 
 type ChatMessage = {
@@ -62,7 +65,9 @@ export default function AdminChatPage() {
       const nextThreads = (data.threads ?? []) as ChatThread[];
       setThreads(nextThreads);
       setSelectedThreadId((current) =>
-        current ?? nextThreads[0]?.thread_id ?? null,
+        current && nextThreads.some((thread) => thread.thread_id === current)
+          ? current
+          : null,
       );
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load chats");
@@ -89,6 +94,7 @@ export default function AdminChatPage() {
       }
 
       setMessages(data.messages ?? []);
+      window.dispatchEvent(new Event("admin-chat-updated"));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load messages");
       setMessages([]);
@@ -102,11 +108,17 @@ export default function AdminChatPage() {
   }, [loadThreads]);
 
   useEffect(() => {
-    if (!selectedThreadId) return;
+    if (!selectedThreadId) {
+      setMessages([]);
+      setDraft("");
+      setEditingMessageId(null);
+      setEditingDraft("");
+      return;
+    }
 
     setEditingMessageId(null);
     setEditingDraft("");
-    loadMessages(selectedThreadId);
+    loadMessages(selectedThreadId).then(() => loadThreads());
     const intervalId = window.setInterval(() => {
       loadMessages(selectedThreadId);
       loadThreads();
@@ -138,6 +150,7 @@ export default function AdminChatPage() {
       setDraft("");
       setMessages(data.messages ?? []);
       loadThreads();
+      window.dispatchEvent(new Event("admin-chat-updated"));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to send reply");
     } finally {
@@ -184,6 +197,7 @@ export default function AdminChatPage() {
       setMessages(data.messages ?? []);
       cancelEditing();
       loadThreads();
+      window.dispatchEvent(new Event("admin-chat-updated"));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to edit message");
     } finally {
@@ -216,6 +230,7 @@ export default function AdminChatPage() {
       setMessages(data.messages ?? []);
       if (editingMessageId === messageId) cancelEditing();
       loadThreads();
+      window.dispatchEvent(new Event("admin-chat-updated"));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to delete message");
     } finally {
@@ -293,6 +308,20 @@ export default function AdminChatPage() {
                   <p className="mt-1 line-clamp-2 text-xs text-gray-500">
                     {thread.latest_message || "No messages yet"}
                   </p>
+                  {thread.latest_sender_role &&
+                    thread.latest_sender_role !== "admin" && (
+                      <span
+                        className={`mt-2 inline-flex rounded-full px-2 py-1 text-[11px] font-semibold ${
+                          thread.unread
+                            ? "bg-red-50 text-red-600"
+                            : "bg-amber-50 text-amber-700"
+                        }`}
+                      >
+                        {thread.unread
+                          ? "New message"
+                          : "Waiting for your answer"}
+                      </span>
+                    )}
                 </button>
               ))
             )}
@@ -302,11 +331,23 @@ export default function AdminChatPage() {
         <section className="flex min-h-[520px] flex-col">
           {selectedThread ? (
             <>
-              <div className="border-b border-gray-100 px-4 py-3">
-                <p className="font-semibold text-gray-900">
-                  {selectedThread.full_name}
-                </p>
-                <p className="text-xs text-gray-400">{selectedThread.email}</p>
+              <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-gray-900">
+                    {selectedThread.full_name}
+                  </p>
+                  <p className="truncate text-xs text-gray-400">
+                    {selectedThread.email}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedThreadId(null)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 px-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                >
+                  <X size={13} />
+                  Close chat
+                </button>
               </div>
 
               <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">

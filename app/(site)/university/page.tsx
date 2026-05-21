@@ -5,12 +5,14 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, Search } from "lucide-react";
 import CourseCard from "@/components/CourseCard";
+import UniversityReviewSection from "@/components/UniversityReviewSection";
 import { Course } from "@/types/course";
 
 type UniversityOption = {
   university_id: number;
   name: string;
   email_domain: string;
+  description: string | null;
 };
 
 function UniversityPageContent() {
@@ -77,6 +79,14 @@ function UniversityPageContent() {
       };
     });
   }, [courses, universities]);
+
+  const selectedUniversityOption = useMemo(
+    () =>
+      universityCards.find(
+        (university) => university.name === selectedUniversity,
+      ) ?? null,
+    [selectedUniversity, universityCards],
+  );
 
   const filteredCourses = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -152,10 +162,51 @@ function UniversityPageContent() {
               ))}
             </div>
 
+            {selectedUniversityOption && (
+              <section className="mt-8">
+                <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="max-w-3xl">
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        {selectedUniversityOption.name}
+                      </h2>
+                      <p className="mt-3 text-[15px] leading-7 text-gray-600">
+                        {selectedUniversityOption.description ||
+                          "No university description has been added yet."}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 sm:flex lg:grid">
+                      <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                        <p className="text-xs font-medium text-gray-500">
+                          Courses
+                        </p>
+                        <p className="mt-1 text-lg font-semibold text-gray-900">
+                          {selectedUniversityOption.courseCount}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                        <p className="text-xs font-medium text-gray-500">
+                          Email domain
+                        </p>
+                        <p className="mt-1 max-w-40 truncate text-sm font-semibold text-gray-900">
+                          {selectedUniversityOption.email_domain || "Not set"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <UniversityReviewSection
+                  universityId={selectedUniversityOption.university_id}
+                />
+              </section>
+            )}
+
             <div className="mt-8">
               <h2 className="text-lg font-semibold text-gray-900">
                 {selectedUniversity
-                  ? `${selectedUniversity} Courses`
+                  ? `Courses Available at ${selectedUniversity}`
                   : "Select a university"}
               </h2>
 

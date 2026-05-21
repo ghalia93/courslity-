@@ -6,6 +6,7 @@ import { ArrowBigDown, ArrowBigUp } from "lucide-react";
 
 type ReviewFooterBarProps = {
   reviewId: number;
+  voteEndpointBase?: string;
   initialUpvotes?: number;
   initialDownvotes?: number;
   initialUserVote?: number | null;
@@ -20,6 +21,7 @@ type ReviewFooterBarProps = {
 
 export default function ReviewFooterBar({
   reviewId,
+  voteEndpointBase = "/api/reviews",
   initialUpvotes = 0,
   initialDownvotes = 0,
   initialUserVote = null,
@@ -48,7 +50,7 @@ export default function ReviewFooterBar({
     setError("");
 
     try {
-      const res = await fetch(`/api/reviews/${reviewId}/vote`, {
+      const res = await fetch(`${voteEndpointBase}/${reviewId}/vote`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

@@ -5,6 +5,11 @@ import { requireAdmin, requireUniversityAdmin } from "@/lib/auth";
 import pool from "@/db";
 import { getSemesterFromCourseCode, getYearFromCourseCode } from "@/lib/courseCode";
 import { normalizeCourseDescription } from "@/lib/courseDescriptionText";
+import {
+  ensureCourseVideoColumns,
+  normalizeOptionalVideoTitle,
+  normalizeOptionalVideoUrl,
+} from "@/lib/courseVideosDb";
 import { COURSE_LEVEL_VALUES, formatCourseLevel } from "@/lib/courseLevels";
 import { ensureRoadmapTables } from "@/lib/roadmapsDb";
 import { notifyStudentsAboutCourse } from "@/lib/notificationsDb";
@@ -15,6 +20,8 @@ type AdminCourseRow = RowDataPacket & {
   code: string;
   title: string;
   description: string;
+  video_url: string | null;
+  video_title: string | null;
   credits: number;
   level: string;
   language: string;
@@ -84,6 +91,7 @@ export async function GET(req: NextRequest) {
     await requireAdmin(req);
     await ensureRoadmapTables();
     await ensureReviewHiddenColumn();
+    await ensureCourseVideoColumns();
 
     const { searchParams } = new URL(req.url);
     const q = (searchParams.get("q") || "").trim();
@@ -144,6 +152,8 @@ export async function GET(req: NextRequest) {
         c.code,
         c.title,
         c.description,
+        c.video_url,
+        c.video_title,
         c.credits,
         c.level,
         c.language,
@@ -179,7 +189,7 @@ export async function GET(req: NextRequest) {
       ${where}
       GROUP BY
         c.course_id, c.code, c.title, c.description, c.credits,
-        c.level, c.language, c.department_id, d.name,
+        c.video_url, c.video_title, c.level, c.language, c.department_id, d.name,
         uni.university_id, uni.name, c.deleted_at
       ORDER BY ${orderBy}`,
       params,
@@ -191,6 +201,8 @@ export async function GET(req: NextRequest) {
       code: row.code,
       title: row.title,
       description: normalizeCourseDescription(row),
+      videoUrl: row.video_url ?? null,
+      videoTitle: row.video_title ?? null,
       credits: row.credits,
       level: row.level,
       language: row.language,
@@ -249,6 +261,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireUniversityAdmin(req);
     await ensureRoadmapTables();
+    await ensureCourseVideoColumns();
 
     const body = await req.json();
     const {
@@ -261,6 +274,8 @@ export async function POST(req: NextRequest) {
       department_id,
       major_id,
     } = body;
+    const videoUrlInput = body.video_url ?? body.videoUrl;
+    const videoTitleInput = body.video_title ?? body.videoTitle;
 
     if (!code || typeof code !== "string") {
       return NextResponse.json(
@@ -339,6 +354,21 @@ export async function POST(req: NextRequest) {
     const cleanCode = code.trim();
     const cleanTitle = title.trim();
     const cleanDescription = description.trim();
+    let cleanVideoUrl: string | null;
+    let cleanVideoTitle: string | null;
+    try {
+      cleanVideoUrl = normalizeOptionalVideoUrl(videoUrlInput);
+      cleanVideoTitle = normalizeOptionalVideoTitle(videoTitleInput);
+    } catch (error) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            error instanceof Error ? error.message : "Invalid course video data",
+        },
+        { status: 400 },
+      );
+    }
 
     // Verify department exists and is active
     const [deptRows] = await pool.query<DepartmentCourseRow[]>(
@@ -407,12 +437,15 @@ export async function POST(req: NextRequest) {
       await connection.beginTransaction();
 
       const [result] = await connection.query<ResultSetHeader>(
-        `INSERT INTO course (code, title, description, credits, language, level, department_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO course
+          (code, title, description, video_url, video_title, credits, language, level, department_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           cleanCode,
           cleanTitle,
           cleanDescription,
+          cleanVideoUrl,
+          cleanVideoTitle,
           creditsNum,
           language,
           level,
@@ -501,6 +534,8 @@ export async function POST(req: NextRequest) {
           code: cleanCode,
           title: cleanTitle,
           description: cleanDescription,
+          videoUrl: cleanVideoUrl,
+          videoTitle: cleanVideoTitle,
           credits: creditsNum,
           language,
           level,

@@ -7,6 +7,7 @@ import WriteReviewCard from "@/components/WriteReviewCard";
 import StudentReviews from "@/components/StudentReviews";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/toast/Toastprovider";
+import { isAdminRole } from "@/lib/roles";
 
 interface Props {
   slug: string;
@@ -18,6 +19,7 @@ export default function CoursePageClient({ slug, courseId }: Props) {
   const { toast } = useToast();
   const [showWriteReview, setShowWriteReview] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const isAdminUser = isAdminRole(user?.role);
 
   function handleReviewSubmitted() {
     setShowWriteReview(false);
@@ -30,17 +32,22 @@ export default function CoursePageClient({ slug, courseId }: Props) {
       return;
     }
 
+    if (isAdminRole(user.role)) {
+      toast("Admins cannot leave student reviews", "error");
+      return;
+    }
+
     setShowWriteReview(true);
   }
 
   return (
     <div>
-      {!showWriteReview && (
+      {!showWriteReview && !isAdminUser && (
         <Button onClick={handleLeaveReviewClick} variant="primary">
           Leave a review
         </Button>
       )}
-      {showWriteReview && (
+      {showWriteReview && !isAdminUser && (
         <WriteReviewCard
           slug={slug}
           courseId={courseId}

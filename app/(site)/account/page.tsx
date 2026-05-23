@@ -8,6 +8,7 @@ import StarRating from "@/components/StarRating";
 import ThemeModeControl from "@/components/ThemeModeControl";
 import { useToast } from "@/components/toast/Toastprovider";
 import { useAuth } from "@/context/AuthContext";
+import { isAdminRole } from "@/lib/roles";
 import {
   buildEmailWithDomain,
   getEmailLocalPart,
@@ -31,7 +32,7 @@ interface University {
 
 export default function AccountPage() {
   const router = useRouter();
-  const { refresh } = useAuth();
+  const { user: authUser, refresh } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [universities, setUniversities] = useState<University[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +42,7 @@ export default function AccountPage() {
   const [emailLocalPart, setEmailLocalPart] = useState("");
 
   const { toast } = useToast();
+  const isAdminUser = isAdminRole(authUser?.role);
 
   const reportRef = useRef<HTMLDivElement | null>(null);
   const [reportRating, setReportRating] = useState(0);
@@ -192,6 +194,11 @@ export default function AccountPage() {
   };
 
   const handleReportSubmit = async () => {
+    if (isAdminUser) {
+      toast("Admins cannot submit problem reports.", "error");
+      return;
+    }
+
     if (!reportMessage.trim()) {
       toast("Please describe the problem before submitting.", "error");
       return;
@@ -353,46 +360,48 @@ export default function AccountPage() {
         <ThemeModeControl />
       </section>
 
-      <section
-        className="mt-10 w-full max-w-md rounded-xl border border-gray-200 bg-white p-4 shadow-lg shadow-gray-200/60 transition-colors dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-black/30 sm:p-6"
-      >
-        <div id="report" ref={reportRef} className="scroll-mt-24" />
-        <h2 className="text-xl font-medium text-gray-700 dark:text-neutral-100">Report a Problem</h2>
-        <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400">
-          Tell us what looks wrong and how it affected you.
-        </p>
-
-        <div className="mt-5">
-          <p className="text-sm font-medium text-gray-700 dark:text-neutral-200">Rating</p>
-          <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400">
-            1 = bad experience, 5 = great experience
+      {!isAdminUser && (
+        <section
+          className="mt-10 w-full max-w-md rounded-xl border border-gray-200 bg-white p-4 shadow-lg shadow-gray-200/60 transition-colors dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-black/30 sm:p-6"
+        >
+          <div id="report" ref={reportRef} className="scroll-mt-24" />
+          <h2 className="text-xl font-medium text-gray-700 dark:text-neutral-100">Report a Problem</h2>
+          <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400">
+            Tell us what looks wrong and how it affected you.
           </p>
-          <div className="mt-2">
-            <StarRating value={reportRating} onChange={setReportRating} />
+
+          <div className="mt-5">
+            <p className="text-sm font-medium text-gray-700 dark:text-neutral-200">Rating</p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400">
+              1 = bad experience, 5 = great experience
+            </p>
+            <div className="mt-2">
+              <StarRating value={reportRating} onChange={setReportRating} />
+            </div>
           </div>
-        </div>
 
-        <textarea
-          value={reportMessage}
-          onChange={(e) => setReportMessage(e.target.value)}
-          placeholder="Describe the problem..."
-          className="mt-5 h-32 w-full resize-none rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-[#6155F5] dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder:text-neutral-500"
-          disabled={reportLoading}
-        />
+          <textarea
+            value={reportMessage}
+            onChange={(e) => setReportMessage(e.target.value)}
+            placeholder="Describe the problem..."
+            className="mt-5 h-32 w-full resize-none rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-[#6155F5] dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder:text-neutral-500"
+            disabled={reportLoading}
+          />
 
-        <div className="mt-4 flex justify-end">
-          <Button
-            type="button"
-            onClick={handleReportSubmit}
-            disabled={
-              reportLoading || !reportMessage.trim() || reportRating === 0
-            }
-            className="w-full disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-          >
-            {reportLoading ? "Submitting..." : "Submit"}
-          </Button>
-        </div>
-      </section>
+          <div className="mt-4 flex justify-end">
+            <Button
+              type="button"
+              onClick={handleReportSubmit}
+              disabled={
+                reportLoading || !reportMessage.trim() || reportRating === 0
+              }
+              className="w-full disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            >
+              {reportLoading ? "Submitting..." : "Submit"}
+            </Button>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -2,12 +2,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { ResultSetHeader } from "mysql2";
 import pool from "@/db";
-import { requireAuth } from "@/lib/auth";
+import { isAdminRole, requireAuth, type AuthUser } from "@/lib/auth";
 
 type FeedbackKind = "feedback" | "problem";
 
 function isValidKind(value: unknown): value is FeedbackKind {
   return value === "feedback" || value === "problem";
+}
+
+async function getOptionalUser(req: NextRequest): Promise<AuthUser | null> {
+  try {
+    return await requireAuth(req);
+  } catch {
+    return null;
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -18,7 +26,22 @@ export async function POST(req: NextRequest) {
     const message = body?.message;
     const rawKind = body?.kind;
     const kind: FeedbackKind = isValidKind(rawKind) ? rawKind : "feedback";
-    const userId = kind === "problem" ? (await requireAuth(req)).userId : null;
+    const currentUser = await getOptionalUser(req);
+
+    if (currentUser && isAdminRole(currentUser.role)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Admins cannot submit student feedback or problem reports",
+        },
+        { status: 403 },
+      );
+    }
+
+    const userId =
+      kind === "problem"
+        ? (currentUser ?? (await requireAuth(req))).userId
+        : null;
 
     if (!message || typeof message !== "string" || message.trim().length < 3) {
       return NextResponse.json(

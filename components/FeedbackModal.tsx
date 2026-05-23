@@ -5,6 +5,8 @@ import { useState } from "react";
 import StarRating from "./StarRating";
 import Button from "./Button";
 import { useToast } from "./toast/Toastprovider";
+import { useAuth } from "@/context/AuthContext";
+import { isAdminRole } from "@/lib/roles";
 
 type Props = {
   onClose: () => void;
@@ -17,8 +19,15 @@ export default function FeedbackModal({ onClose, onSubmitted }: Props) {
   const [loading, setLoading] = useState(false);
 
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isAdminUser = isAdminRole(user?.role);
 
   async function handleSubmit() {
+    if (isAdminUser) {
+      toast("Admins cannot submit student feedback.", "error");
+      return;
+    }
+
     if (!feedback.trim()) {
       toast("Please write some feedback before submitting.", "error");
       return;
@@ -58,7 +67,7 @@ export default function FeedbackModal({ onClose, onSubmitted }: Props) {
     }
   }
 
-  const isDisabled = loading || !feedback.trim() || rating === 0;
+  const isDisabled = isAdminUser || loading || !feedback.trim() || rating === 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 px-4 py-6">

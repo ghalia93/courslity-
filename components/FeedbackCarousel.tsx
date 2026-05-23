@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import FeedbackModal from "./FeedbackModal";
 import Button from "./Button";
 import StarRating from "./StarRating";
+import { useAuth } from "@/context/AuthContext";
+import { isAdminRole } from "@/lib/roles";
 
 type Feedback = {
   quote: string;
@@ -50,6 +52,8 @@ function QuoteCard({ quote, user, rating }: Feedback) {
 
 export default function FeedbackCarousel() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const { user } = useAuth();
+  const isAdminUser = isAdminRole(user?.role);
 
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,14 +164,16 @@ export default function FeedbackCarousel() {
           </button>
         </div>
 
-        <div className="mt-8 flex justify-center">
-          <Button variant="primary" onClick={() => setFeedbackOpen(true)}>
-            Leave Your Feedback
-          </Button>
-        </div>
+        {!isAdminUser && (
+          <div className="mt-8 flex justify-center">
+            <Button variant="primary" onClick={() => setFeedbackOpen(true)}>
+              Leave Your Feedback
+            </Button>
+          </div>
+        )}
       </div>
 
-      {feedbackOpen && (
+      {feedbackOpen && !isAdminUser && (
         <FeedbackModal
           onClose={() => setFeedbackOpen(false)}
           onSubmitted={() => {

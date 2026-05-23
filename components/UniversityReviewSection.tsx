@@ -7,6 +7,7 @@ import WriteUniversityReviewCard from "@/components/WriteUniversityReviewCard";
 import UniversityReviews from "@/components/UniversityReviews";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/toast/Toastprovider";
+import { isAdminRole } from "@/lib/roles";
 
 type UniversityReviewSectionProps = {
   universityId: number;
@@ -19,6 +20,7 @@ export default function UniversityReviewSection({
   const { toast } = useToast();
   const [showWriteReview, setShowWriteReview] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const isAdminUser = isAdminRole(user?.role);
 
   function handleReviewSubmitted() {
     setShowWriteReview(false);
@@ -31,18 +33,23 @@ export default function UniversityReviewSection({
       return;
     }
 
+    if (isAdminRole(user.role)) {
+      toast("Admins cannot leave student reviews", "error");
+      return;
+    }
+
     setShowWriteReview(true);
   }
 
   return (
     <section className="mt-6">
-      {!showWriteReview && (
+      {!showWriteReview && !isAdminUser && (
         <Button onClick={handleLeaveReviewClick} variant="primary">
           Leave a review
         </Button>
       )}
 
-      {showWriteReview && (
+      {showWriteReview && !isAdminUser && (
         <WriteUniversityReviewCard
           universityId={universityId}
           onSubmit={handleReviewSubmitted}

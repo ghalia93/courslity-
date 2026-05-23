@@ -125,13 +125,15 @@ export default function NavBar() {
                       </Link>
                     )}
 
-                    <Link
-                      href="/account#report"
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-[#6155F5] dark:text-neutral-200 dark:hover:bg-neutral-800 dark:hover:text-violet-300"
-                      onClick={() => setAccountOpen(false)}
-                    >
-                      Report a Problem
-                    </Link>
+                    {!isAdminRole(user.role) && (
+                      <Link
+                        href="/account#report"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-[#6155F5] dark:text-neutral-200 dark:hover:bg-neutral-800 dark:hover:text-violet-300"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Report a Problem
+                      </Link>
+                    )}
 
                     <div className="mt-1 border-t border-gray-100 dark:border-neutral-800" />
 

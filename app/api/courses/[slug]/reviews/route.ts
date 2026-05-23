@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
-import { type AuthUser, requireAuth } from "@/lib/auth";
+import { isAdminRole, type AuthUser, requireAuth } from "@/lib/auth";
 import { ensureReviewHiddenColumn } from "@/lib/reviewDb";
 import { calculateOverallRating } from "@/lib/reviewRatings";
 
@@ -226,6 +226,13 @@ export async function POST(
 ) {
   try {
     const user = await requireAuth(req);
+
+    if (isAdminRole(user.role)) {
+      return NextResponse.json(
+        { success: false, message: "Admins cannot leave student reviews" },
+        { status: 403 },
+      );
+    }
 
     const { slug } = await params;
     const { searchParams } = new URL(req.url);

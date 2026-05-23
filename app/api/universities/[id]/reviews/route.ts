@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import type { RowDataPacket } from "mysql2";
 import pool from "@/db";
-import { type AuthUser, requireAuth } from "@/lib/auth";
+import { isAdminRole, type AuthUser, requireAuth } from "@/lib/auth";
 import { ensureUniversityReviewTables } from "@/lib/universityReviewDb";
 
 type UniversityRow = RowDataPacket & {
@@ -199,6 +199,14 @@ export async function POST(
 ) {
   try {
     const user = await requireAuth(req);
+
+    if (isAdminRole(user.role)) {
+      return NextResponse.json(
+        { success: false, message: "Admins cannot leave student reviews" },
+        { status: 403 },
+      );
+    }
+
     await ensureUniversityReviewTables();
 
     const { id } = await params;

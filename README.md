@@ -1,9 +1,9 @@
-# University Course Reality Check Platform
+# Coursality
 
 ## Overview
 
 Official university course descriptions often fail to reflect the real student experience.  
-This platform allows students to **anonymously share honest feedback** about university courses — including workload grading fairness, exam difficulty, and attendance strictness.
+Coursality allows students to **anonymously share honest feedback** about university courses, including workload, grading fairness, exam difficulty, and attendance strictness.
 Future students can make **informed decisions** instead of choosing courses blindly.
 
 ---
@@ -23,7 +23,8 @@ Future students can make **informed decisions** instead of choosing courses blin
 - Course search and filtering by:
   - University
   - Department
-  - Difficulty level
+  - Major
+  - Level
 
 ---
 
